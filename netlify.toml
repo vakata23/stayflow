@@ -1,0 +1,17 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+  functions = "netlify/functions"
+
+# iCal endpoint-ът трябва да се хване ПРЕДИ SPA fallback-а —
+# правилата се обхождат отгоре надолу и първото съвпадение печели.
+[[redirects]]
+  from = "/api/ical"
+  to = "/.netlify/functions/ical"
+  status = 200
+
+# SPA fallback — react-router поема всички останали пътища.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

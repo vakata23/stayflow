@@ -1,0 +1,22 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  /* Тъмно тюркоазен primary accent */
+  --color-brand-50: #f0fbfa;
+  --color-brand-100: #d3f3f1;
+  --color-brand-200: #a8e6e3;
+  --color-brand-300: #71d1cf;
+  --color-brand-400: #40b3b3;
+  --color-brand-500: #259698;
+  --color-brand-600: #1b787c;
+  --color-brand-700: #196064;
+  --color-brand-800: #184d51;
+  --color-brand-900: #184044;
+  --color-brand-950: #082527;
+}
+
+body {
+  @apply bg-slate-50 text-slate-900 antialiased;
+}

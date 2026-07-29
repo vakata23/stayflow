@@ -1,0 +1,6 @@
+{
+  "appId": "bg.stayflow.app",
+  "appName": "StayFlow",
+  "webDir": "dist",
+  "backgroundColor": "#f8fafc"
+}
