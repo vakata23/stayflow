@@ -9,6 +9,7 @@ import {
   AlertTriangle,
   Download,
   Sparkles,
+  ClipboardList,
 } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { formatDateBG, todayISO } from '../../lib/dates'
@@ -26,6 +27,7 @@ const METRIC_INFO = {
   adr: 'Средна цена на нощувка (ADR) = приходи ÷ продадени нощувки.',
   direct_share: 'Какъв дял от прихода идва от директни гости (не през платформа) спрямо платформите.',
   saved: 'Директният приход × обичайната комисионна ставка на всеки имот — колко би коствало, ако същите нощувки бяха през платформа.',
+  sold: 'Разлика с „Приходи“: тук броим резервациите по ДАТАТА, на която са направени (независимо кога ще е престоят). „Приходи“ разпределя сумата по датата на НОЩУВКАТА. Пример: резервация направена днес за престой през март се брои в „Продадено“ за днешния месец, но в „Приходи“ за март.',
 }
 
 function MetricCard({ icon: Icon, label, value, sub, info, accent }) {
@@ -55,6 +57,7 @@ export default function Earnings() {
 
   const [hasProperties, setHasProperties] = useState(null)
   const [summary, setSummary] = useState(null)
+  const [sold, setSold] = useState(null)
   const [chartRows, setChartRows] = useState([])
   const [propertyRows, setPropertyRows] = useState([])
   const [unpaid, setUnpaid] = useState([])
@@ -72,7 +75,7 @@ export default function Earnings() {
 
     const chartRange = getChartRange(to)
 
-    const [propsRes, periodRes, chartRes, byPropertyRes, balancesRes, incompleteRes] = await Promise.all([
+    const [propsRes, periodRes, chartRes, byPropertyRes, balancesRes, incompleteRes, soldRes] = await Promise.all([
       supabase.from('properties').select('id, name'),
       supabase.rpc('earnings_by_month', { p_from: from, p_to: to }),
       supabase.rpc('earnings_by_month', { p_from: chartRange.from, p_to: chartRange.to }),
@@ -83,9 +86,11 @@ export default function Earnings() {
         .gt('outstanding', 0)
         .order('check_in', { ascending: true }),
       incompleteBookingsFilter(supabase.from('bookings').select('id', { count: 'exact', head: true })),
+      supabase.rpc('bookings_sold', { p_from: from, p_to: to }),
     ])
 
     if (periodRes.error) setError('Неуспешно зареждане на приходите: ' + periodRes.error.message)
+    setSold(soldRes.data?.[0] ?? null)
 
     const names = Object.fromEntries((propsRes.data ?? []).map((p) => [p.id, p.name]))
     setPropertyNames(names)
@@ -226,7 +231,7 @@ export default function Earnings() {
               </div>
             </Card>
 
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <MetricCard
                 icon={TrendingUp}
                 label="Приходи"
@@ -238,6 +243,13 @@ export default function Earnings() {
                 label="Нетно след комисиони"
                 value={formatMoney(summary?.net ?? 0)}
                 info={METRIC_INFO.net}
+              />
+              <MetricCard
+                icon={ClipboardList}
+                label="Продадено"
+                value={formatMoney(sold?.revenue ?? 0)}
+                sub={`${sold?.bookings_count ?? 0} ${sold?.bookings_count === 1 ? 'резервация' : 'резервации'} · нето ${formatMoney(sold?.net ?? 0)}`}
+                info={METRIC_INFO.sold}
               />
               <MetricCard
                 icon={BedDouble}

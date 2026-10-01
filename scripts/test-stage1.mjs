@@ -1,9 +1,10 @@
-// Тества StayFlow schema.sql + миграции 002/003/004 в памет (PGlite), със
+// Тества StayFlow schema.sql + миграции 002/003/004/005 в памет (PGlite), със
 // заместители за Supabase auth схемата, auth.uid(), ролите anon/authenticated
 // и подразбиращите се права на достъп на Supabase. Проверява: комисиона,
-// плащания/остатъци, настройки по имот (и RLS изолацията им), канали, и
+// плащания/остатъци, настройки по имот (и RLS изолацията им), канали,
 // числата на earnings_by_month/earnings_by_property — вкл. „спестена
-// комисиона" с РАЗЛИЧНА ставка на два имота на един собственик.
+// комисиона" с РАЗЛИЧНА ставка на два имота на един собственик — и
+// bookings_sold() (резервации по дата на създаване, не по нощувка).
 //
 // Еднократно, в произволна scratch папка:  npm i @electric-sql/pglite
 // Пускане от там:                           node <path>/test-stage1.mjs [path/to/stayflow]
@@ -27,6 +28,7 @@ const sqlFiles = [
   join(projectDir, 'supabase/migrations/002_ical_sync.sql'),
   join(projectDir, 'supabase/migrations/003_guest_card.sql'),
   join(projectDir, 'supabase/migrations/004_commission_earnings.sql'),
+  join(projectDir, 'supabase/migrations/005_bookings_sold.sql'),
 ];
 
 const db = new PGlite({ extensions: { btree_gist } });
@@ -112,29 +114,54 @@ await db.exec(`
     ('${U1}', 15.0, 1.00, 20, 30),
     ('${U2}', 20.0, 1.00, 20, 30);
 
+  -- created_at е фиксиран изрично навсякъде по-долу (2026-06-01) — не на
+  -- default now(). Иначе тестът става недетерминиран: bookings_sold()
+  -- групира по created_at, а "сега" се мести всеки ден и рано или късно
+  -- ще влезе в месеца, който тестваме за bookings_sold по-долу.
+
   -- Гост 1: директна резервация, U1, без комисиона (3 нощувки х 100)
-  insert into bookings (id, property_id, status, source, check_in, check_out, guest_name, total_price, commission) values
-    ('b1000000-0000-0000-0000-000000000000','${U1}','confirmed','direct','2026-12-20','2026-12-23','Гост 1',300,0);
+  insert into bookings (id, property_id, status, source, check_in, check_out, guest_name, total_price, commission, created_at) values
+    ('b1000000-0000-0000-0000-000000000000','${U1}','confirmed','direct','2026-12-20','2026-12-23','Гост 1',300,0,'2026-06-01');
   -- Гост 2: през Booking, U1, с комисиона 36 (15% от 240; 2 нощувки х 120)
-  insert into bookings (id, property_id, status, source, check_in, check_out, guest_name, total_price, commission) values
-    ('b2000000-0000-0000-0000-000000000000','${U1}','confirmed','booking','2026-12-23','2026-12-25','Гост 2',240,36);
+  insert into bookings (id, property_id, status, source, check_in, check_out, guest_name, total_price, commission, created_at) values
+    ('b2000000-0000-0000-0000-000000000000','${U1}','confirmed','booking','2026-12-23','2026-12-25','Гост 2',240,36,'2026-06-01');
   -- Гост 3: ръчно въведена (телефон), U2, престой през Нова година (3 нощувки х 90)
-  insert into bookings (id, property_id, status, source, check_in, check_out, guest_name, total_price, commission) values
-    ('b3000000-0000-0000-0000-000000000000','${U2}','confirmed','manual','2026-12-30','2027-01-02','Гост 3',270,0);
+  insert into bookings (id, property_id, status, source, check_in, check_out, guest_name, total_price, commission, created_at) values
+    ('b3000000-0000-0000-0000-000000000000','${U2}','confirmed','manual','2026-12-30','2027-01-02','Гост 3',270,0,'2026-06-01');
   -- Запитване (pending) — не бива да се брои в приходите; друг период, без застъпване
-  insert into bookings (id, property_id, status, source, check_in, check_out, guest_name, total_price) values
-    ('b4000000-0000-0000-0000-000000000000','${U1}','pending','manual','2026-11-01','2026-11-03','Запитване',null);
+  insert into bookings (id, property_id, status, source, check_in, check_out, guest_name, total_price, created_at) values
+    ('b4000000-0000-0000-0000-000000000000','${U1}','pending','manual','2026-11-01','2026-11-03','Запитване',null,'2026-06-01');
   -- Отказана резервация — не бива да се брои, и не блокира датите
-  insert into bookings (id, property_id, status, source, check_in, check_out, guest_name, total_price) values
-    ('b5000000-0000-0000-0000-000000000000','${U2}','cancelled','direct','2026-12-10','2026-12-12','Анулирал',200);
+  insert into bookings (id, property_id, status, source, check_in, check_out, guest_name, total_price, created_at) values
+    ('b5000000-0000-0000-0000-000000000000','${U2}','cancelled','direct','2026-12-10','2026-12-12','Анулирал',200,'2026-06-01');
   -- Отделна резервация само за проверка на tourist_tax в booking_balances
-  insert into bookings (id, property_id, status, source, check_in, check_out, guest_name, total_price, tourist_tax, commission) values
-    ('b6000000-0000-0000-0000-000000000000','${U1}','confirmed','direct','2026-11-10','2026-11-12','Гост с такса',150,4.00,0);
+  insert into bookings (id, property_id, status, source, check_in, check_out, guest_name, total_price, tourist_tax, commission, created_at) values
+    ('b6000000-0000-0000-0000-000000000000','${U1}','confirmed','direct','2026-11-10','2026-11-12','Гост с такса',150,4.00,0,'2026-06-01');
 
   insert into payments (booking_id, kind, amount, method) values
     ('b1000000-0000-0000-0000-000000000000','deposit', 90,'bank'),
     ('b3000000-0000-0000-0000-000000000000','deposit', 81,'card'),
     ('b3000000-0000-0000-0000-000000000000','balance',189,'cash');
+
+  -- За bookings_sold(): резервации направени (created_at) през септември
+  -- 2026, за престои чак през март 2027 — доказва, че функцията групира по
+  -- ДАТА НА РЕЗЕРВАЦИЯТА, не по дата на нощувката (за разлика от
+  -- earnings_by_month). Датите на престоя са далеч в бъдещето, за да не се
+  -- застъпват с нищо съществуващо на U1.
+  insert into bookings (id, property_id, status, source, check_in, check_out, guest_name, total_price, commission, created_at) values
+    ('b7000000-0000-0000-0000-000000000000','${U1}','confirmed','booking','2027-03-01','2027-03-03','Продаден 1',200,20,'2026-09-15 10:00:00'),
+    ('b8000000-0000-0000-0000-000000000000','${U1}','confirmed','direct','2027-03-05','2027-03-07','Продаден 2',150,0,'2026-09-20 10:00:00'),
+    ('b9000000-0000-0000-0000-000000000000','${U1}','cancelled','direct','2027-03-01','2027-03-03','Отказан през септември',999,0,'2026-09-25 10:00:00'),
+    ('ba000000-0000-0000-0000-000000000000','${U1}','confirmed','direct','2027-03-10','2027-03-12','Извън периода',500,0,'2026-10-01 10:00:00');
+
+  -- Границата на Europe/Sofia поправката: 21:30 UTC на 30 септември е still
+  -- 30-ти по UTC+2 (сесийната TZ по подразбиране в Postgres/pglite), НО вече
+  -- е 00:30 на 1 октомври по българско време (UTC+3, лятно часово). Ако
+  -- bookings_sold() използваше голата ::date (сесийна TZ), тази резервация
+  -- щеше погрешно да падне в септември. С "at time zone 'Europe/Sofia'" пада
+  -- коректно в октомври.
+  insert into bookings (id, property_id, status, source, check_in, check_out, guest_name, total_price, commission, created_at) values
+    ('bb000000-0000-0000-0000-000000000000','${U1}','confirmed','direct','2027-03-15','2027-03-17','Граница на часова зона',77,0,'2026-09-30 21:30:00+00');
 `);
 
 // ---------------------------------------------------------------- не чупим съществуващото
@@ -236,15 +263,35 @@ ok('по имот: Апартамент 2 (U2) — само декемврийс
 await asErr('анонимен не може да вика earnings_by_property', 'anon', null,
   `select * from earnings_by_property('2026-12-01','2026-12-31')`, /permission denied/);
 
+// ---------------------------------------------------------------- bookings_sold (005)
+// Продадени през септември 2026, за престои чак през март 2027 — доказва
+// групиране по created_at, не по check_in/check_out.
+r = await as('authenticated', A, `select * from bookings_sold('2026-09-01','2026-09-30')`);
+ok('bookings_sold: брои по ДАТА НА РЕЗЕРВАЦИЯТА, не по нощувка — 2 продадени, 350 приход, 20 комисиона, 330 нето',
+  same(r[0], { bookings_count: 2, revenue: 350, commission: 20, net: 330 }),
+  show(r[0], ['bookings_count', 'revenue', 'commission', 'net']));
+ok('bookings_sold: границата (21:30 UTC/30 септ.) НЕ изтича в септемврийската сметка',
+  num(r[0].revenue) === 350, `revenue=${r[0].revenue} (трябваше да остане 350, не 427)`);
+r = await as('authenticated', A, `select * from bookings_sold('2026-10-01','2026-10-31')`);
+ok('bookings_sold: октомври вече включва и граничната резервация по българско време — 2 продадени, 577 приход',
+  same(r[0], { bookings_count: 2, revenue: 577, commission: 0, net: 577 }),
+  show(r[0], ['bookings_count', 'revenue', 'commission', 'net']));
+r = await as('authenticated', B, `select * from bookings_sold('2026-09-01','2026-09-30')`);
+ok('собственик B вижда 0 за чужди продажби — без параметър, само RLS',
+  same(r[0], { bookings_count: 0, revenue: 0, commission: 0, net: 0 }));
+await asErr('анонимен не може да вика bookings_sold', 'anon', null,
+  `select * from bookings_sold('2026-09-01','2026-09-30')`, /permission denied/);
+
 // ---------------------------------------------------------------- съществуващата изолация (002/003) не е пробита
 r = await as('anon', null, `select * from guest_card('${U1}')`);
 ok('guest_card() все още работи анонимно за валиден имот', r.length === 1 && r[0].name === 'Студио 1');
 const u1Token = (await as('authenticated', A, `select ical_token::text as t from properties where id = '${U1}'`))[0].t;
 r = await as('anon', null, `select count(*)::int n from bookings_for_ical('${u1Token}')`);
-// U1 има 4 резервации със статус <> 'cancelled' (b1, b2, b4-pending, b6) — bookings_for_ical
-// изключва само отказаните, не и pending (съответства на оригиналната логика на 002).
+// U1 вече има 8 резервации със статус <> 'cancelled' (b1, b2, b4-pending, b6,
+// b7, b8, ba, bb — четирите нови от bookings_sold теста по-горе, минус
+// отказания b9). bookings_for_ical изключва само отказаните, не и pending.
 ok('bookings_for_ical() все още работи (вижда всички некотказани резервации на U1)',
-  r[0].n === 4, `видя ${r[0].n}`);
+  r[0].n === 8, `видя ${r[0].n}`);
 
 console.log(`\n${pass} успешни, ${fail} провалени\n`);
 process.exit(fail ? 1 : 0);
