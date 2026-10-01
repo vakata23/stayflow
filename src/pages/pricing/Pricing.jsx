@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { BadgePercent, Plus, Building2, Moon, CalendarRange } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { formatDateBG, fromISODate, todayISO } from '../../lib/dates'
-import { formatPrice } from '../../lib/pricing'
+import { formatMoney } from '../../lib/money'
 import { PageHeader, Card, Select, Button, Alert, Spinner, EmptyState } from '../../components/ui'
 import PricingRuleModal from './PricingRuleModal'
 
@@ -157,7 +157,7 @@ export default function Pricing() {
                           </span>
                         </td>
                         <td className="px-5 py-3.5 font-semibold text-slate-900">
-                          {formatPrice(rule.price_per_night)}
+                          {formatMoney(rule.price_per_night)}
                         </td>
                         <td className="px-5 py-3.5 text-slate-600">
                           <span className="flex items-center gap-1.5">

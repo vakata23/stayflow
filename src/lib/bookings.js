@@ -35,6 +35,62 @@ export function statusLabel(v) {
   return BOOKING_STATUSES.find((s) => s.value === v)?.label ?? v
 }
 
+// Платформи, които удържат комисиона — всичко друго е директна резервация.
+export const OTA_SOURCES = ['airbnb', 'booking']
+export function isOtaSource(source) {
+  return OTA_SOURCES.includes(source)
+}
+
+/**
+ * Резервации от платформа без попълнена цена или комисиона (напр. донесени
+ * през iCal, където Airbnb/Booking не дават финансова информация) — иначе
+ * таблото „Приходи“ смята грешно за тях. Споделена между списъка с
+ * резервации и таблото, за да няма две различни дефиниции за „непълна“.
+ */
+export function incompleteBookingsFilter(query) {
+  return query.in('source', OTA_SOURCES).neq('status', 'cancelled').or('total_price.is.null,commission.eq.0')
+}
+
+export const PAYMENT_KINDS = [
+  { value: 'deposit', label: 'Капаро' },
+  { value: 'balance', label: 'Остатък' },
+  { value: 'refund', label: 'Връщане' },
+]
+
+export const PAYMENT_METHODS = [
+  { value: 'bank', label: 'Банков превод' },
+  { value: 'card', label: 'Карта' },
+  { value: 'cash', label: 'В брой' },
+  { value: 'revolut', label: 'Revolut' },
+  { value: 'stripe', label: 'Stripe' },
+  { value: 'other', label: 'Друго' },
+]
+
+export function paymentKindLabel(v) {
+  return PAYMENT_KINDS.find((k) => k.value === v)?.label ?? v
+}
+
+export function paymentMethodLabel(v) {
+  return PAYMENT_METHODS.find((m) => m.value === v)?.label ?? v
+}
+
+/** Предложена комисиона = обща цена × ставката на имота (закръглена до стотинка). */
+export function suggestCommission(totalPrice, otaCommissionPct) {
+  const price = Number(totalPrice)
+  if (!Number.isFinite(price) || price <= 0) return 0
+  return Math.round(price * (Number(otaCommissionPct) || 0)) / 100
+}
+
+/** Предложен туристически данък = гости × нощувки × ставка на имота. */
+export function suggestTouristTax(numGuests, nights, touristTaxRate) {
+  const guests = Number(numGuests)
+  const rate = Number(touristTaxRate)
+  if (!Number.isFinite(guests) || guests <= 0 || !Number.isFinite(rate) || rate <= 0 || nights <= 0) {
+    return 0
+  }
+  return Math.round(guests * nights * rate * 100) / 100
+}
+
 /**
  * Проверява дали периодът се застъпва със съществуваща резервация.
  * Това е първата от двете защити срещу двойно резервиране — втората е

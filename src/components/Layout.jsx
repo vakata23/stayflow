@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import {
   DoorOpen,
+  TrendingUp,
   ClipboardCheck,
   StickyNote,
   CalendarDays,
@@ -21,6 +22,7 @@ import { useAuth } from '../context/AuthContext'
 
 const dashboardNav = [
   { to: '/', label: 'Настанявания/Напускания', icon: DoorOpen },
+  { to: '/earnings', label: 'Приходи', icon: TrendingUp },
   { to: '/cleaning-tasks', label: 'Камериерски задачи', icon: ClipboardCheck },
   { to: '/cleaning-notes', label: 'Забележки от почистване', icon: StickyNote },
   { to: '/calendar', label: 'Календар', icon: CalendarDays },

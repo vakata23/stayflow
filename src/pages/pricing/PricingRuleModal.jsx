@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 import { formatDateBG } from '../../lib/dates'
-import { findOverlappingRule, formatPrice } from '../../lib/pricing'
+import { findOverlappingRule } from '../../lib/pricing'
+import { formatMoney } from '../../lib/money'
 import { Field, Input, Select, Button, Alert } from '../../components/ui'
 
 const empty = {
@@ -72,7 +73,7 @@ export default function PricingRuleModal({ open, onClose, onSaved, properties, i
       setSaving(false)
       setWarning(
         `Този период се застъпва със съществуващо правило ` +
-          `(${formatDateBG(overlap.start_date)} – ${formatDateBG(overlap.end_date)}, ${formatPrice(overlap.price_per_night)}). ` +
+          `(${formatDateBG(overlap.start_date)} – ${formatDateBG(overlap.end_date)}, ${formatMoney(overlap.price_per_night)}). ` +
           `Ако запазите, за застъпените дни ще важи новото правило. Натиснете отново, за да продължите.`
       )
       return
@@ -146,7 +147,7 @@ export default function PricingRuleModal({ open, onClose, onSaved, properties, i
           </div>
 
           <div className="grid gap-5 sm:grid-cols-2">
-            <Field label="Цена на нощувка (лв.)" required>
+            <Field label="Цена на нощувка (€)" required>
               <Input
                 type="number"
                 min={0}

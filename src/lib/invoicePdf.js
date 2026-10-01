@@ -5,8 +5,9 @@
  * чупят кирилицата. Затова зареждаме Roboto (TTF с кирилски глифи) от
  * /fonts и го регистрираме във jsPDF. Шрифтът и самата библиотека се
  * зареждат динамично — само когато потребителят реално издава фактура,
- * за да не тежат на началния bundle.
+ * за да не тежат на началния bundle. Roboto покрива и знака €.
  */
+import { formatMoney } from './money'
 
 let fontBase64Cache = null
 
@@ -30,10 +31,6 @@ async function loadFontBase64() {
 const BRAND = [27, 120, 124] // #1b787c
 const SLATE = [51, 65, 85] // slate-700
 const MUTED = [148, 163, 184] // slate-400
-
-function formatBGN(amount) {
-  return `${Number(amount).toFixed(2)} лв.`
-}
 
 function formatDate(iso) {
   if (!iso) return ''
@@ -139,7 +136,7 @@ export async function generateInvoicePdf(data) {
 
   doc.setFontSize(10)
   doc.setTextColor(...SLATE)
-  doc.text(formatBGN(data.amount), W - M - 3, y, { align: 'right' })
+  doc.text(formatMoney(data.amount), W - M - 3, y, { align: 'right' })
 
   y += Math.max(descWrapped.length * 5, 12) + 6
   doc.setDrawColor(226, 232, 240) // slate-200
@@ -153,7 +150,7 @@ export async function generateInvoicePdf(data) {
   doc.text('Общо за плащане:', 120, y)
   doc.setFontSize(14)
   doc.setTextColor(...BRAND)
-  doc.text(formatBGN(data.amount), W - M - 3, y, { align: 'right' })
+  doc.text(formatMoney(data.amount), W - M - 3, y, { align: 'right' })
 
   // ---- Долен колонтитул ----
   doc.setFontSize(8)

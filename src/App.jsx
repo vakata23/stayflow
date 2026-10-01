@@ -26,6 +26,7 @@ const Pricing = lazy(() => import('./pages/pricing/Pricing'))
 const GuestCards = lazy(() => import('./pages/GuestCards'))
 const GuestCard = lazy(() => import('./pages/guest/GuestCard'))
 const Invoicing = lazy(() => import('./pages/invoicing/Invoicing'))
+const Earnings = lazy(() => import('./pages/earnings/Earnings'))
 
 function PageFallback() {
   return (
@@ -67,6 +68,7 @@ export default function App() {
               <Route path="/guest-cards" element={<GuestCards />} />
               <Route path="/access-codes" element={<AccessCodes />} />
               <Route path="/invoicing" element={<Invoicing />} />
+              <Route path="/earnings" element={<Earnings />} />
               <Route path="/properties" element={<PropertiesList />} />
               <Route path="/properties/new" element={<PropertyNew />} />
               <Route path="/properties/:id" element={<PropertyDetail />} />

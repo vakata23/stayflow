@@ -49,7 +49,7 @@ export default function Calendar() {
 
     let query = supabase
       .from('bookings')
-      .select('id, property_id, guest_name, check_in, check_out, source, status, num_guests, total_price, guest_phone, guest_email, notes')
+      .select('id, property_id, guest_name, check_in, check_out, source, status, num_guests, total_price, commission, tourist_tax, guest_phone, guest_email, notes')
       .neq('status', 'cancelled')
       // Всичко, което се застъпва с показания диапазон.
       .lte('check_in', rangeEnd)
@@ -225,7 +225,7 @@ export default function Calendar() {
                         <div className="flex items-center justify-between">
                           {rule && inMonth ? (
                             <span className="rounded bg-brand-50 px-1 text-[10px] font-semibold text-brand-700">
-                              {Number(rule.price_per_night).toFixed(0)} лв
+                              {Number(rule.price_per_night).toFixed(0)} €
                             </span>
                           ) : (
                             <span />

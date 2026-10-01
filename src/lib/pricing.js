@@ -25,7 +25,3 @@ export async function findOverlappingRule({ propertyId, startDate, endDate, excl
   const { data } = await query.limit(1)
   return data?.[0] ?? null
 }
-
-export function formatPrice(value) {
-  return `${Number(value).toFixed(2)} лв.`
-}

@@ -6,6 +6,7 @@ import { useAuth } from '../../context/AuthContext'
 import { uploadPropertyImage } from '../../lib/storage'
 import { PageHeader, Card, Spinner, Button, Alert, Modal, EmptyState } from '../../components/ui'
 import IcalSync from '../../components/IcalSync'
+import PropertySettingsCard from '../../components/PropertySettingsCard'
 import PropertyForm from './PropertyForm'
 
 function UpcomingBookings({ propertyId, reloadKey }) {
@@ -180,6 +181,11 @@ export default function PropertyDetail() {
           submitLabel="Запази промените"
           saving={saving}
           error={error}
+        />
+
+        <PropertySettingsCard
+          property={property}
+          onSaved={(channels) => setProperty((p) => ({ ...p, channels }))}
         />
 
         <IcalSync

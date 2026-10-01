@@ -169,7 +169,7 @@ export default function InvoiceModal({ open, onClose, onSaved, bookings, propert
             </div>
           </div>
 
-          <Field label="Сума (лв.)" required>
+          <Field label="Сума (€)" required>
             <Input
               type="number"
               min={0}

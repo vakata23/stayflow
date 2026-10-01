@@ -4,6 +4,7 @@ import { FileText, Plus, Building2, Download, Loader2 } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
 import { formatDateBG, nightsBetween } from '../../lib/dates'
+import { formatMoney } from '../../lib/money'
 import { generateInvoicePdf, downloadBlob } from '../../lib/invoicePdf'
 import { PageHeader, Card, Button, Alert, Spinner, EmptyState } from '../../components/ui'
 import InvoiceModal from './InvoiceModal'
@@ -166,7 +167,7 @@ export default function Invoicing() {
                       </td>
                       <td className="px-5 py-3.5 text-slate-600">{formatDateBG(inv.issue_date)}</td>
                       <td className="px-5 py-3.5 font-semibold text-slate-900">
-                        {Number(inv.amount).toFixed(2)} лв.
+                        {formatMoney(inv.amount)}
                       </td>
                       <td className="px-5 py-3.5 text-right">
                         <button
