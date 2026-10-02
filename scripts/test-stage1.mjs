@@ -29,6 +29,7 @@ const sqlFiles = [
   join(projectDir, 'supabase/migrations/003_guest_card.sql'),
   join(projectDir, 'supabase/migrations/004_commission_earnings.sql'),
   join(projectDir, 'supabase/migrations/005_bookings_sold.sql'),
+  join(projectDir, 'supabase/migrations/006_public_booking_site.sql'),
 ];
 
 const db = new PGlite({ extensions: { btree_gist } });
@@ -105,14 +106,23 @@ const U2 = 'c2c2c2c2-0000-0000-0000-000000000000'; // Апартамент 2 (A)
 const UB = 'c3c3c3c3-0000-0000-0000-000000000000'; // имот на B, за изолация
 
 await db.exec(`
-  insert into properties (id, owner_id, name, max_guests, channels) values
-    ('${U1}', '${profA}', 'Студио 1', 2, '[{"type":"viber","value":"+359888000001"}]'),
-    ('${U2}', '${profA}', 'Апартамент 2', 4, '[]'),
-    ('${UB}', '${profB}', 'Имотът на Б', 3, '[]');
+  -- U1 е публикуван (is_listed=true) с публично описание — за /stay теста.
+  -- U2 ИМА slug, но не е публикуван — доказва, че is_listed гейтва, не
+  -- само наличието на slug.
+  insert into properties (id, owner_id, name, max_guests, channels, slug, is_listed, public_description) values
+    ('${U1}', '${profA}', 'Студио 1', 2, '[{"type":"viber","value":"+359888000001"}]', 'studio-1', true, 'Уютно студио до плажа.'),
+    ('${U2}', '${profA}', 'Апартамент 2', 4, '[]', 'apartment-2', false, null),
+    ('${UB}', '${profB}', 'Имотът на Б', 3, '[]', null, false, null);
 
-  insert into property_settings (property_id, ota_commission_pct, tourist_tax, cleaning_fee, deposit_pct) values
-    ('${U1}', 15.0, 1.00, 20, 30),
-    ('${U2}', 20.0, 1.00, 20, 30);
+  insert into property_settings (property_id, ota_commission_pct, tourist_tax, cleaning_fee, deposit_pct, base_price) values
+    ('${U1}', 15.0, 1.00, 20, 30, 70),
+    ('${U2}', 20.0, 1.00, 20, 30, 0);
+
+  -- Ценово правило за юли 2027 (part от бъдещия quote_stay тест) — покрива
+  -- само част от заявения престой, за да докаже превключването към
+  -- base_price за нощувките извън правилото.
+  insert into pricing_rules (property_id, start_date, end_date, price_per_night, min_nights, created_at) values
+    ('${U1}', '2027-07-01', '2027-07-05', 100, 2, '2026-01-01');
 
   -- created_at е фиксиран изрично навсякъде по-долу (2026-06-01) — не на
   -- default now(). Иначе тестът става недетерминиран: bookings_sold()
@@ -281,6 +291,84 @@ ok('собственик B вижда 0 за чужди продажби — б�
   same(r[0], { bookings_count: 0, revenue: 0, commission: 0, net: 0 }));
 await asErr('анонимен не може да вика bookings_sold', 'anon', null,
   `select * from bookings_sold('2026-09-01','2026-09-30')`, /permission denied/);
+
+// ---------------------------------------------------------------- public_property (006)
+r = await as('anon', null, `select * from public_property('studio-1')`);
+ok('public_property: публикуван имот се вижда анонимно с правилните маркетингови полета',
+  r.length === 1 &&
+  same(r[0], { name: 'Студио 1', city: '', public_description: 'Уютно студио до плажа.', max_guests: 2 }),
+  show(r[0] ?? {}, ['name', 'city', 'public_description', 'max_guests']));
+ok('public_property: НЕ връща id/wifi/access_code/owner — само разрешените полета',
+  r.length === 1 && same(
+    { hasForbidden: Object.keys(r[0]).some((k) => /id|wifi|access_code|owner/i.test(k)) },
+    { hasForbidden: false }
+  ), `полета: ${Object.keys(r[0] ?? {}).join(',')}`);
+r = await as('anon', null, `select * from public_property('apartment-2')`);
+ok('public_property: is_listed=false връща 0 реда, ДОРИ slug-ът да съществува', r.length === 0);
+r = await as('anon', null, `select * from public_property('няма-такъв')`);
+ok('public_property: непознат slug връща 0 реда', r.length === 0);
+r = await as('authenticated', A, `select * from public_property('studio-1')`);
+ok('public_property: достъпна и за логнат собственик (без да връща повече данни)', r.length === 1);
+
+// ---------------------------------------------------------------- quote_stay (006)
+r = await as('anon', null, `select * from quote_stay('studio-1','2027-07-03','2027-07-07',2)`);
+ok('quote_stay: смесва ценово правило (3 нощувки × 100) с base_price (1 нощувка × 70), + почистване 20',
+  same(r[0], {
+    nights: 4, accommodation_total: 370, cleaning_fee: 20, tourist_tax: 8,
+    total: 390, deposit: 117, min_nights: 2, fits_guests: true, is_available: true,
+  }),
+  show(r[0], ['nights', 'accommodation_total', 'cleaning_fee', 'tourist_tax', 'total', 'deposit', 'min_nights', 'fits_guests', 'is_available']));
+r = await as('anon', null, `select fits_guests from quote_stay('studio-1','2027-07-03','2027-07-05',5)`);
+ok('quote_stay: 5 гости > max_guests(2) → fits_guests=false (все пак връща цена)', r[0].fits_guests === false);
+r = await as('anon', null, `select is_available from quote_stay('studio-1','2026-12-21','2026-12-22',1)`);
+ok('quote_stay: застъпване със съществуваща резервация (Гост 1) → is_available=false', r[0].is_available === false);
+r = await as('anon', null, `select * from quote_stay('studio-1','2020-01-01','2020-01-03',1)`);
+ok('quote_stay: check_in в миналото (спрямо България) → 0 реда', r.length === 0);
+r = await as('anon', null, `select * from quote_stay('studio-1','2027-07-05','2027-07-03',1)`);
+ok('quote_stay: check_out <= check_in → 0 реда', r.length === 0);
+r = await as('anon', null, `select * from quote_stay('studio-1','2027-07-03','2027-07-05',0)`);
+ok('quote_stay: 0 гости → 0 реда', r.length === 0);
+r = await as('anon', null, `select * from quote_stay('apartment-2','2027-07-03','2027-07-05',1)`);
+ok('quote_stay: is_listed=false → 0 реда', r.length === 0);
+r = await as('anon', null, `select * from quote_stay('няма-такъв','2027-07-03','2027-07-05',1)`);
+ok('quote_stay: непознат slug → 0 реда', r.length === 0);
+
+// ---------------------------------------------------------------- booking_requests RLS (006)
+await asErr('анонимен не може да пише в booking_requests директно', 'anon', null,
+  `insert into booking_requests (property_id, check_in, check_out, guest_name) values
+   ('${U1}','2027-08-01','2027-08-03','Спам')`, /row-level security/);
+await asErr('дори логнат собственик не може да пише в booking_requests директно (само service role)', 'authenticated', A,
+  `insert into booking_requests (property_id, check_in, check_out, guest_name) values
+   ('${U1}','2027-08-01','2027-08-03','Гост')`, /row-level security/);
+
+// Симулира insert-а, който в продукция прави Netlify функцията със service
+// role (тук: директно през тестовата връзка, без anon/authenticated роля).
+await db.exec(`
+  insert into booking_requests (id, property_id, check_in, check_out, num_guests, guest_name, guest_email, quoted_total, quoted_deposit, created_at) values
+    ('c1000000-0000-0000-0000-000000000000','${U1}','2027-08-01','2027-08-03',2,'Заявител','z@primer.bg',200,60,'2026-01-01'),
+    ('c2000000-0000-0000-0000-000000000000','${U1}','2020-01-01','2020-01-03',1,'Стара чакаща заявка','x@primer.bg',100,30,'2020-01-01');
+`);
+
+r = await as('authenticated', A, `select guest_name, status from booking_requests where property_id = '${U1}' order by created_at`);
+ok('собственик A вижда своите 2 заявки', r.length === 2, `видя ${r.length}`);
+r = await as('authenticated', B, `select count(*)::int n from booking_requests where property_id = '${U1}'`);
+ok('собственик B не вижда заявките на A', r[0].n === 0);
+r = await as('anon', null, `select count(*)::int n from booking_requests`);
+ok('анонимен не вижда никакви заявки', r[0].n === 0);
+
+await as('authenticated', A, `update booking_requests set status = 'declined', decided_at = now()
+  where id = 'c1000000-0000-0000-0000-000000000000'`);
+r = await as('authenticated', A, `select status from booking_requests where id = 'c1000000-0000-0000-0000-000000000000'`);
+ok('собственик A може да откаже своя заявка', r[0].status === 'declined');
+
+r = (await db.query(`select expire_old_booking_requests() n`)).rows;
+ok('expire_old_booking_requests: затваря точно старата чакаща заявка (2020)', r[0].n === 1, `затвори ${r[0].n}`);
+r = await as('authenticated', A, `select status from booking_requests where id = 'c2000000-0000-0000-0000-000000000000'`);
+ok('старата заявка вече е expired', r[0].status === 'expired');
+await asErr('анонимен не може да вика expire_old_booking_requests', 'anon', null,
+  `select expire_old_booking_requests()`, /permission denied/);
+await asErr('authenticated не може да вика expire_old_booking_requests (само service role)', 'authenticated', A,
+  `select expire_old_booking_requests()`, /permission denied/);
 
 // ---------------------------------------------------------------- съществуващата изолация (002/003) не е пробита
 r = await as('anon', null, `select * from guest_card('${U1}')`);
