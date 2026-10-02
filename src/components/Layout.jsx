@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import {
   DoorOpen,
   TrendingUp,
@@ -8,6 +8,7 @@ import {
   CalendarDays,
   BadgePercent,
   BookMarked,
+  Inbox,
   MapPin,
   KeyRound,
   FileText,
@@ -18,6 +19,7 @@ import {
   ChevronDown,
   Waves,
 } from 'lucide-react'
+import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 
 const dashboardNav = [
@@ -28,6 +30,7 @@ const dashboardNav = [
   { to: '/calendar', label: 'Календар', icon: CalendarDays },
   { to: '/pricing', label: 'Ценови планове', icon: BadgePercent },
   { to: '/bookings', label: 'Резервации', icon: BookMarked },
+  { to: '/booking-requests', label: 'Заявки', icon: Inbox },
   { to: '/guest-cards', label: 'Адресни карти', icon: MapPin },
   { to: '/access-codes', label: 'Кодове за достъп', icon: KeyRound },
   { to: '/invoicing', label: 'Издаване на фактура към гост', icon: FileText },
@@ -37,38 +40,46 @@ const settingsNav = [
   { to: '/properties', label: 'Поддръжка на имоти', icon: Building2 },
 ]
 
-function NavSection({ title, items, onNavigate }) {
+function NavSection({ title, items, onNavigate, badges }) {
   return (
     <div>
       <p className="px-3 pb-2 pt-5 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
         {title}
       </p>
       <ul className="space-y-0.5">
-        {items.map(({ to, label, icon: Icon }) => (
-          <li key={to}>
-            <NavLink
-              to={to}
-              end={to === '/'}
-              onClick={onNavigate}
-              className={({ isActive }) =>
-                `flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                  isActive
-                    ? 'bg-brand-50 text-brand-700'
-                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-                }`
-              }
-            >
-              <Icon className="h-4 w-4 shrink-0" />
-              <span className="leading-tight">{label}</span>
-            </NavLink>
-          </li>
-        ))}
+        {items.map(({ to, label, icon: Icon }) => {
+          const badge = badges?.[to]
+          return (
+            <li key={to}>
+              <NavLink
+                to={to}
+                end={to === '/'}
+                onClick={onNavigate}
+                className={({ isActive }) =>
+                  `flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                    isActive
+                      ? 'bg-brand-50 text-brand-700'
+                      : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                  }`
+                }
+              >
+                <Icon className="h-4 w-4 shrink-0" />
+                <span className="flex-1 leading-tight">{label}</span>
+                {badge > 0 && (
+                  <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-600 px-1.5 text-[11px] font-semibold text-white">
+                    {badge}
+                  </span>
+                )}
+              </NavLink>
+            </li>
+          )
+        })}
       </ul>
     </div>
   )
 }
 
-function Sidebar({ onNavigate }) {
+function Sidebar({ onNavigate, badges }) {
   return (
     <div className="flex h-full flex-col">
       <div className="flex items-center gap-2.5 px-4 py-5">
@@ -83,7 +94,7 @@ function Sidebar({ onNavigate }) {
         </div>
       </div>
       <nav className="flex-1 overflow-y-auto px-3 pb-6">
-        <NavSection title="Табло за управление" items={dashboardNav} onNavigate={onNavigate} />
+        <NavSection title="Табло за управление" items={dashboardNav} onNavigate={onNavigate} badges={badges} />
         <NavSection title="Настройки" items={settingsNav} onNavigate={onNavigate} />
       </nav>
     </div>
@@ -93,8 +104,10 @@ function Sidebar({ onNavigate }) {
 export default function Layout() {
   const { user, profile, signOut } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [pendingRequests, setPendingRequests] = useState(0)
   const menuRef = useRef(null)
 
   useEffect(() => {
@@ -104,6 +117,16 @@ export default function Layout() {
     document.addEventListener('mousedown', onClickOutside)
     return () => document.removeEventListener('mousedown', onClickOutside)
   }, [])
+
+  // Презарежда се при всяка смяна на страница — лека заявка, пресен брой
+  // след всяко приемане/отказ на заявка от собственика.
+  useEffect(() => {
+    supabase
+      .from('booking_requests')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'pending')
+      .then(({ count }) => setPendingRequests(count ?? 0))
+  }, [location.pathname])
 
   const displayName = profile?.full_name?.trim() || user?.email || ''
   const initials = (profile?.full_name?.trim() || user?.email || '?')
@@ -122,7 +145,7 @@ export default function Layout() {
     <div className="min-h-screen bg-slate-50">
       {/* Desktop sidebar */}
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-slate-200 bg-white lg:block">
-        <Sidebar />
+        <Sidebar badges={{ '/booking-requests': pendingRequests }} />
       </aside>
 
       {/* Mobile sidebar overlay */}
@@ -140,7 +163,7 @@ export default function Layout() {
             >
               <X className="h-5 w-5" />
             </button>
-            <Sidebar onNavigate={() => setMobileOpen(false)} />
+            <Sidebar onNavigate={() => setMobileOpen(false)} badges={{ '/booking-requests': pendingRequests }} />
           </aside>
         </div>
       )}

@@ -27,6 +27,8 @@ const GuestCards = lazy(() => import('./pages/GuestCards'))
 const GuestCard = lazy(() => import('./pages/guest/GuestCard'))
 const Invoicing = lazy(() => import('./pages/invoicing/Invoicing'))
 const Earnings = lazy(() => import('./pages/earnings/Earnings'))
+const BookingRequests = lazy(() => import('./pages/BookingRequests'))
+const PublicStay = lazy(() => import('./pages/stay/PublicStay'))
 
 function PageFallback() {
   return (
@@ -52,6 +54,9 @@ export default function App() {
             {/* Публична гост карта — без login */}
             <Route path="/guest/:id" element={<GuestCard />} />
 
+            {/* Публична страница за резервации — без login */}
+            <Route path="/stay/:slug" element={<PublicStay />} />
+
             <Route
               element={
                 <ProtectedRoute>
@@ -69,6 +74,7 @@ export default function App() {
               <Route path="/access-codes" element={<AccessCodes />} />
               <Route path="/invoicing" element={<Invoicing />} />
               <Route path="/earnings" element={<Earnings />} />
+              <Route path="/booking-requests" element={<BookingRequests />} />
               <Route path="/properties" element={<PropertiesList />} />
               <Route path="/properties/new" element={<PropertyNew />} />
               <Route path="/properties/:id" element={<PropertyDetail />} />

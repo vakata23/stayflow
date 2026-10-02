@@ -3,11 +3,16 @@
   publish = "dist"
   functions = "netlify/functions"
 
-# iCal endpoint-ът трябва да се хване ПРЕДИ SPA fallback-а —
+# API endpoint-ите трябва да се хванат ПРЕДИ SPA fallback-а —
 # правилата се обхождат отгоре надолу и първото съвпадение печели.
 [[redirects]]
   from = "/api/ical"
   to = "/.netlify/functions/ical"
+  status = 200
+
+[[redirects]]
+  from = "/api/booking-request"
+  to = "/.netlify/functions/booking-request"
   status = 200
 
 # SPA fallback — react-router поема всички останали пътища.

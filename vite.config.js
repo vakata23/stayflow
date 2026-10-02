@@ -30,6 +30,50 @@ function icalDevPlugin(env) {
   }
 }
 
+/**
+ * Обслужва /api/booking-request локално — изисква SUPABASE_SERVICE_ROLE_KEY
+ * в .env (БЕЗ VITE_ префикс, затова никога не се пакетира в клиентския код).
+ * Без него връща 500 — иначе логиката е идентична с production.
+ */
+function bookingRequestDevPlugin(env) {
+  return {
+    name: 'stayflow-booking-request-dev',
+    configureServer(server) {
+      server.middlewares.use('/api/booking-request', async (req, res) => {
+        if (req.method !== 'POST') {
+          res.statusCode = 405
+          res.end('Method not allowed')
+          return
+        }
+
+        const chunks = []
+        for await (const chunk of req) chunks.push(chunk)
+        let payload
+        try {
+          payload = JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}')
+        } catch {
+          res.statusCode = 400
+          res.setHeader('Content-Type', 'application/json')
+          res.end(JSON.stringify({ ok: false, error: 'Невалидни данни.' }))
+          return
+        }
+
+        const { handleBookingRequest } = await server.ssrLoadModule('/src/lib/bookingRequestServer.js')
+        const result = await handleBookingRequest({
+          payload,
+          ip: req.socket?.remoteAddress,
+          supabaseUrl: env.VITE_SUPABASE_URL,
+          serviceKey: env.SUPABASE_SERVICE_ROLE_KEY,
+        })
+
+        res.statusCode = result.status
+        res.setHeader('Content-Type', 'application/json')
+        res.end(JSON.stringify(result.body))
+      })
+    },
+  }
+}
+
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
 
@@ -38,6 +82,7 @@ export default defineConfig(({ mode }) => {
       react(),
       tailwindcss(),
       icalDevPlugin(env),
+      bookingRequestDevPlugin(env),
       VitePWA({
         registerType: 'autoUpdate',
         includeAssets: ['apple-touch-icon.png', 'favicon-32.png'],

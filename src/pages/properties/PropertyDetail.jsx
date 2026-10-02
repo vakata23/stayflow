@@ -7,6 +7,7 @@ import { uploadPropertyImage } from '../../lib/storage'
 import { PageHeader, Card, Spinner, Button, Alert, Modal, EmptyState } from '../../components/ui'
 import IcalSync from '../../components/IcalSync'
 import PropertySettingsCard from '../../components/PropertySettingsCard'
+import PublicListingCard from '../../components/PublicListingCard'
 import PropertyForm from './PropertyForm'
 
 function UpcomingBookings({ propertyId, reloadKey }) {
@@ -186,6 +187,11 @@ export default function PropertyDetail() {
         <PropertySettingsCard
           property={property}
           onSaved={(channels) => setProperty((p) => ({ ...p, channels }))}
+        />
+
+        <PublicListingCard
+          property={property}
+          onSaved={(patch) => setProperty((p) => ({ ...p, ...patch }))}
         />
 
         <IcalSync

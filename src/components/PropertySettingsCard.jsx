@@ -85,6 +85,7 @@ export default function PropertySettingsCard({ property, onSaved }) {
         tourist_tax: Number(settings.tourist_tax),
         cleaning_fee: Number(settings.cleaning_fee),
         deposit_pct: Number(settings.deposit_pct),
+        base_price: Number(settings.base_price),
       })
 
       const { error: chError } = await supabase
@@ -119,7 +120,10 @@ export default function PropertySettingsCard({ property, onSaved }) {
           {error && <Alert>{error}</Alert>}
           {success && <Alert kind="success">Настройките са записани.</Alert>}
 
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-5">
+            <Field label="Базова цена на нощувка" hint="€ — ползва се, когато няма ценово правило за деня">
+              <Input type="number" min={0} step="0.01" value={settings.base_price} onChange={set('base_price')} />
+            </Field>
             <Field label="Комисиона на платформите" hint="% от Airbnb/Booking за тази резервация">
               <div className="relative">
                 <Input
