@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Globe, Copy, Check, ExternalLink } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import { fetchPropertySettings } from '../lib/propertySettings'
 import { Card, Field, Input, Textarea, Button, Alert } from './ui'
 
 const SLUG_RE = /^[a-z0-9-]{2,40}$/
@@ -19,10 +20,21 @@ export default function PublicListingCard({ property, onSaved }) {
   const [isListed, setIsListed] = useState(property.is_listed ?? false)
   const [description, setDescription] = useState(property.public_description ?? '')
   const [copied, setCopied] = useState(false)
+  const [basePrice, setBasePrice] = useState(null)
 
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
   const [success, setSuccess] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    fetchPropertySettings(property.id).then((s) => {
+      if (!cancelled) setBasePrice(Number(s.base_price) || 0)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [property.id])
 
   const publicUrl = slug ? `${window.location.origin}/stay/${slug}` : ''
 
@@ -82,6 +94,12 @@ export default function PublicListingCard({ property, onSaved }) {
       <form onSubmit={handleSave} className="mt-5 space-y-5">
         {error && <Alert>{error}</Alert>}
         {success && <Alert kind="success">Записано.</Alert>}
+        {isListed && basePrice === 0 && (
+          <Alert kind="warning">
+            Няма зададена базова цена за нощувка — гостите няма да виждат цена за дати извън
+            ценови план. Задайте базова цена в настройките на имота по-горе.
+          </Alert>
+        )}
 
         <div className="flex items-center justify-between rounded-xl border border-slate-200 px-4 py-3">
           <div>

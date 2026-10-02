@@ -20,6 +20,7 @@ import { supabase } from '../../lib/supabase'
 import { todayISO } from '../../lib/dates'
 import { formatMoney } from '../../lib/money'
 import { channelLabel, channelHref } from '../../lib/propertySettings'
+import { isValidPhone } from '../../lib/bookingRequestServer'
 import { Field, Input, Textarea, Button, Alert } from '../../components/ui'
 
 const CHANNEL_ICONS = {
@@ -97,7 +98,11 @@ export default function PublicStay() {
   }
 
   const canRequest =
-    quote && quote.is_available && quote.fits_guests && quote.nights >= quote.min_nights
+    quote &&
+    quote.is_available &&
+    quote.fits_guests &&
+    quote.nights >= quote.min_nights &&
+    Number(quote.total) > 0
 
   const handleSubmitRequest = async (e) => {
     e.preventDefault()
@@ -106,6 +111,9 @@ export default function PublicStay() {
     if (!guestName.trim()) return setSendError('Името е задължително.')
     if (!guestPhone.trim() && !guestEmail.trim()) {
       return setSendError('Въведете телефон или имейл за връзка.')
+    }
+    if (guestPhone.trim() && !isValidPhone(guestPhone.trim())) {
+      return setSendError('Невалиден телефонен номер (само цифри, интервали и +, поне 8 цифри).')
     }
 
     setSending(true)
@@ -255,6 +263,8 @@ export default function PublicStay() {
                 <Alert>Имотът побира максимум {property.max_guests} гости.</Alert>
               ) : quote.nights < quote.min_nights ? (
                 <Alert>Минималният престой за тези дати е {quote.min_nights} нощувки.</Alert>
+              ) : Number(quote.total) <= 0 ? (
+                <Alert>Цената за тези дати не е зададена — свържете се със собственика.</Alert>
               ) : (
                 <Alert kind="success">Свободно е за избрания период.</Alert>
               )}
@@ -301,7 +311,13 @@ export default function PublicStay() {
               </Field>
               <div className="grid grid-cols-2 gap-3">
                 <Field label="Телефон">
-                  <Input value={guestPhone} onChange={(e) => setGuestPhone(e.target.value)} placeholder="+359 88…" />
+                  <Input
+                    type="tel"
+                    inputMode="tel"
+                    value={guestPhone}
+                    onChange={(e) => setGuestPhone(e.target.value)}
+                    placeholder="+359 88…"
+                  />
                 </Field>
                 <Field label="Имейл">
                   <Input type="email" value={guestEmail} onChange={(e) => setGuestEmail(e.target.value)} placeholder="вие@примерен.бг" />

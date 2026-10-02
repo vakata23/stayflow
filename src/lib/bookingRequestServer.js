@@ -11,6 +11,7 @@
 
 const SLUG_RE = /^[a-z0-9-]{2,40}$/
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
+const PHONE_RE = /^[\d+\s]+$/
 const MAX_REQUESTS_PER_IP_PER_HOUR = 5
 
 function clampStr(value, maxLen) {
@@ -22,6 +23,12 @@ function clampStr(value, maxLen) {
 
 function isValidEmail(value) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
+}
+
+/** Само цифри, интервали и +, поне 8 цифри — ползва се и от клиента, и тук. */
+export function isValidPhone(value) {
+  if (!PHONE_RE.test(value)) return false
+  return (value.match(/\d/g) || []).length >= 8
 }
 
 async function supaFetch(path, { supabaseUrl, serviceKey, method = 'GET', body, extraHeaders }) {
@@ -82,6 +89,9 @@ export async function handleBookingRequest({ payload, ip, supabaseUrl, serviceKe
   if (guestEmail && !isValidEmail(guestEmail)) {
     return { status: 400, body: { ok: false, error: 'Невалиден имейл адрес.' } }
   }
+  if (guestPhone && !isValidPhone(guestPhone)) {
+    return { status: 400, body: { ok: false, error: 'Невалиден телефонен номер (само цифри, интервали и +, поне 8 цифри).' } }
+  }
 
   // Лимит на заявките — най-много няколко на час от един и същ адрес.
   if (ip) {
@@ -136,6 +146,12 @@ export async function handleBookingRequest({ payload, ip, supabaseUrl, serviceKe
     return {
       status: 400,
       body: { ok: false, error: `Минималният престой за тези дати е ${quote.min_nights} нощувки.` },
+    }
+  }
+  if (!(Number(quote.total) > 0)) {
+    return {
+      status: 400,
+      body: { ok: false, error: 'Цената за тези дати не е зададена — свържете се със собственика директно.' },
     }
   }
 

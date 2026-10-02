@@ -58,7 +58,9 @@ export function Alert({ kind = 'error', children }) {
       ? 'border-red-200 bg-red-50 text-red-700'
       : kind === 'info'
         ? 'border-slate-200 bg-slate-50 text-slate-600'
-        : 'border-emerald-200 bg-emerald-50 text-emerald-700'
+        : kind === 'warning'
+          ? 'border-amber-200 bg-amber-50 text-amber-700'
+          : 'border-emerald-200 bg-emerald-50 text-emerald-700'
   return <div className={`rounded-lg border px-3.5 py-2.5 text-sm ${styles}`}>{children}</div>
 }
 
