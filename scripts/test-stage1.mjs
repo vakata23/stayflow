@@ -30,6 +30,7 @@ const sqlFiles = [
   join(projectDir, 'supabase/migrations/004_commission_earnings.sql'),
   join(projectDir, 'supabase/migrations/005_bookings_sold.sql'),
   join(projectDir, 'supabase/migrations/006_public_booking_site.sql'),
+  join(projectDir, 'supabase/migrations/007_notifications.sql'),
 ];
 
 const db = new PGlite({ extensions: { btree_gist } });
@@ -369,6 +370,59 @@ await asErr('анонимен не може да вика expire_old_booking_req
   `select expire_old_booking_requests()`, /permission denied/);
 await asErr('authenticated не може да вика expire_old_booking_requests (само service role)', 'authenticated', A,
   `select expire_old_booking_requests()`, /permission denied/);
+
+// ---------------------------------------------------------------- известия: outbox (007)
+r = await as('authenticated', A, `select count(*)::int n from outbox`);
+ok('преди да има notification_targets, по-ранните заявки не са оставили outbox редове', r[0].n === 0);
+
+await asErr('анонимен не може да добавя notification_targets', 'anon', null,
+  `insert into notification_targets (profile_id, channel, address) values ('${profA}','telegram','111')`,
+  /row-level security/);
+await asErr('собственик не може да добави target за чужд profile_id', 'authenticated', A,
+  `insert into notification_targets (profile_id, channel, address) values ('${profB}','telegram','111')`,
+  /row-level security/);
+
+r = await as('authenticated', A, `insert into notification_targets (profile_id, channel, address)
+  values ('${profA}','telegram','555000111') returning id::text as id`);
+const targetA = r[0].id;
+ok('собственик A добавя Telegram адресат', !!targetA);
+
+await db.exec(`
+  insert into booking_requests (id, property_id, check_in, check_out, num_guests, guest_name, guest_email, quoted_total, quoted_deposit, created_at) values
+    ('c3000000-0000-0000-0000-000000000000','${U1}','2027-09-01','2027-09-03',2,'Нов заявител','nov@primer.bg',300,90,'2027-01-01');
+`);
+r = await as('authenticated', A, `select channel, recipient, event, status, payload from outbox where target_id = '${targetA}'`);
+ok('тригърът пълни outbox при нова заявка за имот на A',
+  r.length === 1 && r[0].channel === 'telegram' && r[0].recipient === '555000111' && r[0].event === 'new_booking_request' && r[0].status === 'queued',
+  show(r[0] ?? {}, ['channel', 'recipient', 'event', 'status']));
+ok('payload носи данните за известието (гост, дати, сума, име на имота)',
+  r[0]?.payload?.guest_name === 'Нов заявител' && Number(r[0]?.payload?.quoted_total) === 300 && r[0]?.payload?.property_name === 'Студио 1',
+  JSON.stringify(r[0]?.payload));
+
+r = await as('authenticated', B, `select count(*)::int n from outbox`);
+ok('собственик B не вижда outbox на A', r[0].n === 0);
+r = await as('authenticated', B, `select count(*)::int n from notification_targets`);
+ok('собственик B не вижда notification_targets на A', r[0].n === 0);
+r = await as('anon', null, `select * from outbox`);
+ok('анонимен не вижда никакви outbox редове (RLS филтрира, без грешка)', r.length === 0);
+
+await as('authenticated', A, `update notification_targets set is_enabled = false where id = '${targetA}'`);
+await db.exec(`
+  insert into booking_requests (id, property_id, check_in, check_out, num_guests, guest_name, created_at) values
+    ('c4000000-0000-0000-0000-000000000000','${U1}','2027-09-05','2027-09-07',1,'Докато е изключен','2027-01-02');
+`);
+r = await as('authenticated', A, `select count(*)::int n from outbox where channel = 'telegram' and payload->>'guest_name' = 'Докато е изключен'`);
+ok('изключен target не получава ново известие', r[0].n === 0);
+
+await as('authenticated', A, `select send_test_notification('${targetA}')`);
+r = await as('authenticated', A, `select count(*)::int n from outbox where target_id = '${targetA}' and event = 'test'`);
+ok('собственик A праща тестово известие на свой target', r[0].n === 1);
+await asErr('собственик B не може да прати тест на target-а на A', 'authenticated', B,
+  `select send_test_notification('${targetA}')`, /Нямате достъп/);
+
+await as('authenticated', A, `delete from notification_targets where id = '${targetA}'`);
+r = await as('authenticated', A, `select count(*)::int n from notification_targets where id = '${targetA}'`);
+ok('собственик A трие своя адресат', r[0].n === 0);
 
 // ---------------------------------------------------------------- съществуващата изолация (002/003) не е пробита
 r = await as('anon', null, `select * from guest_card('${U1}')`);
