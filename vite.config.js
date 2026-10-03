@@ -64,11 +64,66 @@ function bookingRequestDevPlugin(env) {
           ip: req.socket?.remoteAddress,
           supabaseUrl: env.VITE_SUPABASE_URL,
           serviceKey: env.SUPABASE_SERVICE_ROLE_KEY,
+          telegramToken: env.TELEGRAM_BOT_TOKEN,
+          resendApiKey: env.RESEND_API_KEY,
+          resendFrom: env.RESEND_FROM_EMAIL,
+          appUrl: env.VITE_PUBLIC_URL || 'http://localhost:5173',
         })
 
         res.statusCode = result.status
         res.setHeader('Content-Type', 'application/json')
         res.end(JSON.stringify(result.body))
+      })
+    },
+  }
+}
+
+/**
+ * Обслужва /api/process-outbox локално — ръчно задействане на доставката
+ * (бутонът "Изпрати тестово" в /notifications), със същата JWT проверка
+ * като production (netlify/functions/process-outbox.mjs). Планираната
+ * доставка (process-outbox-scheduled.mjs) няма локален еквивалент — пуска
+ * се само на Netlify по разписание.
+ */
+function processOutboxDevPlugin(env) {
+  return {
+    name: 'stayflow-process-outbox-dev',
+    configureServer(server) {
+      server.middlewares.use('/api/process-outbox', async (req, res) => {
+        if (req.method !== 'POST') {
+          res.statusCode = 405
+          res.end('Method not allowed')
+          return
+        }
+
+        const { processQueuedOutbox, verifyOwnerProfile } = await server.ssrLoadModule('/src/lib/outboxProcessor.js')
+        const token = (req.headers.authorization || '').replace(/^Bearer\s+/i, '')
+        const profileId = await verifyOwnerProfile({
+          token,
+          supabaseUrl: env.VITE_SUPABASE_URL,
+          serviceKey: env.SUPABASE_SERVICE_ROLE_KEY,
+        })
+        if (!profileId) {
+          res.statusCode = 401
+          res.setHeader('Content-Type', 'application/json')
+          res.end(JSON.stringify({ ok: false, error: 'Unauthorized' }))
+          return
+        }
+
+        const result = await processQueuedOutbox({
+          supabaseUrl: env.VITE_SUPABASE_URL,
+          serviceKey: env.SUPABASE_SERVICE_ROLE_KEY,
+          telegramToken: env.TELEGRAM_BOT_TOKEN,
+          resendApiKey: env.RESEND_API_KEY,
+          resendFrom: env.RESEND_FROM_EMAIL,
+          appUrl: env.VITE_PUBLIC_URL || 'http://localhost:5173',
+          profileId,
+          limit: 20,
+        })
+
+        res.statusCode = result.error ? 500 : 200
+        res.setHeader('Content-Type', 'application/json')
+        res.end(JSON.stringify(result))
       })
     },
   }
@@ -83,6 +138,7 @@ export default defineConfig(({ mode }) => {
       tailwindcss(),
       icalDevPlugin(env),
       bookingRequestDevPlugin(env),
+      processOutboxDevPlugin(env),
       VitePWA({
         registerType: 'autoUpdate',
         includeAssets: ['apple-touch-icon.png', 'favicon-32.png'],

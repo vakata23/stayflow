@@ -7,7 +7,13 @@
  * Пише директно в booking_requests през PostgREST със service role —
  * таблицата няма insert policy за anon/authenticated нарочно (виж
  * миграция 006), затова това е ЕДИНСТВЕНИЯТ път за запис.
+ *
+ * Успешният insert задейства тригър в базата (миграция 007), който пълни
+ * outbox за собственика. Тук само се опитваме да доставим веднага (за да
+ * не чака известието до следващото пускане на scheduled функцията) —
+ * best-effort, грешка тук никога не разваля отговора към госта.
  */
+import { processQueuedOutbox } from './outboxProcessor.js'
 
 const SLUG_RE = /^[a-z0-9-]{2,40}$/
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
@@ -49,7 +55,16 @@ async function supaFetch(path, { supabaseUrl, serviceKey, method = 'GET', body, 
  * payload идва директно от гост формата (ненадежден вход — валидира се
  * всичко). ip е клиентският адрес (за rate-limit), може да липсва.
  */
-export async function handleBookingRequest({ payload, ip, supabaseUrl, serviceKey }) {
+export async function handleBookingRequest({
+  payload,
+  ip,
+  supabaseUrl,
+  serviceKey,
+  telegramToken,
+  resendApiKey,
+  resendFrom,
+  appUrl,
+}) {
   if (!supabaseUrl || !serviceKey) {
     return { status: 500, body: { ok: false, error: 'Сървърът не е конфигуриран.' } }
   }
@@ -177,6 +192,22 @@ export async function handleBookingRequest({ payload, ip, supabaseUrl, serviceKe
   })
   if (!insertRes.ok) {
     return { status: 502, body: { ok: false, error: 'Неуспешно записване. Опитайте отново.' } }
+  }
+
+  // Тригърът в базата вече е сложил outbox редовете — опитваме да ги
+  // доставим веднага. Никога не блокираме или развaляме отговора към госта.
+  try {
+    await processQueuedOutbox({
+      supabaseUrl,
+      serviceKey,
+      telegramToken,
+      resendApiKey,
+      resendFrom,
+      appUrl: appUrl || 'http://localhost:5173',
+      limit: 5,
+    })
+  } catch {
+    /* известието ще чака следващото пускане на scheduled функцията */
   }
 
   return { status: 200, body: { ok: true } }

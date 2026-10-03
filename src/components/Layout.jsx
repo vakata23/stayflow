@@ -9,6 +9,7 @@ import {
   BadgePercent,
   BookMarked,
   Inbox,
+  Bell,
   MapPin,
   KeyRound,
   FileText,
@@ -38,6 +39,7 @@ const dashboardNav = [
 
 const settingsNav = [
   { to: '/properties', label: 'Поддръжка на имоти', icon: Building2 },
+  { to: '/notifications', label: 'Известия', icon: Bell },
 ]
 
 function NavSection({ title, items, onNavigate, badges }) {

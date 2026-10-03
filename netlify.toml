@@ -15,6 +15,16 @@
   to = "/.netlify/functions/booking-request"
   status = 200
 
+[[redirects]]
+  from = "/api/process-outbox"
+  to = "/.netlify/functions/process-outbox"
+  status = 200
+
+[[redirects]]
+  from = "/api/telegram-webhook"
+  to = "/.netlify/functions/telegram-webhook"
+  status = 200
+
 # SPA fallback — react-router поема всички останали пътища.
 [[redirects]]
   from = "/*"
