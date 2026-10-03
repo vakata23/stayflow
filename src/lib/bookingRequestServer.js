@@ -21,8 +21,9 @@ function clampStr(value, maxLen) {
   return trimmed.slice(0, maxLen)
 }
 
-function isValidEmail(value) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
+/** Изисква домейн с истинско разширение (.bg, .com…) — не само произволен текст след @. */
+export function isValidEmail(value) {
+  return /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/.test(value)
 }
 
 /** Само цифри, интервали и +, поне 8 цифри — ползва се и от клиента, и тук. */

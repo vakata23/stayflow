@@ -20,7 +20,7 @@ import { supabase } from '../../lib/supabase'
 import { todayISO } from '../../lib/dates'
 import { formatMoney } from '../../lib/money'
 import { channelLabel, channelHref } from '../../lib/propertySettings'
-import { isValidPhone } from '../../lib/bookingRequestServer'
+import { isValidPhone, isValidEmail } from '../../lib/bookingRequestServer'
 import { Field, Input, Textarea, Button, Alert } from '../../components/ui'
 
 const CHANNEL_ICONS = {
@@ -114,6 +114,9 @@ export default function PublicStay() {
     }
     if (guestPhone.trim() && !isValidPhone(guestPhone.trim())) {
       return setSendError('Невалиден телефонен номер (само цифри, интервали и +, поне 8 цифри).')
+    }
+    if (guestEmail.trim() && !isValidEmail(guestEmail.trim())) {
+      return setSendError('Невалиден имейл адрес (нужен е домейн, напр. .bg или .com).')
     }
 
     setSending(true)
