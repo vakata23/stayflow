@@ -262,16 +262,21 @@ export default function Notifications() {
             </h2>
             <ul className="mt-3 divide-y divide-slate-100 text-sm">
               {history.map((h) => (
-                <li key={h.id} className="flex items-center justify-between gap-3 py-2.5">
-                  <div className="flex items-center gap-2 text-slate-600">
-                    {STATUS_ICONS[h.status]}
-                    <span>{h.event === 'new_booking_request' ? 'Нова заявка' : h.event === 'test' ? 'Тест' : h.event}</span>
-                    <span className="text-slate-400">· {CHANNEL_LABELS[h.channel] ?? h.channel}</span>
+                <li key={h.id} className="flex flex-col gap-1 py-2.5">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 text-slate-600">
+                      {STATUS_ICONS[h.status]}
+                      <span>{h.event === 'new_booking_request' ? 'Нова заявка' : h.event === 'test' ? 'Тест' : h.event}</span>
+                      <span className="text-slate-400">· {CHANNEL_LABELS[h.channel] ?? h.channel}</span>
+                    </div>
+                    {h.attempts > 0 && (
+                      <span className="shrink-0 text-xs text-slate-400">опит {h.attempts}/5</span>
+                    )}
                   </div>
-                  {h.status === 'failed' && h.last_error && (
-                    <span className="truncate text-xs text-red-500" title={h.last_error}>
+                  {h.last_error && (
+                    <p className="truncate text-xs text-red-500" title={h.last_error}>
                       {h.last_error}
-                    </span>
+                    </p>
                   )}
                 </li>
               ))}
