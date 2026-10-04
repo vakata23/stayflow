@@ -23,6 +23,10 @@ export default async (request, context) => {
     ip: context.ip,
     supabaseUrl: process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL,
     serviceKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
+    telegramToken: process.env.TELEGRAM_BOT_TOKEN,
+    resendApiKey: process.env.RESEND_API_KEY,
+    resendFrom: process.env.RESEND_FROM_EMAIL,
+    appUrl: process.env.URL || 'http://localhost:5173',
   })
 
   return new Response(JSON.stringify(result.body), {

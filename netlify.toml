@@ -3,6 +3,12 @@
   publish = "dist"
   functions = "netlify/functions"
 
+# Дублира config.schedule от самия функционен файл — някои бундлъри/версии
+# на Netlify Functions четат разписанието само от netlify.toml, не от
+# export const config вътре във файла. Безопасно е да стоят и двете.
+[functions."process-outbox-scheduled"]
+  schedule = "*/5 * * * *"
+
 # API endpoint-ите трябва да се хванат ПРЕДИ SPA fallback-а —
 # правилата се обхождат отгоре надолу и първото съвпадение печели.
 [[redirects]]
