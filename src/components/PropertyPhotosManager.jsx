@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { ImagePlus, Star, Trash2, GripVertical } from 'lucide-react'
+import { ImagePlus, Star, Trash2, GripVertical, ChevronLeft, ChevronRight } from 'lucide-react'
 import { fetchPhotos, addPhotos, reorderPhotos, deletePhoto, setCoverPhoto } from '../lib/propertyPhotos'
 import { Card, Button, Alert } from './ui'
 
@@ -82,6 +82,16 @@ export default function PropertyPhotosManager({ property, userId, onCoverChanged
     await reorderPhotos(photos.map((p, i) => ({ id: p.id, position: i })))
   }
 
+  // Влаченето не работи на тъч екран — стрелките са алтернативата за телефон.
+  const move = async (index, delta) => {
+    const target = index + delta
+    if (target < 0 || target >= photos.length) return
+    const next = [...photos]
+    ;[next[index], next[target]] = [next[target], next[index]]
+    setPhotos(next)
+    await reorderPhotos(next.map((p, i) => ({ id: p.id, position: i })))
+  }
+
   return (
     <Card className="p-6">
       <h2 className="flex items-center gap-1.5 text-sm font-semibold uppercase tracking-wide text-slate-700">
@@ -117,8 +127,28 @@ export default function PropertyPhotosManager({ property, userId, onCoverChanged
                 }`}
               >
                 <img src={photo.photo_url} alt="" className="h-full w-full object-cover" draggable={false} />
-                <div className="absolute inset-x-0 top-0 flex items-center justify-between p-1.5 opacity-0 transition-opacity group-hover:opacity-100">
-                  <GripVertical className="h-4 w-4 text-white drop-shadow" />
+                <div className="absolute inset-x-0 top-0 flex items-center justify-between p-1.5 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
+                  <div className="flex gap-1">
+                    <GripVertical className="hidden h-4 w-4 text-white drop-shadow sm:block" />
+                    <button
+                      type="button"
+                      onClick={() => move(i, -1)}
+                      disabled={i === 0}
+                      className="rounded-lg bg-slate-900/60 p-1 text-white hover:bg-slate-900/80 disabled:opacity-30"
+                      aria-label="Премести наляво"
+                    >
+                      <ChevronLeft className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => move(i, 1)}
+                      disabled={i === photos.length - 1}
+                      className="rounded-lg bg-slate-900/60 p-1 text-white hover:bg-slate-900/80 disabled:opacity-30"
+                      aria-label="Премести надясно"
+                    >
+                      <ChevronRight className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
                   <button
                     type="button"
                     onClick={() => handleDelete(photo)}
@@ -132,7 +162,7 @@ export default function PropertyPhotosManager({ property, userId, onCoverChanged
                   type="button"
                   onClick={() => handleSetCover(photo)}
                   className={`absolute bottom-1.5 left-1.5 flex items-center gap-1 rounded-lg px-1.5 py-1 text-xs font-medium shadow ${
-                    isCover ? 'bg-brand-600 text-white' : 'bg-white/90 text-slate-600 opacity-0 group-hover:opacity-100'
+                    isCover ? 'bg-brand-600 text-white' : 'bg-white/90 text-slate-600 sm:opacity-0 sm:group-hover:opacity-100'
                   }`}
                 >
                   <Star className={`h-3 w-3 ${isCover ? 'fill-white' : ''}`} />

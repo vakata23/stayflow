@@ -19,9 +19,18 @@ export default function useListingSeo(property) {
     const description = (property.public_description || property.public_description_en || '').slice(0, 160)
     if (descriptionEl && description) descriptionEl.setAttribute('content', description)
 
+    // Edge функцията (netlify/edge-functions/stay-og.js) може вече да е сложила
+    // същите тагове в HTML-а — тогава ги обновяваме, вместо да дублираме.
     const created = []
+    const restored = []
     const setOg = (prop, content) => {
       if (!content) return
+      const existing = document.head.querySelector(`meta[property="${prop}"]`)
+      if (existing) {
+        restored.push([existing, existing.getAttribute('content')])
+        existing.setAttribute('content', content)
+        return
+      }
       const el = document.createElement('meta')
       el.setAttribute('property', prop)
       el.setAttribute('content', content)
@@ -29,7 +38,7 @@ export default function useListingSeo(property) {
       created.push(el)
     }
 
-    const image = property.photos?.[0] || property.cover_image_url || ''
+    const image = property.cover_image_url || property.photos?.[0] || ''
     setOg('og:title', document.title)
     setOg('og:description', description)
     setOg('og:type', 'website')
@@ -58,6 +67,7 @@ export default function useListingSeo(property) {
       document.title = prevTitle
       if (descriptionEl && prevDescription !== null) descriptionEl.setAttribute('content', prevDescription)
       created.forEach((el) => el.remove())
+      restored.forEach(([el, content]) => el.setAttribute('content', content))
     }
   }, [property])
 }

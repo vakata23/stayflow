@@ -200,6 +200,15 @@ export default function PublicStay() {
     return property.public_description || property.public_description_en || ''
   }, [property, lang])
 
+  // Корицата (звездата в галерията на собственика) винаги е първа, после
+  // останалите в реда, който собственикът е задал.
+  const galleryPhotos = useMemo(() => {
+    const photos = property?.photos ?? []
+    const cover = property?.cover_image_url
+    if (!cover || !photos.includes(cover)) return photos
+    return [cover, ...photos.filter((p) => p !== cover)]
+  }, [property])
+
   const selectedAmenities = useMemo(
     () => AMENITIES.filter((a) => property?.amenities?.includes(a.key)),
     [property]
@@ -247,7 +256,7 @@ export default function PublicStay() {
 
   return (
     <div className="min-h-screen bg-slate-100 pb-24 sm:pb-16">
-      <Gallery photos={property.photos ?? []} alt={property.name} />
+      <Gallery photos={galleryPhotos} alt={property.name} />
 
       <div className="mx-auto max-w-3xl space-y-7 px-5 pt-6">
         {/* Заглавие + основни факти */}
