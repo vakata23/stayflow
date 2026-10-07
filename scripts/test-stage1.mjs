@@ -32,6 +32,7 @@ const sqlFiles = [
   join(projectDir, 'supabase/migrations/006_public_booking_site.sql'),
   join(projectDir, 'supabase/migrations/007_notifications.sql'),
   join(projectDir, 'supabase/migrations/008_money_entries.sql'),
+  join(projectDir, 'supabase/migrations/009_listing_page.sql'),
 ];
 
 const db = new PGlite({ extensions: { btree_gist } });
@@ -480,6 +481,97 @@ r = await as('anon', null, `select count(*)::int n from bookings_for_ical('${u1T
 // отказания b9). bookings_for_ical изключва само отказаните, не и pending.
 ok('bookings_for_ical() все още работи (вижда всички некотказани резервации на U1)',
   r[0].n === 8, `видя ${r[0].n}`);
+
+// ---------------------------------------------------------------- листинг страница (009)
+await as('authenticated', A, `update properties set
+  bedrooms = 2, beds = 3, bathrooms = 1.5, area_m2 = 45.5,
+  amenities = '["wifi","parking","kitchen"]'::jsonb,
+  checkin_time = '15:00', checkout_time = '10:00',
+  smoking_allowed = false, parties_allowed = false, cancellation_policy = 'flexible',
+  lat = 43.214100, lng = 27.914700,
+  public_description_en = 'Cozy studio near the beach.'
+  where id = '${U1}'`);
+
+await asErr('анонимен не може да пише в property_photos', 'anon', null,
+  `insert into property_photos (property_id, photo_url) values ('${U1}','https://x/a.jpg')`,
+  /row-level security/);
+await asErr('собственик B не може да добави снимка към имот на A', 'authenticated', B,
+  `insert into property_photos (property_id, photo_url) values ('${U1}','https://x/a.jpg')`,
+  /row-level security/);
+// Вмъкнати в обратен ред — доказва, че photos в public_property() е подредена
+// по position, не по реда на вмъкване.
+await as('authenticated', A, `insert into property_photos (property_id, photo_url, position) values
+  ('${U1}','https://x/photo-b.jpg', 1)`);
+await as('authenticated', A, `insert into property_photos (property_id, photo_url, position) values
+  ('${U1}','https://x/photo-a.jpg', 0)`);
+r = await as('authenticated', B, `select count(*)::int n from property_photos`);
+ok('собственик B не вижда снимките на A', r[0].n === 0);
+
+await asErr('анонимен не може да пише в reviews', 'anon', null,
+  `insert into reviews (property_id, guest_name, rating, comment) values
+   ('${U1}','Спам',5,'...')`, /row-level security/);
+await asErr('собственик B не може да добави отзив към имот на A', 'authenticated', B,
+  `insert into reviews (property_id, guest_name, rating, comment) values
+   ('${U1}','Х',5,'Х')`, /row-level security/);
+await as('authenticated', A, `insert into reviews (property_id, guest_name, rating, comment, stayed_on, created_at) values
+  ('${U1}','Мария К.',5,'Невероятен изглед към морето!','2026-07-01','2026-07-05 10:00:00')`);
+await as('authenticated', A, `insert into reviews (property_id, guest_name, rating, comment, created_at) values
+  ('${U1}','Георги П.',4,'Удобно и чисто.','2026-08-10 10:00:00')`);
+// Реален отзив на НЕПУБЛИКУВАН имот (U2/apartment-2) — не бива да изтича.
+await as('authenticated', A, `insert into reviews (property_id, guest_name, rating, comment) values
+  ('${U2}','Таен гост',5,'Това не бива да се вижда публично.')`);
+
+r = await as('anon', null, `select * from public_property('studio-1')`);
+const listing = r[0];
+ok('public_property: нови полета (спални/легла/бани/кв.м/удобства/часове/анулиране)',
+  listing.bedrooms === 2 && listing.beds === 3 && Number(listing.bathrooms) === 1.5 &&
+  Number(listing.area_m2) === 45.5 && listing.checkin_time === '15:00' && listing.checkout_time === '10:00' &&
+  listing.cancellation_policy === 'flexible',
+  show(listing, ['bedrooms','beds','bathrooms','area_m2','checkin_time','checkout_time','cancellation_policy']));
+ok('public_property: amenities и английско описание минават',
+  listing.amenities.includes('wifi') && listing.public_description_en.includes('Cozy'));
+ok('public_property: снимките излизат подредени по position, не по ред на вмъкване',
+  listing.photos[0] === 'https://x/photo-a.jpg' && listing.photos[1] === 'https://x/photo-b.jpg',
+  listing.photos.join(','));
+ok('public_property: НЕ връща wifi/access_code/id дори с новите полета',
+  !('id' in listing) && !('wifi_name' in listing) && !('wifi_password' in listing) && !('access_code' in listing),
+  Object.keys(listing).join(','));
+
+const latOffset = Math.abs(Number(listing.public_lat) - 43.214100);
+const lngOffset = Math.abs(Number(listing.public_lng) - 27.914700);
+ok('public_property: публичната локация е РАЗМАЗАНА (различна от точната, но до ~300м)',
+  latOffset > 0 && latOffset < 0.0035 && lngOffset > 0 && lngOffset < 0.0045,
+  `lat_offset≈${Math.round(latOffset * 111320)}м lng_offset≈${Math.round(lngOffset * 111320)}м`);
+
+const r2 = await as('anon', null, `select public_lat, public_lng from public_property('studio-1')`);
+ok('public_property: размазаната локация е СТАБИЛНА между заявки (не се разбърква всеки път)',
+  Number(r2[0].public_lat) === Number(listing.public_lat) && Number(r2[0].public_lng) === Number(listing.public_lng));
+
+r = await as('anon', null, `select public_lat from public_property('apartment-2')`);
+ok('public_property: непубликуван имот без lat → 0 реда (is_listed=false печели)', r.length === 0);
+
+// ---------------------------------------------------------------- busy_nights (009)
+r = await as('anon', null, `select * from busy_nights('studio-1','2026-12-18','2026-12-26')`);
+const nightsISO = r.map((x) => (x.night instanceof Date ? x.night.toISOString().slice(0, 10) : String(x.night)));
+ok('busy_nights: Гост1(20-23)+Гост2(23-25) = 5 непрекъснати заети нощувки, 25-ти (checkout) свободен',
+  nightsISO.length === 5 && nightsISO.includes('2026-12-20') && nightsISO.includes('2026-12-24') && !nightsISO.includes('2026-12-25'),
+  nightsISO.join(','));
+ok('busy_nights: връща САМО колоната night, нищо друго (нито guest_name, нито booking id)',
+  r.length > 0 && Object.keys(r[0]).length === 1 && 'night' in r[0], Object.keys(r[0]).join(','));
+r = await as('anon', null, `select * from busy_nights('apartment-2','2026-01-01','2027-12-31')`);
+ok('busy_nights: непубликуван имот → 0 реда', r.length === 0);
+r = await as('anon', null, `select * from busy_nights('няма-такъв','2026-01-01','2027-12-31')`);
+ok('busy_nights: непознат slug → 0 реда', r.length === 0);
+
+// ---------------------------------------------------------------- public_reviews (009)
+r = await as('anon', null, `select * from public_reviews('studio-1')`);
+ok('public_reviews: вижда 2-та реални отзива на публикувания имот, най-нов първи',
+  r.length === 2 && r[0].guest_name === 'Георги П.' && r[1].guest_name === 'Мария К.',
+  r.map((x) => x.guest_name).join(','));
+ok('public_reviews: връща само guest_name/rating/comment/stayed_on/created_at/id — без property_id',
+  !('property_id' in r[0]), Object.keys(r[0]).join(','));
+r = await as('anon', null, `select * from public_reviews('apartment-2')`);
+ok('public_reviews: отзив на НЕпубликуван имот не изтича дори да съществува в таблицата', r.length === 0);
 
 console.log(`\n${pass} успешни, ${fail} провалени\n`);
 process.exit(fail ? 1 : 0);
