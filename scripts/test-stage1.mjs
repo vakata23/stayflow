@@ -36,6 +36,7 @@ const sqlFiles = [
   join(projectDir, 'supabase/migrations/010_ai_listing_setup.sql'),
   join(projectDir, 'supabase/migrations/011_photo_rooms.sql'),
   join(projectDir, 'supabase/migrations/012_recurring_rules.sql'),
+  join(projectDir, 'supabase/migrations/013_public_photo_thumbs.sql'),
 ];
 
 const db = new PGlite({ extensions: { btree_gist } });
@@ -767,6 +768,53 @@ r = await as('authenticated', A, `select generate_my_auto_entries() as n`);
 ok('generate_my_auto_entries() на A работи без параметри: 2 записа за 2020 (не зависи от днешна дата)', r[0].n === 2);
 r = await as('authenticated', A, `select generate_my_auto_entries() as n`);
 ok('…и е идемпотентна', r[0].n === 0);
+
+// ---------------------------------------------------------------- миниатюри на публичната страница (013)
+// photo-a (позиция 0) получава миниатюра; photo-b (позиция 1) — не (стара снимка).
+await as('authenticated', A, `update property_photos set thumb_url = 'https://x/photo-a.thumb.jpg' where property_id = '${U1}' and photo_url = 'https://x/photo-a.jpg'`);
+// Две снимки с ЕДНАКВА позиция — доказва, че двата масива остават в един и същ ред.
+await as('authenticated', A, `insert into property_photos (property_id, photo_url, thumb_url, position) values
+  ('${U1}','https://x/photo-d.jpg','https://x/photo-d.thumb.jpg', 7),
+  ('${U1}','https://x/photo-c.jpg','https://x/photo-c.thumb.jpg', 7)`);
+
+r = await as('anon', null, `select photos, photo_thumbs from public_property('studio-1')`);
+const th = r[0];
+ok('013: photo_thumbs е със същата дължина като photos', th.photos.length === th.photo_thumbs.length && th.photos.length >= 4,
+  `${th.photos.length} / ${th.photo_thumbs.length}`);
+ok('013: снимка с миниатюра → излиза миниатюрата, на същата позиция',
+  th.photos[0] === 'https://x/photo-a.jpg' && th.photo_thumbs[0] === 'https://x/photo-a.thumb.jpg');
+ok('013: снимка БЕЗ миниатюра → излиза основната (резервен вариант)',
+  th.photos[1] === 'https://x/photo-b.jpg' && th.photo_thumbs[1] === 'https://x/photo-b.jpg');
+ok('013: при равни позиции photo_thumbs[i] отговаря точно на photos[i]',
+  th.photos.every((p, i) => p === th.photo_thumbs[i] || p.replace('.jpg', '.thumb.jpg') === th.photo_thumbs[i]),
+  th.photos.map((p, i) => `${p.split('/').pop()}→${th.photo_thumbs[i].split('/').pop()}`).join(' '));
+ok('013: редът по position си остава (photo-a, photo-b преди равните позиции)',
+  th.photos.slice(0, 2).join(',') === 'https://x/photo-a.jpg,https://x/photo-b.jpg');
+r = await as('anon', null, `select * from public_property('studio-1')`);
+ok('013: полетата са същите + само photo_thumbs; нищо чувствително не изтича',
+  'photo_thumbs' in r[0] && !('id' in r[0]) && !('wifi_name' in r[0]) && !('wifi_password' in r[0]) &&
+  !('access_code' in r[0]) && !('ai_assistant' in r[0]) && !('room' in r[0]) && !('owner_id' in r[0]),
+  Object.keys(r[0]).join(','));
+ok('013: адресите на снимките не съдържат id на имота',
+  !JSON.stringify([r[0].photos, r[0].photo_thumbs]).includes(U1));
+r = await as('anon', null, `select * from public_property('apartment-2')`);
+ok('013: непубликуван имот → пак 0 реда', r.length === 0);
+r = await as('authenticated', A, `select photo_thumbs from public_property('studio-1')`);
+ok('013: достъпна и за логнат собственик', r.length === 1 && r[0].photo_thumbs.length >= 4);
+r = await as('authenticated', B, `update property_photos set thumb_url = 'https://evil/x.jpg' where property_id = '${U1}' returning id`);
+ok('013: собственик B не може да подмени миниатюра на снимка на A', r.length === 0);
+// RLS филтрира редовете на UPDATE — без грешка, но и без засегнат ред.
+r = await as('anon', null, `update property_photos set thumb_url = 'https://evil/x.jpg' where property_id = '${U1}' returning id`);
+ok('013: анонимен не може да подмени миниатюра (0 засегнати реда)', r.length === 0);
+ok('013: миниатюрите са непроменени след опитите на B и anon',
+  (await db.query(`select count(*)::int n from property_photos where thumb_url like 'https://evil/%'`)).rows[0].n === 0);
+r = await as('anon', null, `select has_function_privilege('anon','public.public_property(text)','execute') as a,
+  has_function_privilege('public','public.public_property(text)','execute') as p`);
+ok('013: правата са върнати след DROP+CREATE — anon може, „public“ не (изрично revoke)', r[0].a === true && r[0].p === false, JSON.stringify(r[0]));
+// Повторно пускане на самата миграция — без грешка и със същия резултат.
+await db.exec(readFileSync(join(projectDir, 'supabase/migrations/013_public_photo_thumbs.sql'), 'utf8'));
+r = await as('anon', null, `select photo_thumbs from public_property('studio-1')`);
+ok('013: е идемпотентна (повторно пускане без грешка, функцията работи)', r.length === 1 && r[0].photo_thumbs.length >= 4);
 
 console.log(`\n${pass} успешни, ${fail} провалени\n`);
 process.exit(fail ? 1 : 0);
