@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import {
   TrendingUp,
@@ -16,6 +16,8 @@ import {
   Pencil,
   Trash2,
   Paperclip,
+  Wand2,
+  Repeat,
 } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
@@ -31,6 +33,8 @@ import {
   downloadCsv,
 } from '../../lib/earnings'
 import { fetchMoneyEntries, deleteMoneyEntry, signedReceiptUrl, removeReceiptImage } from '../../lib/moneyEntries'
+import { fetchRules, generateMyAutoEntries, countAutoEntriesInRange, ruleTooltip } from '../../lib/recurringRules'
+import SetupWizard from './SetupWizard'
 import { PageHeader, Card, Select, Input, Button, Alert, Spinner, EmptyState, Modal } from '../../components/ui'
 import InfoTooltip from '../../components/InfoTooltip'
 import MoneyEntryModal from '../../components/MoneyEntryModal'
@@ -46,6 +50,8 @@ const METRIC_INFO = {
   sold: 'Разлика с „Приходи“: тук броим резервациите по ДАТАТА, на която са направени (независимо кога ще е престоят). „Приходи“ разпределя сумата по датата на НОЩУВКАТА. Пример: резервация направена днес за престой през март се брои в „Продадено“ за днешния месец, но в „Приходи“ за март.',
   profit: 'Нетно след комисиони + допълнителни приходи (извън резервациите) − разходи за избрания период.',
 }
+
+const SETUP_SEEN_KEY = 'stayflow.autoSetupSeen'
 
 const todayMonth = () => todayISO().slice(0, 7)
 
@@ -102,6 +108,10 @@ export default function Earnings() {
   const [ledgerError, setLedgerError] = useState(null)
   const [receiptUrls, setReceiptUrls] = useState({})
 
+  const [rules, setRules] = useState([])
+  const [autoCount, setAutoCount] = useState(0)
+  const [wizardOpen, setWizardOpen] = useState(false)
+
   const [entryModal, setEntryModal] = useState(null) // { kind, entry? }
   const [confirmDelete, setConfirmDelete] = useState(null)
   const [deleting, setDeleting] = useState(false)
@@ -114,7 +124,7 @@ export default function Earnings() {
 
     const chartRange = getChartRange(to)
 
-    const [propsRes, periodRes, chartRes, byPropertyRes, balancesRes, incompleteRes, soldRes] = await Promise.all([
+    const [propsRes, periodRes, chartRes, byPropertyRes, balancesRes, incompleteRes, soldRes, autoN] = await Promise.all([
       supabase.from('properties').select('id, name'),
       supabase.rpc('earnings_by_month', { p_from: from, p_to: to }),
       supabase.rpc('earnings_by_month', { p_from: chartRange.from, p_to: chartRange.to }),
@@ -126,8 +136,10 @@ export default function Earnings() {
         .order('check_in', { ascending: true }),
       incompleteBookingsFilter(supabase.from('bookings').select('id', { count: 'exact', head: true })),
       supabase.rpc('bookings_sold', { p_from: from, p_to: to }),
+      countAutoEntriesInRange(from, to).catch(() => 0),
     ])
 
+    setAutoCount(autoN)
     if (periodRes.error) setError('Неуспешно зареждане на приходите: ' + periodRes.error.message)
     setSold(soldRes.data?.[0] ?? null)
 
@@ -147,6 +159,36 @@ export default function Earnings() {
   useEffect(() => {
     load()
   }, [load])
+
+  // Автоматичните записи: при отваряне на „Приходи“ догонваме каквото се е
+  // натрупало (резервации, напуснали след последното пускане). Ако са
+  // създадени нови — презареждаме. Грешка (напр. още няма правила) е тиха.
+  const loadRules = useCallback(async () => {
+    const list = await fetchRules().catch(() => null)
+    if (list) {
+      setRules(list)
+      if (list.length === 0 && !localStorage.getItem(SETUP_SEEN_KEY)) setWizardOpen(true)
+    }
+  }, [])
+
+  // refs — за да презаредим с ТЕКУЩИЯ период, а не с този от първото рендиране
+  const reloadRef = useRef(null)
+  reloadRef.current = () => {
+    load()
+    loadLedger()
+  }
+
+  useEffect(() => {
+    loadRules()
+    generateMyAutoEntries()
+      .then((n) => n > 0 && reloadRef.current())
+      .catch(() => {})
+  }, [])
+
+  const closeWizard = () => {
+    localStorage.setItem(SETUP_SEEN_KEY, '1')
+    setWizardOpen(false)
+  }
 
   const loadLedger = useCallback(async () => {
     setLedgerLoading(true)
@@ -229,6 +271,16 @@ export default function Earnings() {
               <Download className="h-4 w-4" />
               Експорт CSV
             </Button>
+            <Button variant="secondary" onClick={() => setWizardOpen(true)}>
+              <Wand2 className="h-4 w-4" />
+              Настройка
+            </Button>
+            <Link to="/earnings/rules">
+              <Button variant="secondary">
+                <Repeat className="h-4 w-4" />
+                Правила{rules.length > 0 ? ` (${rules.length})` : ''}
+              </Button>
+            </Link>
           </div>
         }
       />
@@ -325,6 +377,20 @@ export default function Earnings() {
                 </div>
               </div>
             </Card>
+
+            {autoCount > 0 && (
+              <Link
+                to="/earnings/rules"
+                className="flex items-start gap-2 rounded-xl bg-slate-100 px-4 py-2.5 text-xs leading-relaxed text-slate-600 hover:bg-slate-200/70"
+              >
+                <Repeat className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-400" />
+                <span>
+                  Печалбата включва <strong>{autoCount}</strong>{' '}
+                  {autoCount === 1 ? 'автоматичен запис' : 'автоматични записа'} — оценка по вашите правила, не
+                  реални плащания. Резервациите и ръчно въведените записи са реални.
+                </span>
+              </Link>
+            )}
 
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <MetricCard
@@ -495,6 +561,18 @@ export default function Earnings() {
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="font-medium text-slate-900">{entry.category}</span>
+                      {entry.is_auto && (
+                        <span className="inline-flex items-center gap-0.5 rounded-md bg-slate-100 px-1.5 py-0.5 text-[11px] font-medium text-slate-500">
+                          авто
+                          <InfoTooltip
+                            text={
+                              rules.find((r) => r.id === entry.rule_id)
+                                ? ruleTooltip(rules.find((r) => r.id === entry.rule_id))
+                                : 'Генерирано автоматично от правило. Оценка — ако е различно, редактирайте записа.'
+                            }
+                          />
+                        </span>
+                      )}
                       <span className="text-xs text-slate-400">
                         {propertyNames[entry.property_id] ?? 'Всички имоти'}
                       </span>
@@ -559,11 +637,29 @@ export default function Earnings() {
         />
       )}
 
+      <SetupWizard
+        open={wizardOpen}
+        onClose={closeWizard}
+        onSaved={() => {
+          closeWizard()
+          loadRules()
+          reloadRef.current()
+        }}
+        properties={properties}
+        profileId={profile?.id}
+        existingRules={rules}
+      />
+
       <Modal open={Boolean(confirmDelete)} onClose={() => setConfirmDelete(null)} title="Изтриване на запис">
         <p className="text-sm leading-relaxed text-slate-600">
           Сигурни ли сте, че искате да изтриете този {confirmDelete?.kind === 'income' ? 'приход' : 'разход'} (
           {confirmDelete && formatMoney(confirmDelete.amount)})? Действието е необратимо.
         </p>
+        {confirmDelete?.is_auto && (
+          <p className="mt-2 text-xs leading-relaxed text-slate-500">
+            Това е автоматичен запис. Ако го изтриете, правилото няма да го създаде наново за същия месец/резервация.
+          </p>
+        )}
         <div className="mt-6 flex justify-end gap-3">
           <Button variant="secondary" onClick={() => setConfirmDelete(null)} disabled={deleting}>
             Отказ

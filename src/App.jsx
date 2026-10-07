@@ -29,6 +29,7 @@ const GuestCards = lazy(() => import('./pages/GuestCards'))
 const GuestCard = lazy(() => import('./pages/guest/GuestCard'))
 const Invoicing = lazy(() => import('./pages/invoicing/Invoicing'))
 const Earnings = lazy(() => import('./pages/earnings/Earnings'))
+const Rules = lazy(() => import('./pages/earnings/Rules'))
 const BookingRequests = lazy(() => import('./pages/BookingRequests'))
 const Notifications = lazy(() => import('./pages/Notifications'))
 const PublicStay = lazy(() => import('./pages/stay/PublicStay'))
@@ -87,6 +88,7 @@ export default function App() {
               <Route path="/access-codes" element={<AccessCodes />} />
               <Route path="/invoicing" element={<Invoicing />} />
               <Route path="/earnings" element={<Earnings />} />
+              <Route path="/earnings/rules" element={<Rules />} />
               <Route path="/booking-requests" element={<BookingRequests />} />
               <Route path="/notifications" element={<Notifications />} />
               <Route path="/properties" element={<PropertiesList />} />
