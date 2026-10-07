@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import {
   TrendingUp,
   PiggyBank,
+  Wallet,
   BedDouble,
   Receipt,
   Building2,
@@ -10,14 +11,29 @@ import {
   Download,
   Sparkles,
   ClipboardList,
+  Plus,
+  Minus,
+  Pencil,
+  Trash2,
+  Paperclip,
 } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
-import { formatDateBG, todayISO } from '../../lib/dates'
+import { useAuth } from '../../context/AuthContext'
+import { formatDateBG, todayISO, toISODate } from '../../lib/dates'
 import { formatMoney } from '../../lib/money'
 import { incompleteBookingsFilter } from '../../lib/bookings'
-import { PERIODS, getPeriodRange, getChartRange, aggregateEarningsRows, downloadCsv } from '../../lib/earnings'
-import { PageHeader, Card, Select, Input, Button, Alert, Spinner, EmptyState } from '../../components/ui'
+import {
+  PERIODS,
+  getPeriodRange,
+  getChartRange,
+  endOfMonth,
+  aggregateEarningsRows,
+  downloadCsv,
+} from '../../lib/earnings'
+import { fetchMoneyEntries, deleteMoneyEntry, signedReceiptUrl, removeReceiptImage } from '../../lib/moneyEntries'
+import { PageHeader, Card, Select, Input, Button, Alert, Spinner, EmptyState, Modal } from '../../components/ui'
 import InfoTooltip from '../../components/InfoTooltip'
+import MoneyEntryModal from '../../components/MoneyEntryModal'
 import EarningsChart from './EarningsChart'
 
 const METRIC_INFO = {
@@ -28,6 +44,15 @@ const METRIC_INFO = {
   direct_share: 'Какъв дял от прихода идва от директни гости (не през платформа) спрямо платформите.',
   saved: 'Директният приход × обичайната комисионна ставка на всеки имот — колко би коствало, ако същите нощувки бяха през платформа.',
   sold: 'Разлика с „Приходи“: тук броим резервациите по ДАТАТА, на която са направени (независимо кога ще е престоят). „Приходи“ разпределя сумата по датата на НОЩУВКАТА. Пример: резервация направена днес за престой през март се брои в „Продадено“ за днешния месец, но в „Приходи“ за март.',
+  profit: 'Нетно след комисиони + допълнителни приходи (извън резервациите) − разходи за избрания период.',
+}
+
+const todayMonth = () => todayISO().slice(0, 7)
+
+function monthRange(ym) {
+  const [y, m] = ym.split('-').map(Number)
+  const start = new Date(y, m - 1, 1)
+  return { from: toISODate(start), to: toISODate(endOfMonth(start)) }
 }
 
 function MetricCard({ icon: Icon, label, value, sub, info, accent }) {
@@ -51,6 +76,7 @@ function MetricCard({ icon: Icon, label, value, sub, info, accent }) {
 }
 
 export default function Earnings() {
+  const { profile, user } = useAuth()
   const [periodKind, setPeriodKind] = useState('month')
   const [customFrom, setCustomFrom] = useState(todayISO())
   const [customTo, setCustomTo] = useState(todayISO())
@@ -61,11 +87,24 @@ export default function Earnings() {
   const [chartRows, setChartRows] = useState([])
   const [propertyRows, setPropertyRows] = useState([])
   const [unpaid, setUnpaid] = useState([])
+  const [properties, setProperties] = useState([])
   const [propertyNames, setPropertyNames] = useState({})
   const [incompleteCount, setIncompleteCount] = useState(0)
 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+
+  // Независим филтър по месец за леджера "Последни разходи и приходи" —
+  // отделен от избрания отгоре период (той поддържа година/custom/предстоящи).
+  const [ledgerMonth, setLedgerMonth] = useState(todayMonth())
+  const [ledgerEntries, setLedgerEntries] = useState([])
+  const [ledgerLoading, setLedgerLoading] = useState(true)
+  const [ledgerError, setLedgerError] = useState(null)
+  const [receiptUrls, setReceiptUrls] = useState({})
+
+  const [entryModal, setEntryModal] = useState(null) // { kind, entry? }
+  const [confirmDelete, setConfirmDelete] = useState(null)
+  const [deleting, setDeleting] = useState(false)
 
   const { from, to } = getPeriodRange(periodKind, { from: customFrom, to: customTo })
 
@@ -93,6 +132,7 @@ export default function Earnings() {
     setSold(soldRes.data?.[0] ?? null)
 
     const names = Object.fromEntries((propsRes.data ?? []).map((p) => [p.id, p.name]))
+    setProperties(propsRes.data ?? [])
     setPropertyNames(names)
     setHasProperties((propsRes.data ?? []).length > 0)
 
@@ -108,18 +148,63 @@ export default function Earnings() {
     load()
   }, [load])
 
+  const loadLedger = useCallback(async () => {
+    setLedgerLoading(true)
+    setLedgerError(null)
+    try {
+      const range = monthRange(ledgerMonth)
+      const rows = await fetchMoneyEntries(range)
+      setLedgerEntries(rows)
+
+      const withReceipt = rows.filter((r) => r.receipt_path)
+      const urls = await Promise.all(withReceipt.map((r) => signedReceiptUrl(r.receipt_path)))
+      setReceiptUrls(Object.fromEntries(withReceipt.map((r, i) => [r.id, urls[i]])))
+    } catch (err) {
+      setLedgerError('Неуспешно зареждане: ' + err.message)
+    } finally {
+      setLedgerLoading(false)
+    }
+  }, [ledgerMonth])
+
+  useEffect(() => {
+    loadLedger()
+  }, [loadLedger])
+
+  const handleEntrySaved = () => {
+    load()
+    loadLedger()
+  }
+
+  const handleDeleteConfirmed = async () => {
+    if (!confirmDelete) return
+    setDeleting(true)
+    try {
+      await deleteMoneyEntry(confirmDelete.id)
+      if (confirmDelete.receipt_path) await removeReceiptImage(confirmDelete.receipt_path)
+      setConfirmDelete(null)
+      handleEntrySaved()
+    } catch (err) {
+      setLedgerError('Неуспешно изтриване: ' + err.message)
+    } finally {
+      setDeleting(false)
+    }
+  }
+
   const exportCsv = () => {
     downloadCsv(
       `prihodi-po-imot_${from}_${to}.csv`,
-      ['Имот', 'Нощувки', 'Заетост %', 'Приход', 'Нето', 'Средна цена', 'Дял директни %'],
+      ['Имот', 'Нощувки', 'Заетост %', 'Приход', 'Нето', 'Средна цена', 'Дял директни %', 'Доп. приход', 'Разходи', 'Печалба'],
       propertyRows.map((r) => [
         r.property_name,
         r.nights_sold,
-        r.occupancy_pct,
+        r.occupancy_pct ?? '',
         Number(r.revenue).toFixed(2),
         Number(r.net).toFixed(2),
         r.adr != null ? Number(r.adr).toFixed(2) : '',
         r.direct_share_pct ?? '',
+        Number(r.other_income ?? 0).toFixed(2),
+        Number(r.expenses ?? 0).toFixed(2),
+        Number(r.profit ?? 0).toFixed(2),
       ])
     )
   }
@@ -131,10 +216,20 @@ export default function Earnings() {
         title="Приходи"
         description="Колко печелите — и колко спестявате, като резервирате директно."
         action={
-          <Button variant="secondary" onClick={exportCsv} disabled={propertyRows.length === 0}>
-            <Download className="h-4 w-4" />
-            Експорт CSV
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="secondary" onClick={() => setEntryModal({ kind: 'expense' })}>
+              <Minus className="h-4 w-4" />
+              Разход
+            </Button>
+            <Button variant="secondary" onClick={() => setEntryModal({ kind: 'income' })}>
+              <Plus className="h-4 w-4" />
+              Приход
+            </Button>
+            <Button variant="secondary" onClick={exportCsv} disabled={propertyRows.length === 0}>
+              <Download className="h-4 w-4" />
+              Експорт CSV
+            </Button>
+          </div>
         }
       />
 
@@ -245,6 +340,14 @@ export default function Earnings() {
                 info={METRIC_INFO.net}
               />
               <MetricCard
+                icon={Wallet}
+                label="Печалба"
+                value={formatMoney(summary?.profit ?? 0)}
+                sub={`+${formatMoney(summary?.other_income ?? 0)} приход − ${formatMoney(summary?.expenses ?? 0)} разходи`}
+                info={METRIC_INFO.profit}
+                accent
+              />
+              <MetricCard
                 icon={ClipboardList}
                 label="Продадено"
                 value={formatMoney(sold?.revenue ?? 0)}
@@ -294,18 +397,24 @@ export default function Earnings() {
                         <th className="px-5 py-3 font-semibold">Нето</th>
                         <th className="px-5 py-3 font-semibold">Ср. цена</th>
                         <th className="px-5 py-3 font-semibold">% директни</th>
+                        <th className="px-5 py-3 font-semibold">Доп. приход</th>
+                        <th className="px-5 py-3 font-semibold">Разходи</th>
+                        <th className="px-5 py-3 font-semibold">Печалба</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 tabular-nums">
                       {propertyRows.map((r) => (
-                        <tr key={r.property_id}>
+                        <tr key={r.property_id ?? 'general'}>
                           <td className="px-5 py-3.5 font-medium text-slate-900">{r.property_name}</td>
                           <td className="px-5 py-3.5 text-slate-600">{r.nights_sold}</td>
-                          <td className="px-5 py-3.5 text-slate-600">{r.occupancy_pct}%</td>
+                          <td className="px-5 py-3.5 text-slate-600">{r.occupancy_pct != null ? `${r.occupancy_pct}%` : '—'}</td>
                           <td className="px-5 py-3.5 text-slate-600">{formatMoney(r.revenue)}</td>
                           <td className="px-5 py-3.5 text-slate-600">{formatMoney(r.net)}</td>
                           <td className="px-5 py-3.5 text-slate-600">{r.adr != null ? formatMoney(r.adr) : '—'}</td>
-                          <td className="px-5 py-3.5 text-slate-600">{r.direct_share_pct ?? '—'}%</td>
+                          <td className="px-5 py-3.5 text-slate-600">{r.direct_share_pct != null ? `${r.direct_share_pct}%` : '—'}</td>
+                          <td className="px-5 py-3.5 text-slate-600">{formatMoney(r.other_income ?? 0)}</td>
+                          <td className="px-5 py-3.5 text-slate-600">{formatMoney(r.expenses ?? 0)}</td>
+                          <td className="px-5 py-3.5 font-medium text-slate-900">{formatMoney(r.profit ?? 0)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -350,7 +459,120 @@ export default function Earnings() {
             </Card>
           </>
         )}
+
+        <Card className="overflow-hidden">
+          <header className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-6 py-4">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-700">
+              Последни разходи и приходи
+            </h2>
+            <Input
+              type="month"
+              value={ledgerMonth}
+              onChange={(e) => setLedgerMonth(e.target.value)}
+              className="w-auto"
+            />
+          </header>
+
+          {ledgerError && (
+            <div className="px-6 pt-4">
+              <Alert>{ledgerError}</Alert>
+            </div>
+          )}
+
+          {ledgerLoading ? (
+            <Spinner />
+          ) : ledgerEntries.length === 0 ? (
+            <p className="px-6 py-10 text-center text-sm text-slate-500">
+              Няма разходи или приходи за избрания месец.
+            </p>
+          ) : (
+            <ul className="divide-y divide-slate-100">
+              {ledgerEntries.map((entry) => (
+                <li
+                  key={entry.id}
+                  className="flex flex-wrap items-center justify-between gap-3 px-6 py-3.5 text-sm"
+                >
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-medium text-slate-900">{entry.category}</span>
+                      <span className="text-xs text-slate-400">
+                        {propertyNames[entry.property_id] ?? 'Всички имоти'}
+                      </span>
+                    </div>
+                    <p className="mt-0.5 text-xs text-slate-400">
+                      {formatDateBG(entry.entry_date)}
+                      {entry.note && ` · ${entry.note}`}
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-3">
+                    {entry.receipt_path && receiptUrls[entry.id] && (
+                      <a
+                        href={receiptUrls[entry.id]}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-slate-400 hover:text-brand-600"
+                        aria-label="Преглед на бележката"
+                      >
+                        <Paperclip className="h-4 w-4" />
+                      </a>
+                    )}
+                    <span
+                      className={`font-semibold ${entry.kind === 'income' ? 'text-emerald-600' : 'text-red-600'}`}
+                    >
+                      {entry.kind === 'income' ? '+' : '−'}
+                      {formatMoney(entry.amount)}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setEntryModal({ kind: entry.kind, entry })}
+                      className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                      aria-label="Редакция"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmDelete(entry)}
+                      className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                      aria-label="Изтрий"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
       </div>
+
+      {entryModal && (
+        <MoneyEntryModal
+          open={Boolean(entryModal)}
+          onClose={() => setEntryModal(null)}
+          onSaved={handleEntrySaved}
+          kind={entryModal.kind}
+          initial={entryModal.entry}
+          properties={properties}
+          profileId={profile?.id}
+          userId={user?.id}
+        />
+      )}
+
+      <Modal open={Boolean(confirmDelete)} onClose={() => setConfirmDelete(null)} title="Изтриване на запис">
+        <p className="text-sm leading-relaxed text-slate-600">
+          Сигурни ли сте, че искате да изтриете този {confirmDelete?.kind === 'income' ? 'приход' : 'разход'} (
+          {confirmDelete && formatMoney(confirmDelete.amount)})? Действието е необратимо.
+        </p>
+        <div className="mt-6 flex justify-end gap-3">
+          <Button variant="secondary" onClick={() => setConfirmDelete(null)} disabled={deleting}>
+            Отказ
+          </Button>
+          <Button variant="dangerSolid" onClick={handleDeleteConfirmed} loading={deleting}>
+            Изтрий
+          </Button>
+        </div>
+      </Modal>
     </div>
   )
 }

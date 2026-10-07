@@ -72,6 +72,9 @@ export function aggregateEarningsRows(rows) {
   const directRevenue = sum('direct_revenue')
   const otaRevenue = sum('ota_revenue')
   const commissionSaved = sum('commission_saved')
+  const otherIncome = sum('other_income')
+  const expenses = sum('expenses')
+  const net = round2(revenue - commission)
 
   return {
     available_nights: availableNights,
@@ -79,13 +82,16 @@ export function aggregateEarningsRows(rows) {
     occupancy_pct: availableNights ? round1((100 * nightsSold) / availableNights) : 0,
     revenue,
     commission,
-    net: round2(revenue - commission),
+    net,
     adr: nightsSold ? round2(revenue / nightsSold) : null,
     revpar: availableNights ? round2(revenue / availableNights) : 0,
     direct_revenue: directRevenue,
     ota_revenue: otaRevenue,
     direct_share_pct: revenue ? round1((100 * directRevenue) / revenue) : null,
     commission_saved: commissionSaved,
+    other_income: round2(otherIncome),
+    expenses: round2(expenses),
+    profit: round2(net + otherIncome - expenses),
   }
 }
 
