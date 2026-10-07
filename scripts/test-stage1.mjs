@@ -35,6 +35,7 @@ const sqlFiles = [
   join(projectDir, 'supabase/migrations/009_listing_page.sql'),
   join(projectDir, 'supabase/migrations/010_ai_listing_setup.sql'),
   join(projectDir, 'supabase/migrations/011_photo_rooms.sql'),
+  join(projectDir, 'supabase/migrations/012_recurring_rules.sql'),
 ];
 
 const db = new PGlite({ extensions: { btree_gist } });
@@ -625,6 +626,147 @@ r = await as('authenticated', A, `select ai_assistant from properties where id =
 ok('AI асистентът е изключен по подразбиране', r[0].ai_assistant === false);
 r = await as('anon', null, `select * from public_property('studio-1')`);
 ok('public_property не разкрива ai_assistant нито етикетите', !('ai_assistant' in r[0]) && !('room' in r[0]));
+
+// ---------------------------------------------------------------- автоматични разходи/приходи (012)
+// Всички дати са явни (днес = 2028-04-15) — без скрита зависимост от now().
+const UX = 'c4c4c4c4-0000-0000-0000-000000000000'; // чист имот на A само за този тест
+const TODAY = '2028-04-15';
+const gen = async (profile = profA, today = TODAY) => (await db.query(`select generate_auto_entries('${profile}', '${today}') as n`)).rows[0].n;
+const autoCount = async (where = '') => (await db.query(`select count(*)::int n from money_entries where rule_id is not null ${where}`)).rows[0].n;
+
+await db.exec(`
+  insert into properties (id, owner_id, name, max_guests, channels) values ('${UX}', '${profA}', 'Чист имот', 2, '[]');
+  insert into bookings (id, property_id, status, source, check_in, check_out, guest_name, total_price, commission, created_at) values
+    ('e1000000-0000-0000-0000-000000000000','${UX}','confirmed','direct','2028-03-02','2028-03-05','Р1',300,0,'2028-01-01'),
+    ('e2000000-0000-0000-0000-000000000000','${UX}','confirmed','direct','2028-03-10','2028-03-12','Р2',200,0,'2028-01-01'),
+    ('e3000000-0000-0000-0000-000000000000','${UX}','cancelled','direct','2028-03-20','2028-03-22','Р3 отказана',999,0,'2028-01-01'),
+    ('e4000000-0000-0000-0000-000000000000','${UX}','confirmed','direct','2028-04-28','2028-05-01','Р4 бъдеща',150,0,'2028-01-01');
+`);
+
+// ---- права и валидации
+await asErr('анонимен не може да създава правила', 'anon', null,
+  `insert into recurring_rules (profile_id, kind, category, label, amount, frequency, starts_on) values ('${profA}','expense','Друго','x',5,'per_stay','2028-03-01')`, /permission denied|row-level security/);
+await asErr('собственик B не може да създаде правило за профила на A', 'authenticated', B,
+  `insert into recurring_rules (profile_id, kind, category, label, amount, frequency, starts_on) values ('${profA}','expense','Друго','x',5,'per_stay','2028-03-01')`, /row-level security/);
+await asErr('собственик B не може да закачи правило към имот на A', 'authenticated', B,
+  `insert into recurring_rules (profile_id, property_id, kind, category, label, amount, frequency, starts_on) values ('${profB}','${UX}','expense','Друго','x',5,'per_stay','2028-03-01')`, /row-level security/);
+await expectError('сума ≤ 0 се отхвърля', `insert into recurring_rules (profile_id, kind, category, label, amount, frequency, starts_on) values ('${profA}','expense','Друго','x',0,'per_stay','2028-03-01')`, /check constraint/);
+await expectError('monthly изисква ден от месеца', `insert into recurring_rules (profile_id, kind, category, label, amount, frequency, starts_on) values ('${profA}','expense','Ток','x',5,'monthly','2028-03-01')`, /check constraint/);
+await expectError('per_stay не приема ден от месеца', `insert into recurring_rules (profile_id, kind, category, label, amount, frequency, day_of_month, starts_on) values ('${profA}','expense','Ток','x',5,'per_stay',5,'2028-03-01')`, /check constraint/);
+await expectError('категория, непозната за вида (income + Ток)', `insert into recurring_rules (profile_id, kind, category, label, amount, frequency, starts_on) values ('${profA}','income','Ток','x',5,'per_stay','2028-03-01')`, /check constraint/);
+await asErr('автоматичният генератор НЕ е достъпен за authenticated', 'authenticated', A,
+  `select generate_auto_entries('${profA}', '${TODAY}')`, /permission denied/);
+await asErr('нито за anon', 'anon', null, `select generate_auto_entries('${profA}', '${TODAY}')`, /permission denied/);
+await asErr('anon не може да вика generate_my_auto_entries', 'anon', null, `select generate_my_auto_entries()`, /permission denied/);
+
+// ---- правилата от примера: Почистване 25€/резервация, Интернет 20€/месец (ден 5), Закуска 8€/резервация (приход), +2€/нощувка консумативи
+const mkRule = (fields) => as('authenticated', A, `insert into recurring_rules (profile_id, property_id, kind, category, label, amount, frequency, day_of_month, starts_on) values
+  ('${profA}','${UX}',${fields}) returning id::text as id`);
+const R1 = (await mkRule(`'expense','Почистване','Почистване',25,'per_stay',null,'2028-03-01'`))[0].id;
+const R2 = (await mkRule(`'expense','Интернет/ТВ','Интернет/ТВ',20,'monthly',5,'2028-03-01'`))[0].id;
+const R3 = (await mkRule(`'income','Допълнителна услуга','Закуска',8,'per_stay',null,'2028-03-01'`))[0].id;
+const R4 = (await mkRule(`'expense','Консумативи','Консумативи',2,'per_night',null,'2028-03-01'`))[0].id;
+ok('собственик A създава 4 правила', [R1, R2, R3, R4].every(Boolean));
+
+const created1 = await gen();
+ok('първо пускане: 8 записа (интернет март+април, 3×по 2 за двете потвърдени минали резервации; отказаната и бъдещата — не)', created1 === 8, `създадени ${created1}`);
+
+const sumFor = async (from, to) => {
+  const rows = await as('authenticated', A, `select * from earnings_by_property('${from}','${to}')`);
+  return rows.find((x) => x.property_id === UX);
+};
+let march = await sumFor('2028-03-01', '2028-03-31');
+ok('март: приход 500, доп. приход 16 (2×8), разходи 80 (20+2×25+6+4), печалба 436',
+  same(march, { revenue: 500, other_income: 16, expenses: 80, profit: 436 }), show(march, ['revenue','other_income','expenses','profit']));
+let months = await as('authenticated', A, `select * from earnings_by_month('2028-03-01','2028-04-30')`);
+const mMar = months.find((x) => monthKey(x.month) === '2028-03'), mApr = months.find((x) => monthKey(x.month) === '2028-04');
+// Април: интернет −20 (разход); бъдещата Р4 дава 150 приход по нощувки (28–30 април), но още няма авто записи (check_out е 1 май > днес).
+ok('по месеци: март печалба 436; април: разходи 20 (само интернет), печалба 150−20 = 130',
+  num(mMar.profit) === 436 && num(mApr.expenses) === 20 && num(mApr.profit) === 130,
+  `март=${mMar.profit} април=${mApr.profit}`);
+ok('записите са означени като автоматични и закачени към резервацията',
+  (await autoCount('and is_auto')) === 8 && (await autoCount('and booking_id is not null')) === 6);
+
+// ---- идемпотентност
+const created2 = await gen();
+ok('второ пускане със същата дата: 0 нови, същите числа', created2 === 0 && (await autoCount()) === 8 && num((await sumFor('2028-03-01', '2028-03-31')).profit) === 436);
+ok('нощувките се умножават: консумативи 3 нощувки×2=6 и 2×2=4', (await db.query(`select string_agg(amount::text, ',' order by amount) a from money_entries where rule_id = '${R4}'`)).rows[0].a === '4.00,6.00');
+ok('по-късна дата не създава стари записи наново (днес 2028-04-20)', (await gen(profA, '2028-04-20')) === 0);
+
+// ---- ръчна редакция: губи „авто“, не се дублира
+const e1r1 = (await db.query(`select id::text id from money_entries where rule_id = '${R1}' and booking_id = 'e1000000-0000-0000-0000-000000000000'`)).rows[0].id;
+await as('authenticated', A, `update money_entries set amount = 30 where id = '${e1r1}'`);
+r = await as('authenticated', A, `select is_auto, amount from money_entries where id = '${e1r1}'`);
+ok('редактиран автоматичен запис губи „авто“', r[0].is_auto === false && num(r[0].amount) === 30);
+// ---- ръчно изтриване: не се връща
+const e2r3 = (await db.query(`select id::text id from money_entries where rule_id = '${R3}' and booking_id = 'e2000000-0000-0000-0000-000000000000'`)).rows[0].id;
+await as('authenticated', A, `delete from money_entries where id = '${e2r3}'`);
+ok('след редакция и изтриване нищо не се създава наново', (await gen()) === 0 && (await autoCount()) === 7);
+march = await sumFor('2028-03-01', '2028-03-31');
+ok('март след редакцията (30) и изтриването (−8): доп. приход 8, разходи 85, печалба 423',
+  same(march, { other_income: 8, expenses: 85, profit: 423 }), show(march, ['other_income','expenses','profit']));
+
+// ---- отказана резервация → автоматичните ѝ записи се махат, редактираният остава
+await db.exec(`update bookings set status = 'cancelled' where id = 'e2000000-0000-0000-0000-000000000000'`);
+await gen();
+march = await sumFor('2028-03-01', '2028-03-31');
+ok('отказ на Р2: махат се нейните авто записи (25 и 4); редактираният (30) за Р1 остава → приход 300, доп. приход 8, разходи 56, печалба 252',
+  same(march, { revenue: 300, other_income: 8, expenses: 56, profit: 252 }) && (await autoCount()) === 5, show(march, ['revenue','other_income','expenses','profit']));
+// ---- връщане на резервацията: пресъздава се, но изтритата закуска остава изтрита
+await db.exec(`update bookings set status = 'confirmed' where id = 'e2000000-0000-0000-0000-000000000000'`);
+ok('връщане в „потвърдена“: 2 нови записа (почистване+консумативи), закуската за Р2 НЕ се връща', (await gen()) === 2 && (await autoCount()) === 7);
+// ---- изтрита резервация → авто записите ѝ се махат, редактираният остава
+await db.exec(`delete from bookings where id = 'e1000000-0000-0000-0000-000000000000'`);
+r = await db.query(`select count(*)::int n from money_entries where booking_id is null and rule_id = '${R1}' and amount = 30`);
+ok('изтрита резервация Р1: нейният авто запис за консумативи/закуска се маха, ръчно редактираният (30) остава (booking_id → null)',
+  (await autoCount(`and rule_id in ('${R3}','${R4}') and amount <> 8 and booking_id is null`)) === 0 && r.rows[0].n === 1);
+
+// ---- пауза: не създава нови
+await as('authenticated', A, `update recurring_rules set active = false where id = '${R2}'`);
+// На 2028-05-20 бъдещата Р4 (check_out 1 май) вече е минала → 3 записа (почистване, закуска, консумативи 3×2);
+// интернет за май НЕ се създава, защото правилото е на пауза.
+const pausedRun = await gen(profA, '2028-05-20');
+ok('правило на пауза не генерира нови месеци (май): само 3-те записа на вече минала Р4',
+  pausedRun === 3 && (await autoCount(`and rule_id = '${R2}' and auto_period = '2028-05-01'`)) === 0, `създадени ${pausedRun}`);
+await as('authenticated', A, `update recurring_rules set active = true where id = '${R2}'`);
+ok('след включване — догонва май (1 запис)', (await gen(profA, '2028-05-20')) === 1);
+
+// ---- изтриване на правило: запази / махни записите
+const R5 = (await mkRule(`'expense','Реклама','Реклама',9,'monthly',1,'2028-03-01'`))[0].id;
+await gen(profA, '2028-05-20');
+ok('ново правило „Реклама“ създава 3 записа (март, април, май)…', (await autoCount(`and rule_id = '${R5}'`)) === 3);
+r = await as('authenticated', A, `select delete_recurring_rule('${R5}', false) as removed`);
+ok('…изтриване със запазване: 0 махнати; записите остават като обикновени (без „авто“, без правило)',
+  r[0].removed === 0 && (await db.query(`select count(*)::int n from money_entries where note = 'Реклама' and is_auto = false and rule_id is null and entry_date >= '2028-03-01'`)).rows[0].n === 3);
+const R6 = (await mkRule(`'expense','Вода','Вода',7,'monthly',2,'2028-03-01'`))[0].id;
+await gen(profA, '2028-05-20');
+r = await as('authenticated', A, `select delete_recurring_rule('${R6}', true) as removed`);
+ok('изтриване с „махни и създадените“: махнати 3, няма следа',
+  r[0].removed === 3 && (await db.query(`select count(*)::int n from money_entries where note = 'Вода'`)).rows[0].n === 0);
+await asErr('собственик B не може да изтрие правило на A', 'authenticated', B, `select delete_recurring_rule('${R1}', true)`, /не е намерено/);
+
+// ---- изолация между собственици
+r = await as('authenticated', B, `select count(*)::int n from recurring_rules`);
+ok('собственик B не вижда правилата на A', r[0].n === 0);
+r = await as('authenticated', B, `select count(*)::int n from money_entries where rule_id is not null`);
+ok('нито автоматичните записи на A', r[0].n === 0);
+r = await as('authenticated', B, `select generate_my_auto_entries() as n`);
+ok('generate_my_auto_entries() на B не създава нищо (няма свои правила) и не пипа чужди', r[0].n === 0);
+await as('authenticated', B, `insert into recurring_rules (profile_id, property_id, kind, category, label, amount, frequency, day_of_month, starts_on)
+  values ('${profB}','${UB}','expense','Ток','Ток',40,'monthly',1,'2028-03-01')`);
+ok('генераторът за B създава само негови записи (март, април): 2', (await gen(profB)) === 2);
+r = await as('authenticated', A, `select count(*)::int n from money_entries where note = 'Ток'`);
+ok('…които A не вижда', r[0].n === 0);
+r = await as('authenticated', B, `select count(*)::int n from money_entries where note = 'Ток'`);
+ok('B вижда своите 2', r[0].n === 2);
+
+// ---- обвивката за собственик (без параметри, реално „днес“): правило от 2020 → детерминирано 2 записа
+await as('authenticated', A, `insert into recurring_rules (profile_id, property_id, kind, category, label, amount, frequency, day_of_month, starts_on, ends_on)
+  values ('${profA}','${UX}','expense','Друго','Тест 2020',1,'monthly',1,'2020-01-01','2020-02-28')`);
+r = await as('authenticated', A, `select generate_my_auto_entries() as n`);
+ok('generate_my_auto_entries() на A работи без параметри: 2 записа за 2020 (не зависи от днешна дата)', r[0].n === 2);
+r = await as('authenticated', A, `select generate_my_auto_entries() as n`);
+ok('…и е идемпотентна', r[0].n === 0);
 
 console.log(`\n${pass} успешни, ${fail} провалени\n`);
 process.exit(fail ? 1 : 0);
