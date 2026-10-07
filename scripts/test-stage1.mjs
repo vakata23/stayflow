@@ -34,6 +34,7 @@ const sqlFiles = [
   join(projectDir, 'supabase/migrations/008_money_entries.sql'),
   join(projectDir, 'supabase/migrations/009_listing_page.sql'),
   join(projectDir, 'supabase/migrations/010_ai_listing_setup.sql'),
+  join(projectDir, 'supabase/migrations/011_photo_rooms.sql'),
 ];
 
 const db = new PGlite({ extensions: { btree_gist } });
@@ -611,6 +612,19 @@ await expectError('accent_color приема само #rrggbb', `update properti
 await as('authenticated', A, `update properties set accent_color = '#1b5e7a' where id = '${U1}'`);
 r = await as('anon', null, `select accent_color from public_property('studio-1')`);
 ok('public_property връща accent_color', r[0].accent_color === '#1b5e7a');
+
+// ---------------------------------------------------------------- етикети на снимки (011)
+const photoRows = await as('authenticated', A, `select id::text as id from property_photos where property_id = '${U1}' order by position`);
+await as('authenticated', A, `update property_photos set room = 'kitchen' where id = '${photoRows[0].id}'`);
+r = await as('authenticated', A, `select room from property_photos where id = '${photoRows[0].id}'`);
+ok('собственик A маркира своя снимка с етикет „Кухня“', r[0].room === 'kitchen');
+await expectError('етикет извън списъка се отхвърля (CHECK)', `update property_photos set room = 'garage' where id = '${photoRows[0].id}'`, /check constraint/);
+r = await as('authenticated', B, `update property_photos set room = 'living' where id = '${photoRows[0].id}' returning id`);
+ok('собственик B не може да смени етикета на снимка на A', r.length === 0);
+r = await as('authenticated', A, `select ai_assistant from properties where id = '${U1}'`);
+ok('AI асистентът е изключен по подразбиране', r[0].ai_assistant === false);
+r = await as('anon', null, `select * from public_property('studio-1')`);
+ok('public_property не разкрива ai_assistant нито етикетите', !('ai_assistant' in r[0]) && !('room' in r[0]));
 
 console.log(`\n${pass} успешни, ${fail} провалени\n`);
 process.exit(fail ? 1 : 0);
