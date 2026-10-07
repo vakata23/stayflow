@@ -33,6 +33,7 @@ const sqlFiles = [
   join(projectDir, 'supabase/migrations/007_notifications.sql'),
   join(projectDir, 'supabase/migrations/008_money_entries.sql'),
   join(projectDir, 'supabase/migrations/009_listing_page.sql'),
+  join(projectDir, 'supabase/migrations/010_ai_listing_setup.sql'),
 ];
 
 const db = new PGlite({ extensions: { btree_gist } });
@@ -573,6 +574,43 @@ ok('public_reviews: връща само guest_name/rating/comment/stayed_on/crea
   !('property_id' in r[0]), Object.keys(r[0]).join(','));
 r = await as('anon', null, `select * from public_reviews('apartment-2')`);
 ok('public_reviews: отзив на НЕпубликуван имот не изтича дори да съществува в таблицата', r.length === 0);
+
+// ---------------------------------------------------------------- AI обработки (010)
+await asErr('анонимен не може да стартира AI обработка', 'anon', null,
+  `select start_ai_run('${U1}', 5)`, /permission denied/);
+await asErr('собственик B не може да стартира обработка за имот на A', 'authenticated', B,
+  `select start_ai_run('${U1}', 5)`, /Нямате достъп/);
+await asErr('над 30 снимки се отхвърля', 'authenticated', A,
+  `select start_ai_run('${U1}', 31)`, /между 1 и 30/);
+
+// Обработка от вчера (по българско време) — не бива да се брои в днешния лимит.
+await db.exec(`insert into ai_runs (property_id, profile_id, status, created_at)
+  values ('${U1}', '${profA}', 'done', now() - interval '1 day 2 hours')`);
+
+const runIds = [];
+for (let i = 0; i < 3; i++) {
+  r = await as('authenticated', A, `select start_ai_run('${U1}', 10) as id`);
+  runIds.push(r[0].id);
+}
+ok('собственик A стартира 3 обработки днес (вчерашната не се брои)', runIds.every(Boolean) && new Set(runIds).size === 3);
+await asErr('4-та обработка за същия имот днес → дневен лимит', 'authenticated', A,
+  `select start_ai_run('${U1}', 10)`, /дневния лимит|дневният лимит/);
+r = await as('authenticated', A, `select start_ai_run('${U2}', 10) as id`);
+ok('лимитът е на имот — друг имот на A още може', !!r[0].id);
+
+r = await as('authenticated', A, `select status, photo_count from ai_runs where id = '${runIds[0]}'`);
+ok('новата обработка е queued с броя снимки', r[0].status === 'queued' && r[0].photo_count === 10);
+r = await as('authenticated', B, `select count(*)::int n from ai_runs`);
+ok('собственик B не вижда обработките на A', r[0].n === 0);
+await asErr('собственик не може да пише директно в ai_runs (само start_ai_run)', 'authenticated', A,
+  `insert into ai_runs (property_id, profile_id) values ('${U1}','${profA}')`, /row-level security/);
+r = await as('authenticated', A, `update ai_runs set status = 'done', cost_usd = 0 where id = '${runIds[0]}' returning id`);
+ok('собственик не може да промени резултата/цената на обработка', r.length === 0);
+
+await expectError('accent_color приема само #rrggbb', `update properties set accent_color = 'red' where id = '${U1}'`, /check constraint/);
+await as('authenticated', A, `update properties set accent_color = '#1b5e7a' where id = '${U1}'`);
+r = await as('anon', null, `select accent_color from public_property('studio-1')`);
+ok('public_property връща accent_color', r[0].accent_color === '#1b5e7a');
 
 console.log(`\n${pass} успешни, ${fail} провалени\n`);
 process.exit(fail ? 1 : 0);
