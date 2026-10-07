@@ -16,6 +16,11 @@
 alter table public.properties add column if not exists accent_color text
   check (accent_color is null or accent_color ~ '^#[0-9a-f]{6}$');
 
+-- Миниатюра (768px, без EXIF) до всяка снимка — подава се на Claude по URL
+-- вместо пълния размер: ~4× по-малко токени. Netlify background функциите
+-- приемат заявка само до 256 KB, затова снимките не минават през нея.
+alter table public.property_photos add column if not exists thumb_url text;
+
 create table if not exists public.ai_runs (
   id            uuid primary key default gen_random_uuid(),
   property_id   uuid not null references public.properties (id) on delete cascade,
