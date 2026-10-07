@@ -129,6 +129,40 @@ function processOutboxDevPlugin(env) {
   }
 }
 
+/**
+ * /api/analyze-photos локално — като Netlify background функцията: отговаря
+ * веднага 202 и обработва във фона; резултатът е в ai_runs.
+ */
+function analyzePhotosDevPlugin(env) {
+  return {
+    name: 'stayflow-analyze-photos-dev',
+    configureServer(server) {
+      server.middlewares.use('/api/analyze-photos', async (req, res) => {
+        const chunks = []
+        for await (const chunk of req) chunks.push(chunk)
+        let body = {}
+        try {
+          body = JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}')
+        } catch {
+          /* празно тяло — handleAnalyzePhotos ще го откаже */
+        }
+        res.statusCode = 202
+        res.end()
+
+        const { handleAnalyzePhotos } = await server.ssrLoadModule('/src/lib/photoAnalysisServer.js')
+        const result = await handleAnalyzePhotos({
+          token: (req.headers.authorization || '').replace(/^Bearer\s+/i, ''),
+          runId: body.run_id,
+          supabaseUrl: env.VITE_SUPABASE_URL,
+          serviceKey: env.SUPABASE_SERVICE_ROLE_KEY,
+          anthropicApiKey: env.ANTHROPIC_API_KEY,
+        })
+        console.log('[analyze-photos]', body.run_id, result.status, result.reason || result.error || '')
+      })
+    },
+  }
+}
+
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
 
@@ -139,6 +173,7 @@ export default defineConfig(({ mode }) => {
       icalDevPlugin(env),
       bookingRequestDevPlugin(env),
       processOutboxDevPlugin(env),
+      analyzePhotosDevPlugin(env),
       VitePWA({
         registerType: 'autoUpdate',
         includeAssets: ['apple-touch-icon.png', 'favicon-32.png'],

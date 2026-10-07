@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { ArrowLeft, Building2, Trash2, CalendarDays } from 'lucide-react'
+import { ArrowLeft, Building2, Trash2, CalendarDays, Sparkles } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
 import { uploadPropertyImage } from '../../lib/storage'
@@ -169,10 +169,18 @@ export default function PropertyDetail() {
         title={property.name}
         description="Редакция на данните за имота."
         action={
-          <Button variant="danger" onClick={() => setConfirmOpen(true)}>
-            <Trash2 className="h-4 w-4" />
-            Изтрий
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Link to={`/properties/${id}/setup`}>
+              <Button variant="secondary">
+                <Sparkles className="h-4 w-4" />
+                Страница за гости
+              </Button>
+            </Link>
+            <Button variant="danger" onClick={() => setConfirmOpen(true)}>
+              <Trash2 className="h-4 w-4" />
+              Изтрий
+            </Button>
+          </div>
         }
       />
 

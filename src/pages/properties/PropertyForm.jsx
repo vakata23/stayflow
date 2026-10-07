@@ -33,8 +33,8 @@ export default function PropertyForm({ initial, onSubmit, submitLabel, saving, e
       setLocalError('Файлът трябва да е изображение.')
       return
     }
-    if (f.size > 5 * 1024 * 1024) {
-      setLocalError('Снимката е твърде голяма (максимум 5 MB).')
+    if (f.size > 25 * 1024 * 1024) {
+      setLocalError('Снимката е твърде голяма (максимум 25 MB).')
       return
     }
     setFile(f)
@@ -179,7 +179,7 @@ export default function PropertyForm({ initial, onSubmit, submitLabel, saving, e
               onChange={handleFile}
               className="block w-full text-sm text-slate-500 file:mr-3 file:cursor-pointer file:rounded-lg file:border-0 file:bg-brand-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-brand-700 hover:file:bg-brand-100"
             />
-            <p className="mt-2 text-xs text-slate-400">JPG или PNG, до 5 MB.</p>
+            <p className="mt-2 text-xs text-slate-400">Снимка от телефона, до 25 MB — смаляваме я и махаме GPS данните автоматично.</p>
           </div>
         </div>
       </Card>

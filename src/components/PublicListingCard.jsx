@@ -2,18 +2,8 @@ import { useEffect, useState } from 'react'
 import { Globe, Copy, Check, ExternalLink } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { fetchPropertySettings } from '../lib/propertySettings'
+import { SLUG_RE, slugify } from '../lib/slug'
 import { Card, Field, Input, Textarea, Button, Alert } from './ui'
-
-const SLUG_RE = /^[a-z0-9-]{2,40}$/
-
-function slugify(value) {
-  return value
-    .toLowerCase()
-    .replace(/[^a-z0-9-]+/g, '-')
-    .replace(/-+/g, '-')
-    .replace(/^-|-$/g, '')
-    .slice(0, 40)
-}
 
 export default function PublicListingCard({ property, onSaved }) {
   const [slug, setSlug] = useState(property.slug ?? '')
@@ -130,7 +120,7 @@ export default function PublicListingCard({ property, onSaved }) {
           </button>
         </div>
 
-        <Field label="Публичен адрес" hint="Само малки латински букви, цифри и тирета.">
+        <Field label="Публичен адрес" hint="Може и на кирилица — превръщаме го в латиница (напр. „Морски апартамент“ → morski-apartament).">
           <div className="flex items-center gap-2">
             <span className="shrink-0 text-sm text-slate-400">/stay/</span>
             <Input

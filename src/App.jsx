@@ -17,6 +17,8 @@ const Dashboard = lazy(() => import('./pages/Dashboard'))
 const PropertiesList = lazy(() => import('./pages/properties/PropertiesList'))
 const PropertyNew = lazy(() => import('./pages/properties/PropertyNew'))
 const PropertyDetail = lazy(() => import('./pages/properties/PropertyDetail'))
+const ListingSetup = lazy(() => import('./pages/properties/ListingSetup'))
+const ListingPreview = lazy(() => import('./pages/stay/ListingPreview'))
 const AccessCodes = lazy(() => import('./pages/AccessCodes'))
 const Calendar = lazy(() => import('./pages/Calendar'))
 const BookingsList = lazy(() => import('./pages/bookings/BookingsList'))
@@ -58,6 +60,16 @@ export default function App() {
             {/* Публична страница за резервации — без login */}
             <Route path="/stay/:slug" element={<PublicStay />} />
 
+            {/* „Преглед като гост“ на собственика — без менюто, но само за логнат */}
+            <Route
+              path="/properties/:id/preview"
+              element={
+                <ProtectedRoute>
+                  <ListingPreview />
+                </ProtectedRoute>
+              }
+            />
+
             <Route
               element={
                 <ProtectedRoute>
@@ -80,6 +92,7 @@ export default function App() {
               <Route path="/properties" element={<PropertiesList />} />
               <Route path="/properties/new" element={<PropertyNew />} />
               <Route path="/properties/:id" element={<PropertyDetail />} />
+              <Route path="/properties/:id/setup" element={<ListingSetup />} />
               <Route path="*" element={<NotFound />} />
             </Route>
           </Routes>

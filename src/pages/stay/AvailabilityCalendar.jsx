@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { CalendarDays } from 'lucide-react'
-import { supabase } from '../../lib/supabase'
 import { MONTHS_BG, WEEKDAYS_BG, monthGrid, toISODate, todayISO } from '../../lib/dates'
 import { addMonths, startOfMonth, endOfMonth } from '../../lib/earnings'
 
@@ -43,7 +42,8 @@ function MonthCard({ year, month, busySet, today }) {
   )
 }
 
-export default function AvailabilityCalendar({ slug }) {
+/** loadBusy(fromISO, toISO) → Promise<string[]> заети нощувки ('YYYY-MM-DD'). */
+export default function AvailabilityCalendar({ loadBusy }) {
   const [busySet, setBusySet] = useState(new Set())
   const [loading, setLoading] = useState(true)
   const today = new Date()
@@ -53,17 +53,17 @@ export default function AvailabilityCalendar({ slug }) {
     const from = toISODate(startOfMonth(today))
     const to = toISODate(endOfMonth(addMonths(today, 1)))
 
-    supabase
-      .rpc('busy_nights', { p_slug: slug, p_from: from, p_to: to })
-      .then(({ data }) => {
+    Promise.resolve(loadBusy ? loadBusy(from, to) : [])
+      .catch(() => [])
+      .then((nights) => {
         if (cancelled) return
-        setBusySet(new Set((data ?? []).map((r) => r.night)))
+        setBusySet(new Set(nights))
         setLoading(false)
       })
     return () => {
       cancelled = true
     }
-  }, [slug])
+  }, [loadBusy])
 
   if (loading) return null
 

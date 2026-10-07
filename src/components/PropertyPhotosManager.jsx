@@ -1,22 +1,31 @@
 import { useEffect, useRef, useState } from 'react'
 import { ImagePlus, Star, Trash2, GripVertical, ChevronLeft, ChevronRight } from 'lucide-react'
-import { fetchPhotos, addPhotos, reorderPhotos, deletePhoto, setCoverPhoto } from '../lib/propertyPhotos'
+import { fetchPhotos, addPhotos, reorderPhotos, deletePhoto, setCoverPhoto, MAX_PHOTOS_PER_PROPERTY } from '../lib/propertyPhotos'
 import { Card, Button, Alert } from './ui'
 
-export default function PropertyPhotosManager({ property, userId, onCoverChanged }) {
+export default function PropertyPhotosManager({ property, userId, onCoverChanged, onPhotosChanged, onUploaded }) {
   const [photos, setPhotos] = useState([])
   const [loading, setLoading] = useState(true)
-  const [uploading, setUploading] = useState(false)
+  const [progress, setProgress] = useState(null) // { done, total } докато качва
   const [error, setError] = useState(null)
   const [dragIndex, setDragIndex] = useState(null)
   const fileRef = useRef(null)
+  const uploading = progress !== null
+
+  // Родителят (съветникът) следи броя снимки — в ефект, не в setState updater.
+  useEffect(() => {
+    onPhotosChanged?.(photos)
+  }, [photos])
 
   const load = async () => {
     setLoading(true)
     try {
-      setPhotos(await fetchPhotos(property.id))
+      const fresh = await fetchPhotos(property.id)
+      setPhotos(fresh)
+      return fresh
     } catch (err) {
       setError('Неуспешно зареждане: ' + err.message)
+      return null
     } finally {
       setLoading(false)
     }
@@ -30,14 +39,16 @@ export default function PropertyPhotosManager({ property, userId, onCoverChanged
     const files = [...(e.target.files ?? [])]
     if (files.length === 0) return
     setError(null)
-    setUploading(true)
+    setProgress({ done: 0, total: files.length })
     try {
-      await addPhotos(property.id, files, userId, photos.length)
-      await load()
+      await addPhotos(property.id, files, userId, photos.length, (done, total) => setProgress({ done, total }))
+      const fresh = await load()
+      if (fresh) onUploaded?.(fresh)
     } catch (err) {
       setError('Неуспешно качване: ' + err.message)
+      await load()
     } finally {
-      setUploading(false)
+      setProgress(null)
       if (fileRef.current) fileRef.current.value = ''
     }
   }
@@ -99,7 +110,8 @@ export default function PropertyPhotosManager({ property, userId, onCoverChanged
         Галерия
       </h2>
       <p className="mt-1 text-xs text-slate-400">
-        Влачете снимките, за да ги подредите. Звездата избира корицата, която гостите виждат първо.
+        Подредете със стрелките (или влачене на компютър). Звездата избира корицата. При качване
+        снимките се смаляват и GPS данните от телефона се премахват.
       </p>
 
       {error && (
@@ -174,7 +186,9 @@ export default function PropertyPhotosManager({ property, userId, onCoverChanged
 
           <label className="flex aspect-square cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-300 text-slate-400 hover:border-brand-400 hover:text-brand-600">
             <ImagePlus className="h-6 w-6" />
-            <span className="text-xs font-medium">{uploading ? 'Качване…' : 'Добави снимки'}</span>
+            <span className="px-2 text-center text-xs font-medium">
+              {uploading ? `Качване ${progress.done}/${progress.total}…` : `Добави снимки (${photos.length}/${MAX_PHOTOS_PER_PROPERTY})`}
+            </span>
             <input
               ref={fileRef}
               type="file"

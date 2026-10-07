@@ -3,32 +3,56 @@ import { useNavigate, Link } from 'react-router-dom'
 import { ArrowLeft, Building2 } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
-import { uploadPropertyImage } from '../../lib/storage'
-import { PageHeader, Spinner, Alert } from '../../components/ui'
-import PropertyForm from './PropertyForm'
+import { savePropertySettings } from '../../lib/propertySettings'
+import { slugify } from '../../lib/slug'
+import { PageHeader, Spinner, Alert, Card, Field, Input, Button } from '../../components/ui'
 
+/**
+ * Стъпка 1 от „Качи снимки → страницата се прави сама“: само най-нужното,
+ * удобно за телефон. Всичко останало (WiFi, правила, канали…) е в имота.
+ * Имотът се създава НЕпубликуван; адресът /stay/... се генерира от името.
+ */
 export default function PropertyNew() {
   const navigate = useNavigate()
-  const { user, profile, profileLoading } = useAuth()
+  const { profile, profileLoading } = useAuth()
+  const [values, setValues] = useState({ name: '', city: '', max_guests: 2, base_price: '' })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
 
-  const handleSubmit = async (values, file) => {
-    setSaving(true)
+  const set = (key) => (e) => setValues((v) => ({ ...v, [key]: e.target.value }))
+
+  const insertWithFreeSlug = async (row) => {
+    const base = slugify(`${row.name} ${row.city}`) || slugify(row.name) || 'imot'
+    for (let attempt = 0; attempt < 6; attempt++) {
+      const suffix = attempt === 0 ? '' : attempt < 5 ? `-${attempt + 1}` : `-${crypto.randomUUID().slice(0, 6)}`
+      const slug = (base.slice(0, 40 - suffix.length) + suffix).replace(/^-+/, '')
+      const { data, error } = await supabase.from('properties').insert({ ...row, slug }).select('id').single()
+      if (!error) return data
+      if (error.code !== '23505') throw error // 23505 = адресът е зает → пробваме със суфикс
+    }
+    throw new Error('Не успяхме да намерим свободен адрес за страницата.')
+  }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
     setError(null)
+    if (!values.name.trim()) return setError('Името на имота е задължително.')
+    if (Number(values.max_guests) < 1) return setError('Поне 1 гост.')
+    if (values.base_price !== '' && !(Number(values.base_price) > 0)) return setError('Цената трябва да е положително число.')
 
+    setSaving(true)
     try {
-      let coverUrl = values.cover_image_url || null
-      if (file) coverUrl = await uploadPropertyImage(file, user.id)
-
-      const { data, error } = await supabase
-        .from('properties')
-        .insert({ ...values, cover_image_url: coverUrl, owner_id: profile.id })
-        .select('id')
-        .single()
-
-      if (error) throw error
-      navigate(`/properties/${data.id}`)
+      const created = await insertWithFreeSlug({
+        name: values.name.trim(),
+        city: values.city.trim(),
+        max_guests: Number(values.max_guests),
+        owner_id: profile.id,
+        is_listed: false,
+      })
+      if (values.base_price !== '') {
+        await savePropertySettings(created.id, { base_price: Number(values.base_price) })
+      }
+      navigate(`/properties/${created.id}/setup`)
     } catch (err) {
       setError('Неуспешно записване: ' + err.message)
       setSaving(false)
@@ -47,7 +71,7 @@ export default function PropertyNew() {
   }
 
   return (
-    <div>
+    <div className="mx-auto max-w-lg">
       <Link
         to="/properties"
         className="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-800"
@@ -59,18 +83,31 @@ export default function PropertyNew() {
       <PageHeader
         icon={Building2}
         title="Нов имот"
-        description="Попълнете данните за имота. Можете да ги промените по всяко време."
+        description="Стъпка 1 от 3 — основното. После качвате снимки и страницата се подрежда сама."
       />
 
-      <div className="mt-8">
-        <PropertyForm
-          onSubmit={handleSubmit}
-          submitLabel="Създай имот"
-          saving={saving}
-          error={error}
-          onCancel={() => navigate('/properties')}
-        />
-      </div>
+      <Card className="mt-6 p-5">
+        <form onSubmit={handleSubmit} className="space-y-5">
+          {error && <Alert>{error}</Alert>}
+          <Field label="Име на имота" required>
+            <Input value={values.name} onChange={set('name')} placeholder="Морски апартамент" maxLength={120} autoFocus />
+          </Field>
+          <Field label="Град или курорт">
+            <Input value={values.city} onChange={set('city')} placeholder="Варна" />
+          </Field>
+          <div className="grid grid-cols-2 gap-4">
+            <Field label="До колко гости" required>
+              <Input type="number" inputMode="numeric" min={1} max={50} value={values.max_guests} onChange={set('max_guests')} />
+            </Field>
+            <Field label="Цена от (€/нощ)">
+              <Input type="number" inputMode="decimal" min={1} step="1" value={values.base_price} onChange={set('base_price')} placeholder="70" />
+            </Field>
+          </div>
+          <Button type="submit" loading={saving} className="w-full">
+            Напред — снимки
+          </Button>
+        </form>
+      </Card>
     </div>
   )
 }
