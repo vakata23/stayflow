@@ -19,6 +19,7 @@ export default function PublicListingCard({ property, onSaved }) {
   const [slug, setSlug] = useState(property.slug ?? '')
   const [isListed, setIsListed] = useState(property.is_listed ?? false)
   const [description, setDescription] = useState(property.public_description ?? '')
+  const [descriptionEn, setDescriptionEn] = useState(property.public_description_en ?? '')
   const [copied, setCopied] = useState(false)
   const [basePrice, setBasePrice] = useState(null)
 
@@ -65,6 +66,7 @@ export default function PublicListingCard({ property, onSaved }) {
         slug: cleanSlug || null,
         is_listed: isListed,
         public_description: description.trim() || null,
+        public_description_en: descriptionEn.trim() || null,
       })
       .eq('id', property.id)
     setSaving(false)
@@ -77,7 +79,12 @@ export default function PublicListingCard({ property, onSaved }) {
 
     setSlug(cleanSlug)
     setSuccess(true)
-    onSaved?.({ slug: cleanSlug, is_listed: isListed, public_description: description.trim() || null })
+    onSaved?.({
+      slug: cleanSlug,
+      is_listed: isListed,
+      public_description: description.trim() || null,
+      public_description_en: descriptionEn.trim() || null,
+    })
   }
 
   return (
@@ -135,12 +142,21 @@ export default function PublicListingCard({ property, onSaved }) {
           </div>
         </Field>
 
-        <Field label="Публично описание" hint="Текст, който гостите виждат на страницата.">
+        <Field label="Публично описание (BG)" hint="Текст, който гостите виждат на страницата.">
           <Textarea
             rows={4}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Уютен апартамент на 100 м от плажа, с изглед към морето…"
+          />
+        </Field>
+
+        <Field label="Описание на английски (по избор)" hint="Ако е празно, гостите виждат само българското описание.">
+          <Textarea
+            rows={4}
+            value={descriptionEn}
+            onChange={(e) => setDescriptionEn(e.target.value)}
+            placeholder="Cozy apartment 100m from the beach, with a sea view…"
           />
         </Field>
 

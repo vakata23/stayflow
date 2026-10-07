@@ -1,10 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import {
   Waves,
   MapPin,
   ScrollText,
-  Users,
   Loader2,
   AlertCircle,
   CheckCircle2,
@@ -15,13 +14,34 @@ import {
   Send,
   Instagram,
   Mail,
+  Languages,
+  Star,
+  Wifi,
+  ParkingCircle,
+  Snowflake,
+  Flame,
+  CookingPot,
+  Refrigerator,
+  WashingMachine,
+  Trees,
+  Tv,
+  PawPrint,
+  Baby,
+  Accessibility,
+  Clock,
+  ShieldCheck,
 } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { todayISO } from '../../lib/dates'
 import { formatMoney } from '../../lib/money'
 import { channelLabel, channelHref } from '../../lib/propertySettings'
 import { isValidPhone, isValidEmail } from '../../lib/bookingRequestServer'
+import { AMENITIES, amenityLabel, cancellationLabel } from '../../lib/amenities'
 import { Field, Input, Textarea, Button, Alert } from '../../components/ui'
+import Gallery from './Gallery'
+import AvailabilityCalendar from './AvailabilityCalendar'
+import LocationMap from '../../components/LocationMap'
+import useListingSeo from './useListingSeo'
 
 const CHANNEL_ICONS = {
   phone: Phone,
@@ -34,11 +54,33 @@ const CHANNEL_ICONS = {
   email: Mail,
 }
 
+const AMENITY_ICONS = {
+  wifi: Wifi,
+  parking: ParkingCircle,
+  ac: Snowflake,
+  heating: Flame,
+  kitchen: CookingPot,
+  fridge: Refrigerator,
+  washer: WashingMachine,
+  balcony: Trees,
+  tv: Tv,
+  pets: PawPrint,
+  crib: Baby,
+  step_free: Accessibility,
+}
+
+const DESCRIPTION_PREVIEW_LEN = 240
+
 export default function PublicStay() {
   const { slug } = useParams()
   const [property, setProperty] = useState(null)
+  const [reviews, setReviews] = useState([])
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
+
+  const [lang, setLang] = useState('bg')
+  const [descExpanded, setDescExpanded] = useState(false)
+  const [amenitiesExpanded, setAmenitiesExpanded] = useState(false)
 
   const [checkIn, setCheckIn] = useState('')
   const [checkOut, setCheckOut] = useState('')
@@ -60,18 +102,22 @@ export default function PublicStay() {
   useEffect(() => {
     let cancelled = false
 
-    supabase
-      .rpc('public_property', { p_slug: slug })
-      .then(({ data, error }) => {
-        if (cancelled) return
-        if (error || !data || data.length === 0) setNotFound(true)
-        else setProperty(data[0])
-        setLoading(false)
-      })
+    Promise.all([
+      supabase.rpc('public_property', { p_slug: slug }),
+      supabase.rpc('public_reviews', { p_slug: slug }),
+    ]).then(([propRes, reviewsRes]) => {
+      if (cancelled) return
+      if (propRes.error || !propRes.data || propRes.data.length === 0) setNotFound(true)
+      else setProperty(propRes.data[0])
+      setReviews(reviewsRes.data ?? [])
+      setLoading(false)
+    })
     return () => {
       cancelled = true
     }
   }, [slug])
+
+  useListingSeo(property)
 
   const handleQuote = async (e) => {
     e.preventDefault()
@@ -148,6 +194,17 @@ export default function PublicStay() {
     }
   }
 
+  const description = useMemo(() => {
+    if (!property) return ''
+    if (lang === 'en' && property.public_description_en) return property.public_description_en
+    return property.public_description || property.public_description_en || ''
+  }, [property, lang])
+
+  const selectedAmenities = useMemo(
+    () => AMENITIES.filter((a) => property?.amenities?.includes(a.key)),
+    [property]
+  )
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-100">
@@ -173,36 +230,48 @@ export default function PublicStay() {
   }
 
   const channels = Array.isArray(property.channels) ? property.channels : []
+  const basePrice = Number(property.base_price) || 0
+  const showDescToggle = description.length > DESCRIPTION_PREVIEW_LEN
+  const visibleDescription =
+    !descExpanded && showDescToggle ? description.slice(0, DESCRIPTION_PREVIEW_LEN).trimEnd() + '…' : description
+  const visibleAmenities = amenitiesExpanded ? selectedAmenities : selectedAmenities.slice(0, 8)
+  const hasLocation = property.public_lat != null && property.public_lng != null
+
+  const factsLine = [
+    `до ${property.max_guests} ${property.max_guests === 1 ? 'гост' : 'гости'}`,
+    property.bedrooms ? `${property.bedrooms} ${property.bedrooms === 1 ? 'спалня' : 'спални'}` : null,
+    property.beds ? `${property.beds} ${property.beds === 1 ? 'легло' : 'легла'}` : null,
+    property.bathrooms ? `${property.bathrooms} ${Number(property.bathrooms) === 1 ? 'баня' : 'бани'}` : null,
+    property.area_m2 ? `${property.area_m2} м²` : null,
+  ].filter(Boolean)
 
   return (
-    <div className="min-h-screen bg-slate-100 pb-16">
-      {/* Hero */}
-      <div className="relative h-56 bg-brand-700 sm:h-72">
-        {property.cover_image_url && (
-          <img src={property.cover_image_url} alt={property.name} className="h-full w-full object-cover" />
-        )}
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/70 to-slate-900/10" />
-        <div className="absolute bottom-4 left-0 right-0 px-5">
-          <div className="mx-auto max-w-lg">
-            <h1 className="text-2xl font-bold text-white drop-shadow sm:text-3xl">{property.name}</h1>
-            {property.city && (
-              <p className="mt-1 flex items-center gap-1.5 text-sm text-white/90 drop-shadow">
-                <MapPin className="h-4 w-4" />
-                {property.city}
-              </p>
-            )}
-          </div>
-        </div>
-      </div>
+    <div className="min-h-screen bg-slate-100 pb-24 sm:pb-16">
+      <Gallery photos={property.photos ?? []} alt={property.name} />
 
-      <div className="mx-auto max-w-lg space-y-6 px-5 pt-6">
-        {property.public_description && (
-          <p className="text-sm leading-relaxed text-slate-600">{property.public_description}</p>
-        )}
-
-        <div className="flex items-center gap-1.5 text-sm text-slate-500">
-          <Users className="h-4 w-4" />
-          До {property.max_guests} гости
+      <div className="mx-auto max-w-3xl space-y-7 px-5 pt-6">
+        {/* Заглавие + основни факти */}
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">{property.name}</h1>
+          {property.city && (
+            <p className="mt-1.5 flex items-center gap-1.5 text-sm text-slate-500">
+              <MapPin className="h-4 w-4" />
+              {property.city}
+            </p>
+          )}
+          <p className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-slate-600">
+            {factsLine.map((f, i) => (
+              <span key={i} className="flex items-center gap-1">
+                {i > 0 && <span className="text-slate-300">·</span>}
+                {f}
+              </span>
+            ))}
+          </p>
+          {basePrice > 0 && (
+            <p className="mt-3 text-lg font-semibold text-slate-900">
+              от {formatMoney(basePrice)} <span className="text-sm font-normal text-slate-500">/ нощувка</span>
+            </p>
+          )}
         </div>
 
         {channels.length > 0 && (
@@ -226,8 +295,67 @@ export default function PublicStay() {
           </div>
         )}
 
+        {/* Описание */}
+        {description && (
+          <div>
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-slate-700">Описание</h2>
+              {property.public_description_en && (
+                <button
+                  type="button"
+                  onClick={() => setLang((l) => (l === 'bg' ? 'en' : 'bg'))}
+                  className="flex items-center gap-1 text-xs font-medium text-brand-600 hover:text-brand-700"
+                >
+                  <Languages className="h-3.5 w-3.5" />
+                  {lang === 'bg' ? 'English' : 'Български'}
+                </button>
+              )}
+            </div>
+            <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-slate-600">{visibleDescription}</p>
+            {showDescToggle && (
+              <button
+                type="button"
+                onClick={() => setDescExpanded((v) => !v)}
+                className="mt-1.5 text-xs font-semibold text-brand-600 hover:text-brand-700"
+              >
+                {descExpanded ? 'Покажи по-малко' : 'Покажи още'}
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Удобства */}
+        {selectedAmenities.length > 0 && (
+          <div>
+            <h2 className="mb-3 text-sm font-semibold text-slate-700">Удобства</h2>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3">
+              {visibleAmenities.map((a) => {
+                const Icon = AMENITY_ICONS[a.key] ?? CheckCircle2
+                return (
+                  <div key={a.key} className="flex items-center gap-2.5 text-sm text-slate-600">
+                    <Icon className="h-4 w-4 shrink-0 text-slate-400" />
+                    {a.label}
+                  </div>
+                )
+              })}
+            </div>
+            {selectedAmenities.length > 8 && (
+              <button
+                type="button"
+                onClick={() => setAmenitiesExpanded((v) => !v)}
+                className="mt-3 text-xs font-semibold text-brand-600 hover:text-brand-700"
+              >
+                {amenitiesExpanded ? 'Скрий' : `Виж всички (${selectedAmenities.length})`}
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Наличност */}
+        <AvailabilityCalendar slug={slug} />
+
         {/* Проверка на цена */}
-        <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100">
+        <div id="quote-section" className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100">
           <h2 className="mb-3 text-sm font-semibold text-slate-700">Проверка на цена и наличност</h2>
           <form onSubmit={handleQuote} className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
@@ -354,16 +482,69 @@ export default function PublicStay() {
           </div>
         )}
 
-        {property.house_rules && (
-          <div>
-            <h2 className="mb-2 flex items-center gap-2 px-1 text-sm font-semibold text-slate-500">
-              <ScrollText className="h-4 w-4" />
-              Правила на къщата
-            </h2>
-            <div className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-100">
-              <p className="whitespace-pre-line text-sm leading-relaxed text-slate-600">
+        {/* Правила */}
+        <div>
+          <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700">
+            <ScrollText className="h-4 w-4 text-slate-400" />
+            Правила
+          </h2>
+          <div className="space-y-3 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-100">
+            <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-slate-600">
+              <span className="flex items-center gap-1.5">
+                <Clock className="h-4 w-4 text-slate-400" />
+                Настаняване след {property.checkin_time}
+              </span>
+              <span className="flex items-center gap-1.5">
+                <Clock className="h-4 w-4 text-slate-400" />
+                Напускане до {property.checkout_time}
+              </span>
+              <span>{property.smoking_allowed ? 'Пушенето е разрешено' : 'Непушачи'}</span>
+              <span>{property.parties_allowed ? 'Партита са разрешени' : 'Без партита'}</span>
+            </div>
+            <p className="flex items-center gap-1.5 text-sm text-slate-600">
+              <ShieldCheck className="h-4 w-4 text-slate-400" />
+              Анулиране: {cancellationLabel(property.cancellation_policy)} политика
+            </p>
+            {property.house_rules && (
+              <p className="whitespace-pre-line border-t border-slate-100 pt-3 text-sm leading-relaxed text-slate-600">
                 {property.house_rules}
               </p>
+            )}
+          </div>
+        </div>
+
+        {/* Местоположение */}
+        {hasLocation && (
+          <div>
+            <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700">
+              <MapPin className="h-4 w-4 text-slate-400" />
+              Местоположение
+            </h2>
+            <LocationMap lat={property.public_lat} lng={property.public_lng} showCircle height={240} />
+            <p className="mt-2 text-xs text-slate-400">
+              Показаната зона е приблизителна. Точният адрес се предоставя след потвърждение на резервацията.
+            </p>
+          </div>
+        )}
+
+        {/* Отзиви — само ако има реални */}
+        {reviews.length > 0 && (
+          <div>
+            <h2 className="mb-3 text-sm font-semibold text-slate-700">Отзиви от гости</h2>
+            <div className="space-y-3">
+              {reviews.map((r) => (
+                <div key={r.id} className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-100">
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-medium text-slate-900">{r.guest_name}</span>
+                    <span className="flex items-center text-amber-500">
+                      {Array.from({ length: r.rating }).map((_, i) => (
+                        <Star key={i} className="h-3.5 w-3.5 fill-amber-500" />
+                      ))}
+                    </span>
+                  </div>
+                  <p className="mt-1.5 text-sm text-slate-600">{r.comment}</p>
+                </div>
+              ))}
             </div>
           </div>
         )}
@@ -373,6 +554,21 @@ export default function PublicStay() {
           Изготвено със StayFlow
         </div>
       </div>
+
+      {/* Залепнала лента на телефона */}
+      {basePrice > 0 && (
+        <div className="fixed inset-x-0 bottom-0 z-40 flex items-center justify-between border-t border-slate-200 bg-white px-5 py-3 shadow-[0_-4px_12px_rgba(0,0,0,0.06)] sm:hidden">
+          <div>
+            <p className="text-base font-bold text-slate-900">{formatMoney(basePrice)}</p>
+            <p className="text-xs text-slate-400">на нощувка</p>
+          </div>
+          <Button
+            onClick={() => document.getElementById('quote-section')?.scrollIntoView({ behavior: 'smooth' })}
+          >
+            Провери дати
+          </Button>
+        </div>
+      )}
     </div>
   )
 }

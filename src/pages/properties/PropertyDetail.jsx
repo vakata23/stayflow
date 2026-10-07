@@ -8,6 +8,9 @@ import { PageHeader, Card, Spinner, Button, Alert, Modal, EmptyState } from '../
 import IcalSync from '../../components/IcalSync'
 import PropertySettingsCard from '../../components/PropertySettingsCard'
 import PublicListingCard from '../../components/PublicListingCard'
+import PropertyListingDetailsCard from '../../components/PropertyListingDetailsCard'
+import PropertyPhotosManager from '../../components/PropertyPhotosManager'
+import PropertyReviewsManager from '../../components/PropertyReviewsManager'
 import PropertyForm from './PropertyForm'
 
 function UpcomingBookings({ propertyId, reloadKey }) {
@@ -193,6 +196,19 @@ export default function PropertyDetail() {
           property={property}
           onSaved={(patch) => setProperty((p) => ({ ...p, ...patch }))}
         />
+
+        <PropertyPhotosManager
+          property={property}
+          userId={user?.id}
+          onCoverChanged={(coverUrl) => setProperty((p) => ({ ...p, cover_image_url: coverUrl }))}
+        />
+
+        <PropertyListingDetailsCard
+          property={property}
+          onSaved={(patch) => setProperty((p) => ({ ...p, ...patch }))}
+        />
+
+        <PropertyReviewsManager propertyId={property.id} />
 
         <IcalSync
           property={property}
