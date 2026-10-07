@@ -31,6 +31,7 @@ const sqlFiles = [
   join(projectDir, 'supabase/migrations/005_bookings_sold.sql'),
   join(projectDir, 'supabase/migrations/006_public_booking_site.sql'),
   join(projectDir, 'supabase/migrations/007_notifications.sql'),
+  join(projectDir, 'supabase/migrations/008_money_entries.sql'),
 ];
 
 const db = new PGlite({ extensions: { btree_gist } });
@@ -236,6 +237,39 @@ await asErr('анонимен не чете booking_balances', 'anon', null, `se
 r = await as('authenticated', B, `select count(*)::int n from booking_balances`);
 ok('собственик B не вижда остатъците на A', r[0].n === 0);
 
+// ---------------------------------------------------------------- money_entries (008)
+await asErr('анонимен не може да пише в money_entries', 'anon', null,
+  `insert into money_entries (profile_id, kind, category, amount, entry_date) values
+   ('${profA}','expense','Друго',10,'2026-12-01')`, /row-level security/);
+await asErr('собственик не може да добави запис за чужд profile_id', 'authenticated', A,
+  `insert into money_entries (profile_id, kind, category, amount, entry_date) values
+   ('${profB}','expense','Друго',10,'2026-12-01')`, /row-level security/);
+await expectError('невалидна категория за kind=income се отхвърля (CHECK — "Ток" е само за expense)',
+  `insert into money_entries (profile_id, kind, category, amount, entry_date) values
+   ('${profA}','income','Ток',10,'2026-12-01')`, /violates check constraint/);
+await asErr('собственик не може да закачи запис към чужд имот', 'authenticated', A,
+  `insert into money_entries (profile_id, property_id, kind, category, amount, entry_date) values
+   ('${profA}','${UB}','expense','Друго',10,'2026-12-01')`, /row-level security/);
+
+// Фиксура за примера на потребителя: декември нетно 684 + приход 50 − разходи 120 = печалба 614.
+// Приходът е закачен за U1 (доп. услуга); разходът е ОБЩ (property_id null, реклама за всички имоти).
+await as('authenticated', A, `insert into money_entries (id, profile_id, property_id, kind, category, amount, entry_date) values
+  ('d1000000-0000-0000-0000-000000000000','${profA}','${U1}','income','Допълнителна услуга',50,'2026-12-15')`);
+await as('authenticated', A, `insert into money_entries (id, profile_id, property_id, kind, category, amount, entry_date) values
+  ('d2000000-0000-0000-0000-000000000000','${profA}',null,'expense','Реклама',120,'2026-12-20')`);
+
+r = await as('authenticated', B, `select count(*)::int n from money_entries`);
+ok('собственик B не вижда записите на A', r[0].n === 0);
+
+await as('authenticated', A, `insert into money_entries (id, profile_id, kind, category, amount, entry_date) values
+  ('d3000000-0000-0000-0000-000000000000','${profA}','expense','Друго',5,'2026-12-01')`);
+await as('authenticated', A, `update money_entries set amount = 7 where id = 'd3000000-0000-0000-0000-000000000000'`);
+r = await as('authenticated', A, `select amount from money_entries where id = 'd3000000-0000-0000-0000-000000000000'`);
+ok('собственик A може да редактира свой запис', num(r[0].amount) === 7);
+await as('authenticated', A, `delete from money_entries where id = 'd3000000-0000-0000-0000-000000000000'`);
+r = await as('authenticated', A, `select count(*)::int n from money_entries where id = 'd3000000-0000-0000-0000-000000000000'`);
+ok('собственик A може да изтрие свой запис', r[0].n === 0);
+
 // ---------------------------------------------------------------- earnings_by_month
 await asErr('анонимен не може да вика earnings_by_month', 'anon', null,
   `select * from earnings_by_month('2026-12-01','2027-01-31')`, /permission denied/);
@@ -254,6 +288,10 @@ ok('декември: спестена комисиона смята СЪС СО
 ok('януари: престоят през Нова година се разделя по нощувка (U2, 20% ставка)',
   same(jan, { nights_sold: 1, revenue: 90, adr: 90, revpar: 1.45, direct_share_pct: 100, commission_saved: 18 }),
   show(jan, ['nights_sold','revenue','revpar','commission_saved']));
+ok('декември: доп. приход/разходи/печалба (684 нето + 50 приход − 120 разход = 614)',
+  same(dec, { other_income: 50, expenses: 120, profit: 614 }),
+  show(dec, ['other_income','expenses','profit']));
+ok('януари: без доп. движения — печалба = нето', num(jan.other_income) === 0 && num(jan.expenses) === 0);
 
 r = await as('authenticated', B, `select * from earnings_by_month('2026-12-01','2027-01-31')`);
 const decB = r.find((x) => monthKey(x.month) === '2026-12');
@@ -271,6 +309,14 @@ ok('по имот: Студио 1 (U1)',
 ok('по имот: Апартамент 2 (U2) — само декемврийските 2 нощувки от прехода',
   same(p2, { nights_sold: 2, revenue: 180, adr: 90, direct_share_pct: 100 }),
   show(p2, ['nights_sold','revenue','adr','direct_share_pct']));
+ok('по имот: Студио 1 (U1) — 50 доп. приход закачен за този имот → печалба 504+50=554',
+  same(p1, { other_income: 50, expenses: 0, profit: 554 }), show(p1, ['other_income','expenses','profit']));
+ok('по имот: Апартамент 2 (U2) — без доп. движения, печалба = нето (180)',
+  same(p2, { other_income: 0, expenses: 0, profit: 180 }), show(p2, ['other_income','expenses','profit']));
+const general = r.find((x) => x.property_name === 'Общи разходи');
+ok('"Общи разходи" ред се появява заради ОБЩИЯ разход (без приход, 120 разход → печалба -120), не се лепи към нито един имот',
+  !!general && general.property_id === null && same(general, { other_income: 0, expenses: 120, profit: -120 }),
+  general ? show(general, ['property_id','other_income','expenses','profit']) : 'липсва редът');
 await asErr('анонимен не може да вика earnings_by_property', 'anon', null,
   `select * from earnings_by_property('2026-12-01','2026-12-31')`, /permission denied/);
 
