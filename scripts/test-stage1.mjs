@@ -528,6 +528,7 @@ ok('public_property: нови полета (спални/легла/бани/к�
   Number(listing.area_m2) === 45.5 && listing.checkin_time === '15:00' && listing.checkout_time === '10:00' &&
   listing.cancellation_policy === 'flexible',
   show(listing, ['bedrooms','beds','bathrooms','area_m2','checkin_time','checkout_time','cancellation_policy']));
+ok('public_property: base_price от property_settings (за "от X €/нощувка")', num(listing.base_price) === 70);
 ok('public_property: amenities и английско описание минават',
   listing.amenities.includes('wifi') && listing.public_description_en.includes('Cozy'));
 ok('public_property: снимките излизат подредени по position, не по ред на вмъкване',

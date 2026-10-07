@@ -111,7 +111,7 @@ returns table (
   bedrooms smallint, beds smallint, bathrooms numeric, area_m2 numeric,
   amenities jsonb, checkin_time text, checkout_time text,
   smoking_allowed boolean, parties_allowed boolean, cancellation_policy text,
-  photos text[], public_lat numeric, public_lng numeric
+  photos text[], public_lat numeric, public_lng numeric, base_price numeric
 )
 language sql
 stable
@@ -138,8 +138,10 @@ as $$
     end as public_lat,
     case when p.lat is null or p.lng is null then null
       else p.lng + (hashtext(p.id::text || ':lng') % 1000) / 1000.0 * (300.0 / (111320.0 * cos(radians(p.lat))))
-    end as public_lng
+    end as public_lng,
+    coalesce(ps.base_price, 0) as base_price
   from public.properties p
+  left join public.property_settings ps on ps.property_id = p.id
   where p.slug = p_slug and p.is_listed = true;
 $$;
 
