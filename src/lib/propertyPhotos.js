@@ -69,6 +69,12 @@ export async function deletePhoto(photo) {
   if (paths.length) await supabase.storage.from(BUCKET).remove(paths)
 }
 
+/** room: един от ROOM_TYPES или null (маха етикета). */
+export async function setPhotoRoom(photoId, room) {
+  const { error } = await supabase.from('property_photos').update({ room }).eq('id', photoId)
+  if (error) throw error
+}
+
 export async function setCoverPhoto(propertyId, photoUrl) {
   const { error } = await supabase.from('properties').update({ cover_image_url: photoUrl }).eq('id', propertyId)
   if (error) throw error

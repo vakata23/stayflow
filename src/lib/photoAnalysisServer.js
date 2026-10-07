@@ -103,9 +103,11 @@ export async function handleAnalyzePhotos(config) {
     if (!anthropicApiKey) throw new Error('ANTHROPIC_API_KEY не е конфигуриран.')
 
     const [property] = await supa(
-      `/rest/v1/properties?id=eq.${run.property_id}&select=name,city,max_guests`,
+      `/rest/v1/properties?id=eq.${run.property_id}&select=name,city,max_guests,ai_assistant`,
       db
     )
+    // Второ заключване освен ключа: без изрично включен асистент нищо не се плаща.
+    if (!property?.ai_assistant) throw new Error('AI асистентът е изключен за този имот.')
     const photos = await supa(
       `/rest/v1/property_photos?property_id=eq.${run.property_id}&select=id,photo_url,thumb_url&order=position&limit=30`,
       db

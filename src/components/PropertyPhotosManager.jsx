@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { ImagePlus, Star, Trash2, GripVertical, ChevronLeft, ChevronRight } from 'lucide-react'
-import { fetchPhotos, addPhotos, reorderPhotos, deletePhoto, setCoverPhoto, MAX_PHOTOS_PER_PROPERTY } from '../lib/propertyPhotos'
+import { fetchPhotos, addPhotos, reorderPhotos, deletePhoto, setCoverPhoto, setPhotoRoom, MAX_PHOTOS_PER_PROPERTY } from '../lib/propertyPhotos'
+import { ROOM_CHIPS } from '../lib/photoRooms'
 import { Card, Button, Alert } from './ui'
 
 export default function PropertyPhotosManager({ property, userId, onCoverChanged, onPhotosChanged, onUploaded }) {
@@ -63,6 +64,18 @@ export default function PropertyPhotosManager({ property, userId, onCoverChanged
     }
   }
 
+  // Един клик: избира етикет; втори клик върху същия го маха.
+  const handleRoom = async (photo, room) => {
+    const next = photo.room === room ? null : room
+    setPhotos((prev) => prev.map((p) => (p.id === photo.id ? { ...p, room: next } : p)))
+    try {
+      await setPhotoRoom(photo.id, next)
+    } catch (err) {
+      setPhotos((prev) => prev.map((p) => (p.id === photo.id ? { ...p, room: photo.room } : p)))
+      setError('Неуспешно записване на етикета: ' + err.message)
+    }
+  }
+
   const handleSetCover = async (photo) => {
     setError(null)
     try {
@@ -110,8 +123,9 @@ export default function PropertyPhotosManager({ property, userId, onCoverChanged
         Галерия
       </h2>
       <p className="mt-1 text-xs text-slate-400">
-        Подредете със стрелките (или влачене на компютър). Звездата избира корицата. При качване
-        снимките се смаляват и GPS данните от телефона се премахват.
+        Отбележете какво е на всяка снимка — по етикетите страницата се подрежда сама. Стрелките
+        местят ръчно (влачене — на компютър), звездата избира корицата. При качване снимките се
+        смаляват и GPS данните от телефона се премахват.
       </p>
 
       {error && (
@@ -127,8 +141,8 @@ export default function PropertyPhotosManager({ property, userId, onCoverChanged
           {photos.map((photo, i) => {
             const isCover = photo.photo_url === property.cover_image_url
             return (
+              <div key={photo.id}>
               <div
-                key={photo.id}
                 draggable
                 onDragStart={handleDragStart(i)}
                 onDragOver={handleDragOver(i)}
@@ -180,6 +194,24 @@ export default function PropertyPhotosManager({ property, userId, onCoverChanged
                   <Star className={`h-3 w-3 ${isCover ? 'fill-white' : ''}`} />
                   {isCover ? 'Корица' : 'Направи корица'}
                 </button>
+              </div>
+              <div className="mt-1.5 flex flex-wrap gap-1" role="group" aria-label="Какво е на снимката">
+                {ROOM_CHIPS.map((chip) => (
+                  <button
+                    key={chip.key}
+                    type="button"
+                    onClick={() => handleRoom(photo, chip.key)}
+                    aria-pressed={photo.room === chip.key}
+                    className={`rounded-full border px-2 py-1 text-[11px] font-medium leading-none transition-colors ${
+                      photo.room === chip.key
+                        ? 'border-brand-600 bg-brand-600 text-white'
+                        : 'border-slate-200 bg-white text-slate-500 hover:border-brand-300 hover:text-brand-700'
+                    }`}
+                  >
+                    {chip.label}
+                  </button>
+                ))}
+              </div>
               </div>
             )
           })}

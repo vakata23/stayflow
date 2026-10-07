@@ -5,7 +5,8 @@ import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
 import { savePropertySettings } from '../../lib/propertySettings'
 import { slugify } from '../../lib/slug'
-import { PageHeader, Spinner, Alert, Card, Field, Input, Button } from '../../components/ui'
+import { PROPERTY_TYPES } from '../../lib/constants'
+import { PageHeader, Spinner, Alert, Card, Field, Input, Select, Button } from '../../components/ui'
 
 /**
  * Стъпка 1 от „Качи снимки → страницата се прави сама“: само най-нужното,
@@ -15,7 +16,7 @@ import { PageHeader, Spinner, Alert, Card, Field, Input, Button } from '../../co
 export default function PropertyNew() {
   const navigate = useNavigate()
   const { profile, profileLoading } = useAuth()
-  const [values, setValues] = useState({ name: '', city: '', max_guests: 2, base_price: '' })
+  const [values, setValues] = useState({ name: '', city: '', property_type: 'apartment', max_guests: 2, base_price: '' })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
 
@@ -45,6 +46,7 @@ export default function PropertyNew() {
       const created = await insertWithFreeSlug({
         name: values.name.trim(),
         city: values.city.trim(),
+        property_type: values.property_type,
         max_guests: Number(values.max_guests),
         owner_id: profile.id,
         is_listed: false,
@@ -83,7 +85,7 @@ export default function PropertyNew() {
       <PageHeader
         icon={Building2}
         title="Нов имот"
-        description="Стъпка 1 от 3 — основното. После качвате снимки и страницата се подрежда сама."
+        description="Стъпка 1 от 3 — основното. После качвате снимки, отбелязвате какво е на всяка и страницата се подрежда по етикетите."
       />
 
       <Card className="mt-6 p-5">
@@ -94,6 +96,13 @@ export default function PropertyNew() {
           </Field>
           <Field label="Град или курорт">
             <Input value={values.city} onChange={set('city')} placeholder="Варна" />
+          </Field>
+          <Field label="Тип имот">
+            <Select value={values.property_type} onChange={set('property_type')}>
+              {PROPERTY_TYPES.map((t) => (
+                <option key={t.value} value={t.value}>{t.label}</option>
+              ))}
+            </Select>
           </Field>
           <div className="grid grid-cols-2 gap-4">
             <Field label="До колко гости" required>

@@ -1,21 +1,12 @@
 /**
- * Чиста логика около AI анализа на снимки — без SDK, ползва се и от браузъра
- * (прегледа на собственика), и от сървъра (photoAnalysisServer.js).
- * Подредбата се прави тук, детерминирано — AI-ът само класифицира и оценява.
+ * БЪДЕЩ „AI асистент“ (изключен по подразбиране — properties.ai_assistant и
+ * липсващ ANTHROPIC_API_KEY): чиста логика около AI анализа на снимки — без
+ * SDK. Ако го включим, AI само предлага етикети; редът пак се прави в кода.
+ * Етикетите и подредбата без AI са в photoRooms.js.
  */
+import { ROOM_TYPES, ROOM_LABELS } from './photoRooms.js'
 
-export const ROOM_TYPES = ['living', 'bedroom', 'kitchen', 'bathroom', 'terrace', 'view', 'exterior', 'other']
-
-export const ROOM_LABELS = {
-  living: 'Дневна',
-  bedroom: 'Спалня',
-  kitchen: 'Кухня',
-  bathroom: 'Баня',
-  terrace: 'Тераса',
-  view: 'Гледка',
-  exterior: 'Сграда/отвън',
-  other: 'Друго',
-}
+export { ROOM_TYPES, ROOM_LABELS }
 
 // Ред като в Airbnb: дневна → спални → кухня → баня → тераса/гледка → отвън.
 const ROOM_RANK = { living: 0, bedroom: 1, kitchen: 2, bathroom: 3, terrace: 4, view: 4, exterior: 5, other: 6 }

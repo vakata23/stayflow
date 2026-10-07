@@ -7,6 +7,18 @@ const BG = {
 
 export const SLUG_RE = /^[a-z0-9-]{2,40}$/
 
+/** Кирилица → латиница със запазени главни букви и интервали (Варна → Varna). */
+export function transliterate(value) {
+  return String(value ?? '')
+    .split('')
+    .map((ch) => {
+      const mapped = BG[ch.toLowerCase()]
+      if (mapped === undefined) return ch
+      return ch !== ch.toLowerCase() ? mapped.charAt(0).toUpperCase() + mapped.slice(1) : mapped
+    })
+    .join('')
+}
+
 export function slugify(value) {
   return String(value ?? '')
     .toLowerCase()

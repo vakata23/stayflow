@@ -12,34 +12,33 @@ import {
   CheckCircle2,
   Palette,
   Copy,
+  Wand2,
 } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
 import { fetchPhotos, reorderPhotos } from '../../lib/propertyPhotos'
 import { AMENITIES } from '../../lib/amenities'
-import { ROOM_LABELS } from '../../lib/photoAnalysis'
+import { PROPERTY_TYPES } from '../../lib/constants'
+import { ROOM_LABELS, orderByRooms, amenityHintsFromRooms, suggestCoverId, brightnessFromImage, roomCounts } from '../../lib/photoRooms'
+import { buildDescription } from '../../lib/descriptionTemplate'
 import { accentFromImage } from '../../lib/accentColor'
 import { slugify, SLUG_RE } from '../../lib/slug'
 import { appOrigin } from '../../lib/appUrl'
-import { PageHeader, Card, Button, Alert, Spinner, Field, Textarea } from '../../components/ui'
+import { PageHeader, Card, Button, Alert, Spinner, Field, Input, Select, Textarea } from '../../components/ui'
 import PropertyPhotosManager from '../../components/PropertyPhotosManager'
 
-const MIN_PHOTOS_FOR_AI = 5
-const DAILY_RUNS = 3
 const POLL_MS = 3000
 const POLL_TIMEOUT_MS = 3 * 60 * 1000
 
-function startOfTodayISO() {
-  const d = new Date()
-  d.setHours(0, 0, 0, 0)
-  return d.toISOString()
-}
-
 /**
- * Стъпки 2–3 от „Качи снимки → страницата се прави сама“:
- *   снимки → автоматична обработка (Claude) → преглед → публикуване.
- * AI резултатът е само ПРЕДЛОЖЕНИЕ (ai_runs.result). В имота се записва
- * едва при „Запази“/„Публикувай“, а публично става само при „Публикувай“.
+ * „Качи снимки → страницата се прави сама“ — БЕЗ платено AI:
+ *   снимки с етикети → преглед (подредба по етикети, подсказки за удобства,
+ *   описание от шаблон, цвят от корицата) → публикуване.
+ * Нищо не става публично без „Публикувай“.
+ *
+ * Бъдещ „AI асистент“: ако properties.ai_assistant е включено (по
+ * подразбиране НЕ е) се показва блок, който пуска старата обработка. Без
+ * ANTHROPIC_API_KEY в Netlify тя просто отказва — не харчи нищо.
  */
 export default function ListingSetup() {
   const { id } = useParams()
@@ -48,40 +47,30 @@ export default function ListingSetup() {
 
   const [property, setProperty] = useState(null)
   const [photos, setPhotos] = useState([])
-  const [step, setStep] = useState('photos') // photos | processing | review
-  const [run, setRun] = useState(null)
-  const [runsToday, setRunsToday] = useState(0)
-  const [everRan, setEverRan] = useState(true) // докато не знаем — не пускаме нищо платено само
-  const [aiNotice, setAiNotice] = useState(null)
+  const [step, setStep] = useState('photos') // photos | processing (само AI) | review
   const [error, setError] = useState(null)
+  const [notice, setNotice] = useState(null)
   const [loading, setLoading] = useState(true)
 
-  // Състояние на прегледа
+  // Преглед
   const [ordered, setOrdered] = useState([])
   const [amenities, setAmenities] = useState([])
+  const [hints, setHints] = useState([])
+  const [facts, setFacts] = useState({ property_type: 'apartment', bedrooms: 1, beds: 1, bathrooms: 1, area_m2: '' })
   const [descBg, setDescBg] = useState('')
   const [descEn, setDescEn] = useState('')
   const [accent, setAccent] = useState(null)
   const [useAccent, setUseAccent] = useState(true)
+  const [coverNote, setCoverNote] = useState(null)
   const [saving, setSaving] = useState(false)
   const [savedMsg, setSavedMsg] = useState(null)
   const [published, setPublished] = useState(false)
+
+  // Бъдещ AI асистент (изключен)
+  const [run, setRun] = useState(null)
   const pollRef = useRef(null)
-
+  const aiEnabled = property?.ai_assistant === true
   const suggestion = run?.status === 'done' ? run.result : null
-
-  const loadRunsToday = useCallback(async () => {
-    const { data } = await supabase
-      .from('ai_runs')
-      .select('*')
-      .eq('property_id', id)
-      .order('created_at', { ascending: false })
-      .limit(20)
-    const runs = data ?? []
-    setEverRan(runs.length > 0)
-    setRunsToday(runs.filter((r) => r.created_at >= startOfTodayISO()).length)
-    return runs
-  }, [id])
 
   useEffect(() => {
     let cancelled = false
@@ -95,90 +84,65 @@ export default function ListingSetup() {
       }
       setProperty(data)
       setPublished(data.is_listed)
-      const [runs, fresh] = await Promise.all([loadRunsToday(), fetchPhotos(id).catch(() => [])])
-      if (cancelled) return
-      setPhotos(fresh)
-      // Ако има започната обработка от преди малко — продължаваме да я следим.
-      const pending = runs.find((r) => r.status === 'queued' || r.status === 'running')
-      if (pending && Date.now() - new Date(pending.created_at).getTime() < POLL_TIMEOUT_MS) {
-        setRun(pending)
-        setStep('processing')
-      } else {
-        // Последният успешен резултат остава достъпен, без нова (платена) обработка.
-        const lastDone = runs.find((r) => r.status === 'done')
-        if (lastDone) setRun(lastDone)
-      }
+      setPhotos(await fetchPhotos(id).catch(() => []))
       setLoading(false)
     })()
     return () => {
       cancelled = true
       clearInterval(pollRef.current)
     }
-  }, [id, loadRunsToday])
-
-  // ---------------------------------------------------------------- AI
-  const startAi = async (currentPhotos = photos) => {
-    setError(null)
-    setAiNotice(null)
-    const { data: runId, error } = await supabase.rpc('start_ai_run', {
-      p_property_id: id,
-      p_photo_count: Math.min(currentPhotos.length, 30),
-    })
-    if (error) {
-      setAiNotice(error.message)
-      return
-    }
-    setRun({ id: runId, status: 'queued', created_at: new Date().toISOString() })
-    setStep('processing')
-    setRunsToday((n) => n + 1)
-    setEverRan(true)
-    fetch('/api/analyze-photos', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
-      body: JSON.stringify({ run_id: runId }),
-    }).catch(() => {
-      /* статусът се следи от ai_runs; ако заявката изобщо не тръгне, таймаутът по-долу поема */
-    })
-  }
-
-  useEffect(() => {
-    if (step !== 'processing' || !run?.id) return
-    const started = new Date(run.created_at).getTime()
-    pollRef.current = setInterval(async () => {
-      const { data } = await supabase.from('ai_runs').select('*').eq('id', run.id).maybeSingle()
-      if (data?.status === 'done' || data?.status === 'failed') {
-        clearInterval(pollRef.current)
-        setRun(data)
-        if (data.status === 'failed') {
-          setAiNotice(`Автоматичната обработка не успя (${data.error}). Страницата се прави и без нея — подредете снимките и напишете описание ръчно.`)
-        }
-        enterReview(data.status === 'done' ? data.result : null)
-      } else if (Date.now() - started > POLL_TIMEOUT_MS) {
-        clearInterval(pollRef.current)
-        setAiNotice('Автоматичната обработка се бави твърде дълго. Продължете ръчно — ако резултатът дойде по-късно, ще го видите при следващо отваряне.')
-        enterReview(null)
-      }
-    }, POLL_MS)
-    return () => clearInterval(pollRef.current)
-  }, [step, run?.id])
+  }, [id])
 
   // ---------------------------------------------------------------- преглед
-  const enterReview = async (result) => {
+  const enterReview = async (aiResult = null) => {
     const fresh = await fetchPhotos(id).catch(() => photos)
     setPhotos(fresh)
+
     let order = fresh
-    if (result?.order?.length) {
+    if (aiResult?.order?.length) {
       const byId = new Map(fresh.map((p) => [p.id, p]))
-      const fromAi = result.order.map((pid) => byId.get(pid)).filter(Boolean)
-      order = [...fromAi, ...fresh.filter((p) => !result.order.includes(p.id))]
-    } else if (property?.cover_image_url) {
-      const cover = fresh.find((p) => p.photo_url === property.cover_image_url)
-      if (cover) order = [cover, ...fresh.filter((p) => p !== cover)]
+      order = [...aiResult.order.map((pid) => byId.get(pid)).filter(Boolean), ...fresh.filter((p) => !aiResult.order.includes(p.id))]
+    } else if (fresh.some((p) => p.room)) {
+      order = orderByRooms(fresh)
+    }
+
+    // Корица: ако собственикът вече е избрал — уважаваме я; иначе предлагаме по осветеност.
+    const chosen = order.find((p) => p.photo_url === property?.cover_image_url)
+    if (chosen) {
+      order = [chosen, ...order.filter((p) => p !== chosen)]
+      setCoverNote(null)
+    } else if (order.length > 1) {
+      try {
+        const candidates = order.slice(0, 12)
+        const levels = await Promise.all(candidates.map((p) => brightnessFromImage(p.thumb_url || p.photo_url).catch(() => 0.5)))
+        const brightness = Object.fromEntries(candidates.map((p, i) => [p.id, levels[i]]))
+        const coverId = suggestCoverId(candidates, brightness)
+        const cover = order.find((p) => p.id === coverId)
+        if (cover) {
+          order = [cover, ...order.filter((p) => p !== cover)]
+          setCoverNote('Корицата е предложена по осветеност — сменете я със звездата, ако искате друга.')
+        }
+      } catch {
+        setCoverNote(null)
+      }
     }
     setOrdered(order)
+
+    const suggested = [...new Set([...amenityHintsFromRooms(fresh), ...(aiResult?.amenities ?? [])])]
+    setHints(suggested)
     setAmenities(property?.amenities ?? [])
-    setDescBg(property?.public_description || result?.description_bg || '')
-    setDescEn(property?.public_description_en || result?.description_en || '')
+
+    const f = {
+      property_type: property?.property_type ?? 'apartment',
+      bedrooms: property?.bedrooms ?? 1,
+      beds: property?.beds ?? 1,
+      bathrooms: property?.bathrooms ?? 1,
+      area_m2: property?.area_m2 ?? '',
+    }
+    setFacts(f)
+    const draftFrom = { ...property, ...f, amenities: property?.amenities ?? [] }
+    setDescBg(property?.public_description || aiResult?.description_bg || buildDescription(draftFrom, 'bg'))
+    setDescEn(property?.public_description_en || aiResult?.description_en || buildDescription(draftFrom, 'en'))
     setStep('review')
   }
 
@@ -206,9 +170,24 @@ export default function ListingSetup() {
     const next = [...ordered]
     const [p] = next.splice(index, 1)
     setOrdered([p, ...next])
+    setCoverNote(null)
+  }
+  const resortByLabels = () => {
+    setOrdered((prev) => {
+      const cover = prev[0]
+      const sorted = orderByRooms(prev.slice(1))
+      return cover ? [cover, ...sorted] : sorted
+    })
   }
   const toggleAmenity = (key) =>
     setAmenities((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]))
+  const setFact = (key) => (e) => setFacts((f) => ({ ...f, [key]: e.target.value }))
+
+  const regenerateText = () => {
+    const src = { ...property, ...facts, amenities }
+    setDescBg(buildDescription(src, 'bg'))
+    setDescEn(buildDescription(src, 'en'))
+  }
 
   const ensureSlug = async () => {
     if (property.slug && SLUG_RE.test(property.slug)) return property.slug
@@ -233,6 +212,11 @@ export default function ListingSetup() {
       const patch = {
         cover_image_url: ordered[0]?.photo_url ?? property.cover_image_url,
         amenities,
+        property_type: facts.property_type,
+        bedrooms: Number(facts.bedrooms) || 0,
+        beds: Number(facts.beds) || 0,
+        bathrooms: Number(facts.bathrooms) || 0,
+        area_m2: facts.area_m2 === '' ? null : Number(facts.area_m2),
         public_description: descBg.trim() || null,
         public_description_en: descEn.trim() || null,
         accent_color: useAccent ? accent : null,
@@ -256,12 +240,46 @@ export default function ListingSetup() {
     if (await save()) navigate(`/properties/${id}/preview`)
   }
 
+  // ---------------------------------------------------------------- бъдещ AI асистент (изключен)
+  const startAi = async () => {
+    setError(null)
+    setNotice(null)
+    const { data: runId, error } = await supabase.rpc('start_ai_run', {
+      p_property_id: id,
+      p_photo_count: Math.min(photos.length, 30),
+    })
+    if (error) return setNotice(error.message)
+    setRun({ id: runId, status: 'queued', created_at: new Date().toISOString() })
+    setStep('processing')
+    fetch('/api/analyze-photos', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
+      body: JSON.stringify({ run_id: runId }),
+    }).catch(() => {})
+  }
+
+  useEffect(() => {
+    if (step !== 'processing' || !run?.id) return
+    const started = new Date(run.created_at).getTime()
+    pollRef.current = setInterval(async () => {
+      const { data } = await supabase.from('ai_runs').select('*').eq('id', run.id).maybeSingle()
+      const timedOut = Date.now() - started > POLL_TIMEOUT_MS
+      if (data?.status === 'done' || data?.status === 'failed' || timedOut) {
+        clearInterval(pollRef.current)
+        if (data) setRun(data)
+        if (data?.status !== 'done') setNotice('AI асистентът не отговори — продължаваме с етикетите и шаблона.')
+        enterReview(data?.status === 'done' ? data.result : null)
+      }
+    }, POLL_MS)
+    return () => clearInterval(pollRef.current)
+  }, [step, run?.id])
+
   // ---------------------------------------------------------------- UI
   if (loading) return <Spinner />
   if (!property) return <Alert>{error}</Alert>
 
-  const runsLeft = Math.max(0, DAILY_RUNS - runsToday)
-  const suggested = suggestion?.amenities ?? []
+  const { unlabeled } = roomCounts(photos)
+  const labeled = photos.length - unlabeled
   const publicUrl = property.slug ? `${appOrigin()}/stay/${property.slug}` : null
 
   return (
@@ -278,17 +296,17 @@ export default function ListingSetup() {
         icon={Sparkles}
         title="Страницата за гости"
         description={
-          step === 'photos'
-            ? 'Стъпка 2 от 3 — качете 5 до 30 снимки. После ги подреждаме и пишем чернова на описание.'
+          step === 'review'
+            ? 'Стъпка 3 от 3 — прегледайте, поправете каквото искате и публикувайте.'
             : step === 'processing'
-              ? 'Подреждаме снимките…'
-              : 'Стъпка 3 от 3 — прегледайте, поправете каквото искате и публикувайте.'
+              ? 'Изчакваме асистента…'
+              : 'Стъпка 2 от 3 — качете снимките и отбележете какво е на всяка. Страницата се подрежда по етикетите.'
         }
       />
 
       <div className="mt-6 space-y-5">
         {error && <Alert>{error}</Alert>}
-        {aiNotice && <Alert kind="warning">{aiNotice}</Alert>}
+        {notice && <Alert kind="warning">{notice}</Alert>}
 
         {step === 'photos' && (
           <>
@@ -297,29 +315,25 @@ export default function ListingSetup() {
               userId={user?.id}
               onPhotosChanged={setPhotos}
               onCoverChanged={(url) => setProperty((p) => ({ ...p, cover_image_url: url }))}
-              onUploaded={(fresh) => {
-                // Автоматично само при ПЪРВОТО качване на 5+ снимки. Всяка следваща
-                // обработка струва пари и е ръчна (бутонът по-долу).
-                if (!everRan && fresh.length >= MIN_PHOTOS_FOR_AI && runsLeft > 0) startAi(fresh)
-              }}
             />
             <Card className="space-y-3 p-5">
               <p className="text-sm text-slate-600">
-                {photos.length < MIN_PHOTOS_FOR_AI
-                  ? `Качете поне ${MIN_PHOTOS_FOR_AI} снимки (имате ${photos.length}) — после автоматично ги подреждаме като в Airbnb, предлагаме удобства, които се виждат, и пишем чернова на описание.`
-                  : `Автоматичната обработка подрежда снимките, предлага видимите удобства и пише чернова BG/EN. Нищо не се публикува без вас. Остават ${runsLeft} от ${DAILY_RUNS} за днес.`}
+                {photos.length === 0
+                  ? 'Качете снимките от телефона — до 30 наведнъж.'
+                  : `Етикетирани: ${labeled} от ${photos.length}. ${
+                      unlabeled > 0 ? 'Неетикетираните отиват най-накрая — отбележете ги за по-добър ред.' : 'Всички са отбелязани.'
+                    }`}
               </p>
               <div className="flex flex-wrap gap-3">
-                <Button
-                  onClick={() => startAi()}
-                  disabled={photos.length < MIN_PHOTOS_FOR_AI || runsLeft === 0}
-                >
-                  <Sparkles className="h-4 w-4" />
-                  Подреди и опиши автоматично
+                <Button onClick={() => enterReview(suggestion)} disabled={photos.length === 0}>
+                  Продължи към прегледа
                 </Button>
-                <Button variant="secondary" onClick={() => enterReview(suggestion)} disabled={photos.length === 0}>
-                  Продължи ръчно
-                </Button>
+                {aiEnabled && (
+                  <Button variant="secondary" onClick={startAi} disabled={photos.length < 5}>
+                    <Wand2 className="h-4 w-4" />
+                    Попитай AI асистента (бета)
+                  </Button>
+                )}
               </div>
             </Card>
           </>
@@ -328,48 +342,43 @@ export default function ListingSetup() {
         {step === 'processing' && (
           <Card className="flex flex-col items-center gap-3 p-10 text-center">
             <Loader2 className="h-8 w-8 animate-spin text-brand-600" />
-            <p className="font-semibold text-slate-800">Разглеждаме снимките…</p>
-            <p className="max-w-sm text-sm text-slate-500">
-              Разпознаваме стаите, избираме корица и пишем чернова. Обикновено отнема под минута —
-              може да оставите телефона, резултатът се пази.
-            </p>
+            <p className="font-semibold text-slate-800">Асистентът разглежда снимките…</p>
             <Button variant="secondary" onClick={() => { clearInterval(pollRef.current); enterReview(null) }}>
-              Не чакай — продължи ръчно
+              Не чакай — продължи с етикетите
             </Button>
           </Card>
         )}
 
         {step === 'review' && (
           <>
-            {suggestion && run?.cost_usd != null && (
-              <p className="text-xs text-slate-400">
-                Автоматичната обработка на {run.photo_count} снимки струваше ${Number(run.cost_usd).toFixed(3)} (
-                {run.input_tokens?.toLocaleString('bg-BG')} входни + {run.output_tokens?.toLocaleString('bg-BG')} изходни токена).
-              </p>
-            )}
-
             <Card className="p-5">
-              <h2 className="text-sm font-semibold text-slate-700">Ред на снимките</h2>
-              <p className="mt-1 text-xs text-slate-400">
-                {suggestion ? 'Предложен ред: корица, дневна → спални → кухня → баня → тераса/гледка → отвън.' : 'Първата снимка е корицата.'}
-              </p>
+              <div className="flex flex-wrap items-start justify-between gap-2">
+                <div>
+                  <h2 className="text-sm font-semibold text-slate-700">Ред на снимките</h2>
+                  <p className="mt-1 text-xs text-slate-400">
+                    Подредени по етикети: дневна → спални → кухня → баня → тераса/гледка → отвън. Стрелките местят ръчно.
+                  </p>
+                </div>
+                <button type="button" onClick={resortByLabels} className="text-xs font-semibold text-brand-600">
+                  Подреди пак по етикети
+                </button>
+              </div>
+              {coverNote && <p className="mt-2 text-xs text-amber-700">{coverNote}</p>}
               <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
                 {ordered.map((p, i) => (
                   <div key={p.id} className={`relative overflow-hidden rounded-xl border ${i === 0 ? 'border-brand-500 ring-2 ring-brand-200' : 'border-slate-200'}`}>
                     <img src={p.thumb_url || p.photo_url} alt="" className="aspect-square w-full object-cover" />
                     <div className="absolute inset-x-0 top-0 flex justify-between p-1.5">
                       <div className="flex gap-1">
-                        <button type="button" onClick={() => move(i, -1)} disabled={i === 0} className="rounded-lg bg-slate-900/60 p-1 text-white disabled:opacity-30" aria-label="Наляво">
+                        <button type="button" onClick={() => move(i, -1)} disabled={i === 0} className="rounded-lg bg-slate-900/60 p-1 text-white disabled:opacity-30" aria-label="По-напред">
                           <ChevronLeft className="h-3.5 w-3.5" />
                         </button>
-                        <button type="button" onClick={() => move(i, 1)} disabled={i === ordered.length - 1} className="rounded-lg bg-slate-900/60 p-1 text-white disabled:opacity-30" aria-label="Надясно">
+                        <button type="button" onClick={() => move(i, 1)} disabled={i === ordered.length - 1} className="rounded-lg bg-slate-900/60 p-1 text-white disabled:opacity-30" aria-label="По-назад">
                           <ChevronRight className="h-3.5 w-3.5" />
                         </button>
                       </div>
-                      {suggestion?.rooms?.[p.id] && (
-                        <span className="rounded-md bg-white/90 px-1.5 py-0.5 text-[11px] font-medium text-slate-700">
-                          {ROOM_LABELS[suggestion.rooms[p.id]]}
-                        </span>
+                      {p.room && (
+                        <span className="rounded-md bg-white/90 px-1.5 py-0.5 text-[11px] font-medium text-slate-700">{ROOM_LABELS[p.room]}</span>
                       )}
                     </div>
                     <button
@@ -378,30 +387,30 @@ export default function ListingSetup() {
                       className={`absolute bottom-1.5 left-1.5 flex items-center gap-1 rounded-lg px-1.5 py-1 text-xs font-medium shadow ${i === 0 ? 'bg-brand-600 text-white' : 'bg-white/90 text-slate-600'}`}
                     >
                       <Star className={`h-3 w-3 ${i === 0 ? 'fill-white' : ''}`} />
-                      {i === 0 ? 'Корица' : 'Корица'}
+                      Корица
                     </button>
                   </div>
                 ))}
               </div>
               <button type="button" onClick={() => setStep('photos')} className="mt-3 text-xs font-semibold text-brand-600">
-                Добави или изтрий снимки
+                Добави, изтрий или смени етикети
               </button>
             </Card>
 
             <Card className="p-5">
               <h2 className="text-sm font-semibold text-slate-700">Удобства</h2>
               <p className="mt-1 text-xs text-slate-400">
-                {suggested.length
-                  ? 'С „видяно“ са отбелязани неща, които разпознахме на снимките — отметнете ги само ако са верни.'
+                {hints.length
+                  ? 'Със „подсказка“ са отбелязани неща, за които има етикет на снимка (Кухня → кухня, Тераса → балкон). Отметнете ги само ако са верни — нищо не се слага само.'
                   : 'Отметнете какво има в имота.'}
               </p>
-              {suggested.some((k) => !amenities.includes(k)) && (
+              {hints.some((k) => !amenities.includes(k)) && (
                 <button
                   type="button"
-                  onClick={() => setAmenities((prev) => [...new Set([...prev, ...suggested])])}
+                  onClick={() => setAmenities((prev) => [...new Set([...prev, ...hints])])}
                   className="mt-2 text-xs font-semibold text-brand-600"
                 >
-                  Отметни всички видени ({suggested.length})
+                  Отметни подсказаните ({hints.length})
                 </button>
               )}
               <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -414,8 +423,8 @@ export default function ListingSetup() {
                       className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
                     />
                     {a.label}
-                    {suggested.includes(a.key) && (
-                      <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800">видяно</span>
+                    {hints.includes(a.key) && (
+                      <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800">подсказка</span>
                     )}
                   </label>
                 ))}
@@ -426,27 +435,39 @@ export default function ListingSetup() {
               <div>
                 <h2 className="text-sm font-semibold text-slate-700">Описание</h2>
                 <p className="mt-1 text-xs text-slate-400">
-                  {suggestion ? 'Чернова по снимките — прочетете я и поправете. Пише само това, което се вижда.' : 'Няколко изречения за гостите.'}
+                  Чернова от вашите данни по-долу — проверете числата, после редактирайте текста както искате.
                 </p>
               </div>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+                <Field label="Тип">
+                  <Select value={facts.property_type} onChange={setFact('property_type')}>
+                    {PROPERTY_TYPES.map((t) => (
+                      <option key={t.value} value={t.value}>{t.label}</option>
+                    ))}
+                  </Select>
+                </Field>
+                <Field label="Спални">
+                  <Input type="number" inputMode="numeric" min={0} value={facts.bedrooms} onChange={setFact('bedrooms')} />
+                </Field>
+                <Field label="Легла">
+                  <Input type="number" inputMode="numeric" min={0} value={facts.beds} onChange={setFact('beds')} />
+                </Field>
+                <Field label="Бани">
+                  <Input type="number" inputMode="decimal" min={0} step="0.5" value={facts.bathrooms} onChange={setFact('bathrooms')} />
+                </Field>
+                <Field label="Кв.м">
+                  <Input type="number" inputMode="decimal" min={0} value={facts.area_m2} onChange={setFact('area_m2')} />
+                </Field>
+              </div>
               <Field label="На български">
-                <Textarea rows={5} value={descBg} onChange={(e) => setDescBg(e.target.value)} />
+                <Textarea rows={4} value={descBg} onChange={(e) => setDescBg(e.target.value)} />
               </Field>
               <Field label="На английски (по избор)">
-                <Textarea rows={5} value={descEn} onChange={(e) => setDescEn(e.target.value)} />
+                <Textarea rows={4} value={descEn} onChange={(e) => setDescEn(e.target.value)} />
               </Field>
-              {suggestion && property.public_description && descBg === property.public_description && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setDescBg(suggestion.description_bg)
-                    setDescEn(suggestion.description_en)
-                  }}
-                  className="text-xs font-semibold text-brand-600"
-                >
-                  Замени с черновата от снимките
-                </button>
-              )}
+              <button type="button" onClick={regenerateText} className="text-xs font-semibold text-brand-600">
+                Попълни наново от данните (презаписва текста)
+              </button>
             </Card>
 
             <Card className="p-5">
