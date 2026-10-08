@@ -20,7 +20,7 @@ export default function ListingPreview() {
     let cancelled = false
     Promise.all([
       supabase.from('properties').select('*').eq('id', id).maybeSingle(),
-      supabase.from('property_photos').select('photo_url').eq('property_id', id).order('position'),
+      supabase.from('property_photos').select('photo_url, thumb_url').eq('property_id', id).order('position').order('id'),
       supabase.from('property_settings').select('base_price').eq('property_id', id).maybeSingle(),
       supabase.from('reviews').select('*').eq('property_id', id).order('created_at', { ascending: false }),
     ]).then(([p, photos, settings, revs]) => {
@@ -29,6 +29,7 @@ export default function ListingPreview() {
       setProperty({
         ...p.data,
         photos: (photos.data ?? []).map((x) => x.photo_url),
+        photo_thumbs: (photos.data ?? []).map((x) => x.thumb_url || x.photo_url),
         base_price: settings.data?.base_price ?? 0,
         public_lat: p.data.lat,
         public_lng: p.data.lng,
