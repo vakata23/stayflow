@@ -184,7 +184,7 @@ export default defineConfig(({ mode }) => {
             'Управление на краткосрочни наеми — резервации, календар, почистване, фактури.',
           lang: 'bg',
           theme_color: '#1b787c',
-          background_color: '#f8fafc',
+          background_color: '#f6f9f9',
           display: 'standalone',
           orientation: 'portrait',
           start_url: '/',
@@ -196,10 +196,11 @@ export default defineConfig(({ mode }) => {
           ],
         },
         workbox: {
-          // Прекешираме само app shell-а (JS/CSS/HTML/икони). Шрифтът за
-          // фактурите (515KB) се тегли при нужда — не бива да тежи в SW.
-          globPatterns: ['**/*.{js,css,html,png,svg,ico}'],
-          globIgnores: ['**/fonts/**'],
+          // Прекешираме app shell-а (JS/CSS/HTML/икони) и шрифта на интерфейса
+          // Onest (~78 KB, за да не мига текстът офлайн). Шрифтът за фактурите
+          // (Roboto, 515KB) се тегли при нужда — не бива да тежи в SW.
+          globPatterns: ['**/*.{js,css,html,png,svg,ico}', 'fonts/onest-*.woff2'],
+          globIgnores: ['**/fonts/Roboto*'],
           // API заявките към Supabase и /api/ical никога не се кешират.
           navigateFallbackDenylist: [/^\/api\//],
           maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,

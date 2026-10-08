@@ -33,6 +33,7 @@ const Rules = lazy(() => import('./pages/earnings/Rules'))
 const BookingRequests = lazy(() => import('./pages/BookingRequests'))
 const Notifications = lazy(() => import('./pages/Notifications'))
 const PublicStay = lazy(() => import('./pages/stay/PublicStay'))
+const DesignSystem = lazy(() => import('./pages/DesignSystem'))
 
 function PageFallback() {
   return (
@@ -60,6 +61,9 @@ export default function App() {
 
             {/* Публична страница за резервации — без login */}
             <Route path="/stay/:slug" element={<PublicStay />} />
+
+            {/* Витрина на дизайн системата — без данни, noindex */}
+            <Route path="/design" element={<DesignSystem />} />
 
             {/* „Преглед като гост“ на собственика — без менюто, но само за логнат */}
             <Route

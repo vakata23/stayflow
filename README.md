@@ -137,12 +137,13 @@ iCal линка и го поставете в Airbnb/Booking („Импорт н
 
 ```
 stayflow/
-├── public/fonts/          # Roboto TTF за кирилица в PDF фактурите
+├── public/fonts/          # Onest (интерфейс, кирилица) + Roboto TTF за PDF фактурите
 ├── netlify/functions/     # iCal serverless функция (production)
 ├── supabase/
 │   ├── schema.sql         # основна схема
 │   └── migrations/        # 002 (iCal), 003 (гост карта)
 ├── src/
+│   ├── styles/            # tokens.css (дизайн токени), fonts.css, base.css, components.css
 │   ├── components/        # Layout, ui примитиви, IcalSync…
 │   ├── context/           # AuthContext
 │   ├── lib/               # supabase, dates, ical, bookings, pricing, PDF…
@@ -150,6 +151,18 @@ stayflow/
 ├── netlify.toml
 └── vite.config.js         # + dev middleware за /api/ical
 ```
+
+---
+
+## 5.1 Дизайн система
+
+Всички цветове, шрифтове, радиуси, сенки и времена на движение са на едно място — `src/styles/tokens.css`
+(три слоя: примитиви → семантични роли → компонентни размери). Екраните ползват ролите
+(`bg-surface`, `text-ink-soft`, `border-line`), не суровите цветове; общите компоненти са в `src/components/ui.jsx`.
+Живата витрина е на **`/design`**. Проверки:
+
+- `node scripts/test-design.mjs` — контраст на всички двойки текст/фон (≥ 4.5:1, граници ≥ 3:1), токени, шрифт, движение ≤ 200 ms;
+- `scripts/visual/` — снимки на 375/1440 px, достъпност (axe-core) и поведение на компонентите (виж README там).
 
 ---
 
@@ -172,3 +185,5 @@ stayflow/
 | `npm run dev` | Локален dev сървър |
 | `npm run build` | Production build в `dist/` |
 | `npm run preview` | Преглед на production build локално |
+| `node scripts/test-design.mjs` | Проверка на дизайн токените и контраста |
+| `node scripts/test-stage1.mjs` | SQL тестове (PGlite) |

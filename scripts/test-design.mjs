@@ -58,31 +58,80 @@ ok('сянката за градиентите е „r,g,b“', /^\d{1,3},\d{1,3
 ok('хартията е светла, мастилото е тъмно', hexToRgb(sample['--stay-paper']).every((c) => c > 200) && hexToRgb(sample['--stay-ink']).every((c) => c < 60))
 
 // ---------------------------------------------------------------- 2. токени на приложението
+const read = (p) => readFileSync(join(root, p), 'utf8')
 const tokensPath = join(root, 'src/styles/tokens.css')
 if (existsSync(tokensPath)) {
-  const css = readFileSync(tokensPath, 'utf8')
+  const css = read('src/styles/tokens.css')
   const vars = {}
   for (const m of css.matchAll(/--([a-z0-9-]+)\s*:\s*([^;]+);/gi)) vars[m[1]] = m[2].trim()
   // Разрешава var(--x) верижно до #hex.
   const hex = (name, depth = 0) => {
     const raw = vars[name]
-    if (!raw || depth > 6) return null
+    if (!raw || depth > 8) return null
     const ref = raw.match(/^var\(--([a-z0-9-]+)\)$/i)
     if (ref) return hex(ref[1], depth + 1)
     return /^#[0-9a-f]{6}$/i.test(raw) ? raw.toLowerCase() : null
   }
-  const pairs = JSON.parse(readFileSync(join(root, 'scripts/token-pairs.json'), 'utf8'))
+
+  // 2a) двойки текст/фон (единният списък е и в витрината на /design)
+  const pairs = JSON.parse(read('scripts/token-pairs.json'))
   for (const [fg, bg, min, why] of pairs) {
-    const a = hex(fg)
-    const b = hex(bg)
+    const a = hex('color-' + fg)
+    const b = hex('color-' + bg)
     if (!a || !b) {
-      ok(`токен ${fg} върху ${bg}: ${why}`, false, `не се разрешава (${a ?? '?'} / ${b ?? '?'})`)
+      ok(`${why}: ${fg} върху ${bg}`, false, `не се разрешава (${a ?? '?'} / ${b ?? '?'})`)
       continue
     }
     const r = contrastRatio(a, b)
     ok(`${why}: ${fg} върху ${bg} ≥ ${min}`, r >= min, `${r.toFixed(2)}:1 (${a} / ${b})`)
   }
+
+  // 2b) всички светли/тъмни двойки на състоянията: мек фон + тъмен текст ≥ 7:1 (AAA за основния текст), плътен + бял ≥ 4.5
+  for (const tone of ['success', 'warning', 'danger', 'info']) {
+    const solid = hex(`color-${tone}-600`)
+    ok(`${tone}-600 с бял текст ≥ 4.5 (плътен бутон/значка)`, !!solid && contrastRatio('#ffffff', solid) >= 4.5, solid ? contrastRatio('#ffffff', solid).toFixed(2) : 'липсва')
+    const soft = hex(`color-${tone}-50`)
+    const deep = hex(`color-${tone}-800`)
+    ok(`${tone}-800 върху ${tone}-50 ≥ 7 (AAA)`, !!soft && !!deep && contrastRatio(deep, soft) >= 7, soft && deep ? contrastRatio(deep, soft).toFixed(2) : 'липсва')
+  }
+
+  // 2c) старите имена (emerald/amber/red/rose/blue) сочат към съществуващи стойности — иначе класовете в екраните „осиротяват“
+  const legacy = { emerald: 'success', amber: 'warning', red: 'danger', rose: 'danger', blue: 'info' }
+  const broken = []
+  for (const [old, now] of Object.entries(legacy)) {
+    for (const step of [50, 100, 200, 300, 400, 500, 600, 700, 800, 900]) {
+      if (vars[`color-${old}-${step}`] !== `var(--color-${now}-${step})` || !hex(`color-${old}-${step}`)) broken.push(`${old}-${step}`)
+    }
+  }
+  ok('старите имена на цветовете (emerald, amber, red, rose, blue) се разрешават до нови стойности', broken.length === 0, broken.slice(0, 4).join(', '))
+
+  // 2d) неутралната скала е монотонна (по-голямо число = по-тъмно) и без дупки
+  const lum = (h) => contrastRatio(h, '#000000')
+  const slate = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950].map((s) => hex(`color-slate-${s}`))
+  ok('неутралната скала slate-50…950 е пълна и последователно потъмнява', slate.every(Boolean) && slate.every((h, i) => i === 0 || lum(h) < lum(slate[i - 1])))
+
+  // 2e) движение: приложението е ≤ 200 ms; разстояние за пръст ≥ 44 px
+  const ms = (name) => Number((vars[name] || '').replace('ms', ''))
+  ok('времената на движение са ≤ 200 ms (fast/base/slow)', ['duration-fast', 'duration-base', 'duration-slow'].every((n) => ms(n) > 0 && ms(n) <= 200), ['duration-fast', 'duration-base', 'duration-slow'].map((n) => vars[n]).join(' / '))
+  const rem = (name) => Number((vars[name] || '').replace('rem', '')) * 16
+  ok('--control-h и --tap-min са ≥ 44 px', rem('control-h') >= 44 && rem('tap-min') >= 44, `${rem('control-h')} / ${rem('tap-min')} px`)
+
+  // 2f) шрифт: Onest е първият в стека и всеки файл от @font-face съществува
+  ok('основният шрифт е Onest (кирилица)', /^"Onest"/.test(vars['font-sans'] || ''), vars['font-sans']?.slice(0, 30))
+  const fonts = read('src/styles/fonts.css')
+  const files = [...fonts.matchAll(/url\("([^"]+)"\)/g)].map((m) => m[1])
+  ok('всички файлове от fonts.css съществуват в /public', files.length >= 3 && files.every((f) => existsSync(join(root, 'public', f))), files.join(', '))
+  ok('кирилското подмножество покрива българската азбука (U+0400–045F)', /U\+0400-045F/.test(fonts))
+
+  // 2g) „без сурови цветове в компонентите“: components.css и base.css ползват само токени
+  for (const f of ['src/styles/components.css', 'src/styles/base.css']) {
+    const css = read(f).replace(/\/\*[\s\S]*?\*\//g, '')
+    const raw = [...css.matchAll(/(?<![&%\w-])#[0-9a-fA-F]{3,8}\b/g)].map((m) => m[0]).filter((h) => !['#fff', '#ffffff'].includes(h.toLowerCase()))
+    ok(`${f}: няма сурови hex цветове (само токени; бялото #fff е позволено)`, raw.length === 0, raw.slice(0, 5).join(', '))
+  }
 }
+
+
 
 console.log(`\n${pass} успешни, ${fail} провалени\n`)
 process.exit(fail ? 1 : 0)

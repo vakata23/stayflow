@@ -1,0 +1,283 @@
+/* ==========================================================================
+   StayFlow — дизайн токени
+   Единственият източник на истина за вида на приложението (цветове, шрифтове,
+   размери, радиуси, сенки, движение). Три слоя:
+
+     1. ПРИМИТИВИ   — суровите стойности (скали от цветове, размери).
+     2. СЕМАНТИЧНИ  — ролята: повърхност, текст, линия, акцент, състояние.
+     3. КОМПОНЕНТНИ — размери и радиуси на бутони, полета, карти (в :root долу).
+
+   Компонентите и екраните четат САМО слой 2 и 3 — не сурови hex стойности.
+   Tailwind v4 превръща променливите от @theme в класове (bg-canvas, text-ink-soft,
+   border-line, rounded-xl, shadow-card …). Проверката на контраста е в
+   scripts/test-design.mjs (двойките са в scripts/token-pairs.json).
+   ========================================================================== */
+
+@theme static {
+  /* ----------------------------------------------------------------------
+     1. ПРИМИТИВИ
+     ---------------------------------------------------------------------- */
+
+  /* Шрифтове — самохоствани, с кирилица (виж fonts.css). Цифрите в таблици
+     са таблични (tabular-nums), за да се подреждат сумите една под друга. */
+  --font-sans: "Onest", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-display: "Onest", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+
+  /* Бранд — тъмен тюркоаз (съвпада с иконите и theme-color на PWA) */
+  --color-brand-50: #f0fbfa;
+  --color-brand-100: #d3f3f1;
+  --color-brand-200: #a8e6e3;
+  --color-brand-300: #71d1cf;
+  --color-brand-400: #40b3b3;
+  --color-brand-500: #259698;
+  --color-brand-600: #1b787c;
+  --color-brand-700: #196064;
+  --color-brand-800: #184d51;
+  --color-brand-900: #184044;
+  --color-brand-950: #082527;
+
+  /* Неутрална скала с лек тюркоазен оттенък (един и същ нюанс навсякъде).
+     Наречена „slate“, за да превежда съществуващите bg-slate-*, text-slate-*,
+     border-slate-* класове в цялото приложение без да се пипат екраните.
+     400 е нарочно тъмен: текст върху бяло ≥ 5.5:1 (хинтове, плейсхолдъри). */
+  --color-slate-50: #f6f9f9;
+  --color-slate-100: #eff3f4;
+  --color-slate-200: #e2e8e9;
+  --color-slate-300: #c7d2d3;
+  --color-slate-400: #5b6c6f;
+  --color-slate-500: #465558;
+  --color-slate-600: #374446;
+  --color-slate-700: #293435;
+  --color-slate-800: #1d2526;
+  --color-slate-900: #121819;
+  --color-slate-950: #0a0f0f;
+  /* Граница на полета и контроли — ≥ 3:1 върху бяло и върху фона (WCAG 1.4.11) */
+  --color-ctrl: #7f9194;
+
+  /* Състояния — всеки 600 е плътен цвят с бял текст ≥ 4.5:1 */
+  --color-success-50: #edfaf4;
+  --color-success-100: #d9f2e6;
+  --color-success-200: #b6e2cd;
+  --color-success-300: #86cbab;
+  --color-success-400: #4ca97e;
+  --color-success-500: #228758;
+  --color-success-600: #176e45;
+  --color-success-700: #115a38;
+  --color-success-800: #0e442b;
+  --color-success-900: #0b2d1d;
+
+  --color-warning-50: #fff7e8;
+  --color-warning-100: #fdeac3;
+  --color-warning-200: #fad589;
+  --color-warning-300: #f7b645;
+  --color-warning-400: #f5970a;
+  --color-warning-500: #cd7604;
+  --color-warning-600: #a85a00;
+  --color-warning-700: #833e01;
+  --color-warning-800: #612a05;
+  --color-warning-900: #401c07;
+
+  --color-danger-50: #fef0ee;
+  --color-danger-100: #fddcd9;
+  --color-danger-200: #f8bfb9;
+  --color-danger-300: #ef918a;
+  --color-danger-400: #e46258;
+  --color-danger-500: #da3a2f;
+  --color-danger-600: #c12a1f;
+  --color-danger-700: #a02118;
+  --color-danger-800: #7b1b14;
+  --color-danger-900: #511410;
+
+  --color-info-50: #eef5fe;
+  --color-info-100: #d9e8fd;
+  --color-info-200: #b4d2f8;
+  --color-info-300: #7eb0f1;
+  --color-info-400: #4b8fe7;
+  --color-info-500: #2173de;
+  --color-info-600: #1860bf;
+  --color-info-700: #134e9a;
+  --color-info-800: #113c73;
+  --color-info-900: #0f2a4d;
+
+  /* Старите имена на състоянията сочат към новите скали — така съществуващите
+     text-red-700, bg-emerald-50, border-amber-200 … се пренареждат автоматично. */
+  --color-emerald-50: var(--color-success-50);
+  --color-emerald-100: var(--color-success-100);
+  --color-emerald-200: var(--color-success-200);
+  --color-emerald-300: var(--color-success-300);
+  --color-emerald-400: var(--color-success-400);
+  --color-emerald-500: var(--color-success-500);
+  --color-emerald-600: var(--color-success-600);
+  --color-emerald-700: var(--color-success-700);
+  --color-emerald-800: var(--color-success-800);
+  --color-emerald-900: var(--color-success-900);
+
+  --color-amber-50: var(--color-warning-50);
+  --color-amber-100: var(--color-warning-100);
+  --color-amber-200: var(--color-warning-200);
+  --color-amber-300: var(--color-warning-300);
+  --color-amber-400: var(--color-warning-400);
+  --color-amber-500: var(--color-warning-500);
+  --color-amber-600: var(--color-warning-600);
+  --color-amber-700: var(--color-warning-700);
+  --color-amber-800: var(--color-warning-800);
+  --color-amber-900: var(--color-warning-900);
+
+  --color-red-50: var(--color-danger-50);
+  --color-red-100: var(--color-danger-100);
+  --color-red-200: var(--color-danger-200);
+  --color-red-300: var(--color-danger-300);
+  --color-red-400: var(--color-danger-400);
+  --color-red-500: var(--color-danger-500);
+  --color-red-600: var(--color-danger-600);
+  --color-red-700: var(--color-danger-700);
+  --color-red-800: var(--color-danger-800);
+  --color-red-900: var(--color-danger-900);
+
+  --color-rose-50: var(--color-danger-50);
+  --color-rose-100: var(--color-danger-100);
+  --color-rose-200: var(--color-danger-200);
+  --color-rose-300: var(--color-danger-300);
+  --color-rose-400: var(--color-danger-400);
+  --color-rose-500: var(--color-danger-500);
+  --color-rose-600: var(--color-danger-600);
+  --color-rose-700: var(--color-danger-700);
+  --color-rose-800: var(--color-danger-800);
+  --color-rose-900: var(--color-danger-900);
+
+  --color-blue-50: var(--color-info-50);
+  --color-blue-100: var(--color-info-100);
+  --color-blue-200: var(--color-info-200);
+  --color-blue-300: var(--color-info-300);
+  --color-blue-400: var(--color-info-400);
+  --color-blue-500: var(--color-info-500);
+  --color-blue-600: var(--color-info-600);
+  --color-blue-700: var(--color-info-700);
+  --color-blue-800: var(--color-info-800);
+  --color-blue-900: var(--color-info-900);
+
+  /* Радиуси — по-меки от стандартните; вътрешните елементи са по-стегнати от контейнерите */
+  --radius-xs: 0.375rem;
+  --radius-sm: 0.5rem;
+  --radius-md: 0.625rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.25rem;
+  --radius-3xl: 1.75rem;
+
+  /* Сенки — оцветени в тъмния тюркоаз на мастилото, една посока на светлината (отгоре) */
+  --shadow-2xs: 0 1px 1px 0 rgb(10 40 42 / 0.04);
+  --shadow-xs: 0 1px 2px 0 rgb(10 40 42 / 0.06);
+  --shadow-sm: 0 1px 2px 0 rgb(10 40 42 / 0.06), 0 1px 3px 0 rgb(10 40 42 / 0.05);
+  --shadow-md: 0 4px 10px -2px rgb(10 40 42 / 0.08), 0 2px 4px -2px rgb(10 40 42 / 0.05);
+  --shadow-lg: 0 14px 28px -10px rgb(10 40 42 / 0.16), 0 4px 8px -4px rgb(10 40 42 / 0.06);
+  --shadow-xl: 0 28px 56px -18px rgb(10 40 42 / 0.28), 0 8px 16px -8px rgb(10 40 42 / 0.1);
+  --shadow-card: 0 0 0 1px rgb(10 40 42 / 0.055), 0 1px 2px 0 rgb(10 40 42 / 0.05), 0 6px 18px -12px rgb(10 40 42 / 0.14);
+  --shadow-pop: 0 0 0 1px rgb(10 40 42 / 0.07), 0 12px 32px -12px rgb(10 40 42 / 0.28);
+  --shadow-sheet: 0 -8px 40px -12px rgb(10 40 42 / 0.3);
+
+  /* Движение — за приложението: кратко и фино (≤ 200 ms). Силна ease-out крива
+     (по-отзивчива от вградените) за всичко, което влиза или реагира на пръст. */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  --default-transition-duration: 160ms;
+  --default-transition-timing-function: var(--ease-out);
+
+  /* Контейнер на страниците */
+  --container-app: 72rem;
+
+  /* ----------------------------------------------------------------------
+     2. СЕМАНТИЧНИ — ролите, които ползват компонентите
+     ---------------------------------------------------------------------- */
+
+  /* Повърхности */
+  --color-canvas: var(--color-slate-50);      /* фон на страницата */
+  --color-surface: #ffffff;                   /* карти, полета, менюта */
+  --color-sunken: var(--color-slate-100);     /* вдълбнати зони: заглавие на таблица, подложки */
+  --color-line: var(--color-slate-200);       /* тънки разделители (декоративни) */
+  --color-line-strong: var(--color-ctrl);     /* граница на контроли (≥ 3:1) */
+
+  /* Текст */
+  --color-ink: var(--color-slate-900);        /* основен текст — 17.9:1 върху бяло */
+  --color-ink-soft: var(--color-slate-600);   /* второстепенен — 10:1 */
+  --color-ink-muted: var(--color-slate-400);  /* подсказки, плейсхолдъри — 5.5:1 */
+
+  /* Акцент (основното действие) */
+  --color-accent: var(--color-brand-600);
+  --color-accent-hover: var(--color-brand-700);
+  --color-accent-press: var(--color-brand-800);
+  --color-accent-soft: var(--color-brand-50);
+  --color-accent-soft-hover: var(--color-brand-100);
+  --color-accent-ink: var(--color-brand-700);
+  --color-on-accent: #ffffff;
+  --color-focus: var(--color-brand-600);      /* пръстен на фокуса — 5.2:1 върху бяло */
+
+  /* Състояния: плътен (за бутон/индикатор), мек фон, текст върху мекия фон, линия */
+  --color-success: var(--color-success-600);
+  --color-success-soft: var(--color-success-50);
+  --color-success-ink: var(--color-success-800);
+  --color-success-line: var(--color-success-200);
+
+  --color-warning: var(--color-warning-600);
+  --color-warning-soft: var(--color-warning-50);
+  --color-warning-ink: var(--color-warning-800);
+  --color-warning-line: var(--color-warning-200);
+
+  --color-danger: var(--color-danger-600);
+  --color-danger-soft: var(--color-danger-50);
+  --color-danger-ink: var(--color-danger-800);
+  --color-danger-line: var(--color-danger-200);
+
+  --color-info: var(--color-info-600);
+  --color-info-soft: var(--color-info-50);
+  --color-info-ink: var(--color-info-800);
+  --color-info-line: var(--color-info-200);
+}
+
+/* --------------------------------------------------------------------------
+   3. КОМПОНЕНТНИ — размери и поведение на общите компоненти
+   -------------------------------------------------------------------------- */
+:root {
+  /* Контроли: 44 px е минимумът за пръст; по-малкият „sm“ важи само с мишка */
+  --control-h: 2.75rem;
+  --control-h-sm: 2.25rem;
+  --control-h-lg: 3.25rem;
+  --control-radius: var(--radius-lg);
+  --control-border: var(--color-line-strong);
+  --control-pad-x: 0.875rem;
+  --tap-min: 2.75rem;
+
+  --btn-radius: var(--radius-lg);
+  --btn-weight: 600;
+
+  --card-radius: var(--radius-2xl);
+  --card-pad: 1.25rem;
+  --card-pad-sm: 1rem;
+
+  --modal-radius: var(--radius-3xl);
+  --badge-radius: var(--radius-sm);
+
+  /* Пръстен на фокуса: тънък контур за клавиатура, мек ореол за полета */
+  --ring-width: 2px;
+  --ring-offset: 2px;
+  --ring-halo: 0 0 0 3px color-mix(in srgb, var(--color-focus) 24%, transparent);
+  --ring-halo-danger: 0 0 0 3px color-mix(in srgb, var(--color-danger) 22%, transparent);
+
+  /* Времена на движение (приложение) */
+  --duration-fast: 120ms;
+  --duration-base: 160ms;
+  --duration-slow: 200ms;
+
+  /* Слоеве — един ред на подреждане за цялото приложение */
+  --z-sticky: 20;
+  --z-nav: 30;
+  --z-overlay: 40;
+  --z-modal: 50;
+  --z-toast: 60;
+
+  /* Размер на текст по роли (виж .type-* в components.css) */
+  --tracking-tight: -0.018em;
+  --tracking-snug: -0.01em;
+}
