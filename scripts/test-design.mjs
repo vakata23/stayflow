@@ -133,5 +133,16 @@ if (existsSync(tokensPath)) {
 
 
 
+// ---------------------------------------------------------------- 3. палитри на трите визуални посоки (design/directions)
+const dirsPath = join(root, 'design/directions/palettes.mjs')
+if (existsSync(dirsPath)) {
+  const { DIRECTIONS, check } = await import(pathToFileURL(dirsPath).href)
+  for (const d of Object.values(DIRECTIONS)) {
+    const res = check(d)
+    const bad = res.filter((r) => !r.ok)
+    ok('посока ' + d.key.toUpperCase() + ' «' + d.name + '»: всички ' + res.length + ' двойки (текст ≥ 4.5, граници/фокус/графики ≥ 3) минават', bad.length === 0, bad.map((r) => r.fg + '/' + r.bg + ' ' + r.ratio.toFixed(2)).join(', ') || 'най-ниска ' + Math.min(...res.map((r) => r.ratio / r.min)).toFixed(2) + '× от нужното')
+  }
+}
+
 console.log(`\n${pass} успешни, ${fail} провалени\n`)
 process.exit(fail ? 1 : 0)
