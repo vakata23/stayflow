@@ -139,6 +139,22 @@ for (const [label, w, h] of [['телефон', 375, 812], ['голям екра
   await ctx.close()
 }
 
+/* ---------------------------------------------------------- прозорец, отворен от екран, е върху видимия екран */
+for (const [label, w, h] of [['телефон', 375, 812], ['голям екран', 1440, 900]]) {
+  const { ctx, page, go } = await open(w, h, '/bookings')
+  await go('/bookings')
+  await page.getByRole('button', { name: 'Нова резервация' }).first().click()
+  await page.waitForSelector('[role="dialog"]')
+  await page.waitForTimeout(500)
+  const m = await page.evaluate(() => {
+    const r = document.querySelector('.modal-root').getBoundingClientRect()
+    const p = document.querySelector('.modal-panel').getBoundingClientRect()
+    return { x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width), h: Math.round(r.height), vw: innerWidth, vh: innerHeight, panelTop: Math.round(p.top), panelBottom: Math.round(p.bottom) }
+  })
+  ok(`${label}: прозорецът от екран покрива целия екран и е изцяло видим (не се измества от анимацията на екрана)`, m.x === 0 && m.y === 0 && m.w === m.vw && m.h === m.vh && m.panelTop >= 0 && m.panelBottom <= m.vh + 1, JSON.stringify(m))
+  await ctx.close()
+}
+
 /* ---------------------------------------------------------- 404 и „назад“ */
 {
   const { ctx, page } = await open(375, 812, '/')

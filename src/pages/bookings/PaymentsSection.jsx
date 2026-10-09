@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Trash2, Wallet } from 'lucide-react'
+import { Trash2 } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { formatDateBG } from '../../lib/dates'
 import { formatMoney } from '../../lib/money'
 import { PAYMENT_KINDS, PAYMENT_METHODS, paymentKindLabel, paymentMethodLabel } from '../../lib/bookings'
-import { Field, Input, Select, Button, Alert, Spinner } from '../../components/ui'
+import { Field, Input, Select, Button, Alert, LoadingCard } from '../../components/ui'
 
 export default function PaymentsSection({ bookingId }) {
   const [payments, setPayments] = useState([])
@@ -72,65 +72,52 @@ export default function PaymentsSection({ bookingId }) {
     load()
   }
 
-  return (
-    <div className="border-t border-line pt-5">
-      <p className="mb-3 flex items-center gap-1.5 text-sm font-medium text-ink">
-        <Wallet className="h-4 w-4 text-ink-muted" />
-        Плащания
-      </p>
+  const owes = balance && Number(balance.outstanding) > 0
 
-      {error && (
-        <div className="mb-3">
-          <Alert>{error}</Alert>
-        </div>
-      )}
+  return (
+    <section className="space-y-4 border-t border-line pt-7">
+      <h3 className="type-heading">Плащания</h3>
+
+      {error && <Alert>{error}</Alert>}
 
       {loading ? (
-        <Spinner className="py-8" />
+        <LoadingCard rows={2} className="!shadow-none bg-sunken/60" />
       ) : (
         <>
           {balance && (
-            <div className="mb-3 flex flex-wrap gap-4 rounded-lg bg-sunken px-4 py-3 text-sm">
-              <span>
-                Дължимо: <strong>{formatMoney(balance.due)}</strong>
-              </span>
-              <span>
-                Платено: <strong>{formatMoney(balance.paid)}</strong>
-              </span>
-              <span
-                className={
-                  Number(balance.outstanding) > 0
-                    ? 'font-semibold text-warning-ink'
-                    : 'font-semibold text-success-ink'
-                }
-              >
-                Остатък: {formatMoney(balance.outstanding)}
-              </span>
-            </div>
+            <dl className="grid grid-cols-3 gap-2 text-center sm:gap-3">
+              <div className="rounded-2xl bg-sunken px-2 py-3">
+                <dt className="text-xs text-ink-soft">Дължимо</dt>
+                <dd className="num mt-0.5 font-display text-lg font-semibold">{formatMoney(balance.due)}</dd>
+              </div>
+              <div className="rounded-2xl bg-sunken px-2 py-3">
+                <dt className="text-xs text-ink-soft">Платено</dt>
+                <dd className="num mt-0.5 font-display text-lg font-semibold">{formatMoney(balance.paid)}</dd>
+              </div>
+              <div className={`rounded-2xl px-2 py-3 ${owes ? 'bg-warning-soft text-warning-ink' : 'bg-success-soft text-success-ink'}`}>
+                <dt className="text-xs">Остатък</dt>
+                <dd className="num mt-0.5 font-display text-lg font-semibold">{formatMoney(balance.outstanding)}</dd>
+              </div>
+            </dl>
           )}
 
           {payments.length > 0 && (
-            <ul className="mb-3 divide-y divide-line rounded-lg border border-line">
+            <ul className="divide-y divide-line rounded-2xl bg-sunken/60 px-4">
               {payments.map((p) => (
-                <li key={p.id} className="flex items-center justify-between gap-3 px-3 py-2 text-sm">
+                <li key={p.id} className="flex min-h-14 items-center justify-between gap-3 py-1.5 text-sm">
                   <div className="min-w-0">
-                    <span className="font-medium text-ink">{paymentKindLabel(p.kind)}</span>
-                    <span className="ml-2 text-xs text-ink-muted">
+                    <p className="font-semibold text-ink">{paymentKindLabel(p.kind)}</p>
+                    <p className="text-xs text-ink-muted">
                       {paymentMethodLabel(p.method)} · {formatDateBG(p.paid_at.slice(0, 10))}
-                    </span>
+                    </p>
                   </div>
-                  <div className="flex shrink-0 items-center gap-2">
-                    <span className="font-semibold text-ink">
+                  <div className="flex shrink-0 items-center gap-1">
+                    <span className="num font-semibold text-ink">
                       {p.kind === 'refund' ? '−' : ''}
                       {formatMoney(p.amount)}
                     </span>
-                    <button
-                      type="button"
-                      onClick={() => handleDelete(p.id)}
-                      className="rounded p-1 text-ink-muted hover:bg-danger-soft hover:text-danger"
-                      aria-label="Изтрий плащането"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
+                    <button type="button" onClick={() => handleDelete(p.id)} className="icon-btn text-ink-muted hover:text-danger" aria-label="Изтрий плащането">
+                      <Trash2 className="h-4 w-4" aria-hidden="true" />
                     </button>
                   </div>
                 </li>
@@ -138,17 +125,21 @@ export default function PaymentsSection({ bookingId }) {
             </ul>
           )}
 
-          <div className="flex flex-wrap items-end gap-3">
+          <div className="grid grid-cols-2 items-end gap-3 sm:grid-cols-[1fr_1fr_7rem_auto]">
             <Field label="Вид">
-              <Select
-                value={kind}
-                onChange={(e) => setKind(e.target.value)}
-                onKeyDown={handleEnterKey}
-                className="w-auto min-w-32"
-              >
+              <Select value={kind} onChange={(e) => setKind(e.target.value)} onKeyDown={handleEnterKey}>
                 {PAYMENT_KINDS.map((k) => (
                   <option key={k.value} value={k.value}>
                     {k.label}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            <Field label="Метод">
+              <Select value={method} onChange={(e) => setMethod(e.target.value)} onKeyDown={handleEnterKey}>
+                {PAYMENT_METHODS.map((m) => (
+                  <option key={m.value} value={m.value}>
+                    {m.label}
                   </option>
                 ))}
               </Select>
@@ -158,33 +149,19 @@ export default function PaymentsSection({ bookingId }) {
                 type="number"
                 min={0}
                 step="0.01"
+                inputMode="decimal"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 onKeyDown={handleEnterKey}
                 placeholder="0.00"
-                className="w-28"
               />
             </Field>
-            <Field label="Метод">
-              <Select
-                value={method}
-                onChange={(e) => setMethod(e.target.value)}
-                onKeyDown={handleEnterKey}
-                className="w-auto min-w-32"
-              >
-                {PAYMENT_METHODS.map((m) => (
-                  <option key={m.value} value={m.value}>
-                    {m.label}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-            <Button type="button" variant="secondary" onClick={handleAdd} loading={adding} className="!py-2">
-              Добави плащане
+            <Button type="button" variant="secondary" onClick={handleAdd} loading={adding} aria-label="Добави плащане" className="col-span-1 self-end">
+              Добави
             </Button>
           </div>
         </>
       )}
-    </div>
+    </section>
   )
 }

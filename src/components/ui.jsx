@@ -400,7 +400,11 @@ export function Modal({ open, onClose, title, description, size = 'md', variant,
           </p>
         )}
         {children}
-        {footer && <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">{footer}</div>}
+        {footer && (
+          <div className="modal-foot">
+            <div className="flex gap-2 sm:justify-end">{footer}</div>
+          </div>
+        )}
       </div>
     </div>
   )

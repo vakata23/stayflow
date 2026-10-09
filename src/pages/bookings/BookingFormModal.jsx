@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
+import { Trash2 } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { nightsBetween, formatDateBG } from '../../lib/dates'
+import { formatMoney } from '../../lib/money'
 import { fetchPropertySettings, DEFAULT_SETTINGS } from '../../lib/propertySettings'
 import {
   BOOKING_SOURCES,
@@ -11,7 +13,7 @@ import {
   suggestCommission,
   suggestTouristTax,
 } from '../../lib/bookings'
-import { Field, Input, Textarea, Select, Button, Alert } from '../../components/ui'
+import { Field, Input, Textarea, Select, Button, Alert, Modal } from '../../components/ui'
 import PaymentsSection from './PaymentsSection'
 
 const empty = {
@@ -30,12 +32,24 @@ const empty = {
   notes: '',
 }
 
+/** Група полета със заглавие — формата е на ясни стъпки: престой, гост, цена. */
+function Section({ title, children }) {
+  return (
+    <section className="space-y-4">
+      <h3 className="type-heading">{title}</h3>
+      {children}
+    </section>
+  )
+}
+
 export default function BookingFormModal({ open, onClose, onSaved, properties, initial, defaults }) {
   const [values, setValues] = useState(empty)
   const [settings, setSettings] = useState(DEFAULT_SETTINGS)
   const [error, setError] = useState(null)
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const errorRef = useRef(null)
 
   // Докато собственикът не пипне ръчно комисионата/таксата, стойността им
   // следва автоматично цената, имота, датите и броя гости.
@@ -47,6 +61,7 @@ export default function BookingFormModal({ open, onClose, onSaved, properties, i
   useEffect(() => {
     if (!open) return
     setError(null)
+    setConfirmDelete(false)
     // „Докоснато“ само ако резервацията вече има истинска стойност —
     // иначе (0 или липсва, типично за внесени през iCal платформени
     // резервации) оставяме автоматичното предложение да проработи,
@@ -104,7 +119,10 @@ export default function BookingFormModal({ open, onClose, onSaved, properties, i
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, values.num_guests, nights, settings.tourist_tax])
 
-  if (!open) return null
+  // Грешката е най-горе във формата — при дълъг формуляр я довеждаме пред очите.
+  useEffect(() => {
+    if (error) errorRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+  }, [error])
 
   const set = (key) => (e) => setValues((v) => ({ ...v, [key]: e.target.value }))
   const setCommission = (e) => {
@@ -192,25 +210,39 @@ export default function BookingFormModal({ open, onClose, onSaved, properties, i
     setDeleting(true)
     const { error } = await supabase.from('bookings').delete().eq('id', initial.id)
     setDeleting(false)
-    if (error) return setError(translateBookingError(error))
+    if (error) {
+      setConfirmDelete(false)
+      return setError(translateBookingError(error))
+    }
     onSaved()
     onClose()
   }
 
+  const price = values.total_price === '' ? null : Number(values.total_price)
+
+  // Действията са винаги пред очите: Отказ и Запази. Изтриването е в края на формата и е необратимо —
+  // иска второ потвърждение (като записите в „Приходи“).
+  const footer = (
+    <>
+      <Button type="button" variant="secondary" onClick={onClose} disabled={saving || deleting}>
+        Отказ
+      </Button>
+      <Button type="submit" form="booking-form" loading={saving}>
+        {isEdit ? 'Запази' : 'Създай резервация'}
+      </Button>
+    </>
+  )
+
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-4 sm:p-8">
-      <div className="fixed inset-0 bg-ink/40" onClick={onClose} />
+    <Modal open={open} onClose={onClose} title={isEdit ? 'Редакция на резервация' : 'Нова резервация'} size="lg" footer={footer}>
+      <form id="booking-form" onSubmit={handleSubmit} className="space-y-8">
+        {error && (
+          <div ref={errorRef}>
+            <Alert>{error}</Alert>
+          </div>
+        )}
 
-      <div className="relative w-full max-w-2xl rounded-2xl border border-line bg-card shadow-xl">
-        <header className="border-b border-line px-6 py-4">
-          <h2 className="text-lg font-bold">
-            {isEdit ? 'Редакция на резервация' : 'Нова резервация'}
-          </h2>
-        </header>
-
-        <form onSubmit={handleSubmit} className="space-y-5 px-6 py-5">
-          {error && <Alert>{error}</Alert>}
-
+        <Section title="Престой">
           <Field label="Имот" required>
             <Select value={values.property_id} onChange={set('property_id')}>
               <option value="">— Изберете имот —</option>
@@ -222,44 +254,51 @@ export default function BookingFormModal({ open, onClose, onSaved, properties, i
             </Select>
           </Field>
 
-          <div className="grid gap-5 sm:grid-cols-2">
-            <Field label="Име на госта" required>
-              <Input value={values.guest_name} onChange={set('guest_name')} placeholder="Иван Петров" />
-            </Field>
-            <Field label="Телефон">
-              <Input value={values.guest_phone} onChange={set('guest_phone')} placeholder="+359 88 123 4567" />
-            </Field>
-            <Field label="Имейл">
-              <Input type="email" value={values.guest_email} onChange={set('guest_email')} placeholder="gost@primer.bg" />
-            </Field>
-            <Field label="Брой гости">
-              <Input type="number" min={1} value={values.num_guests} onChange={set('num_guests')} />
-            </Field>
-          </div>
-
-          <div className="grid gap-5 sm:grid-cols-2">
+          <div className="grid grid-cols-2 gap-4">
             <Field label="Настаняване" required>
               <Input type="date" value={values.check_in} onChange={set('check_in')} />
             </Field>
-            <Field
-              label="Напускане"
-              required
-              hint={nights > 0 ? `${nights} ${nights === 1 ? 'нощувка' : 'нощувки'}` : undefined}
-            >
+            <Field label="Напускане" required>
               <Input type="date" value={values.check_out} onChange={set('check_out')} min={values.check_in} />
             </Field>
           </div>
 
-          <div className="grid gap-5 sm:grid-cols-3">
+          {nights > 0 && (
+            <p className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-2xl bg-accent-soft px-4 py-3 text-sm text-accent-ink" aria-live="polite">
+              <strong className="font-semibold">
+                {nights} {nights === 1 ? 'нощувка' : 'нощувки'}
+              </strong>
+              {price != null && price > 0 && (
+                <>
+                  <span className="num">{formatMoney(price)} общо</span>
+                  <span className="num">{formatMoney(price / nights)} на нощувка</span>
+                </>
+              )}
+            </p>
+          )}
+        </Section>
+
+        <Section title="Гост">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Име на госта" required>
+              <Input value={values.guest_name} onChange={set('guest_name')} placeholder="Иван Петров" autoComplete="off" />
+            </Field>
+            <Field label="Брой гости">
+              <Input type="number" min={1} inputMode="numeric" value={values.num_guests} onChange={set('num_guests')} />
+            </Field>
+            <Field label="Телефон">
+              <Input type="tel" value={values.guest_phone} onChange={set('guest_phone')} placeholder="+359 88 123 4567" autoComplete="off" />
+            </Field>
+            <Field label="Имейл">
+              <Input type="email" value={values.guest_email} onChange={set('guest_email')} placeholder="gost@primer.bg" autoComplete="off" />
+            </Field>
+          </div>
+        </Section>
+
+        <Section title="Цена и източник">
+          <div className="grid gap-4 sm:grid-cols-3">
             <Field label="Обща цена (€)">
-              <Input
-                type="number"
-                min={0}
-                step="0.01"
-                value={values.total_price}
-                onChange={set('total_price')}
-                placeholder="0.00"
-              />
+              <Input type="number" min={0} step="0.01" inputMode="decimal" value={values.total_price} onChange={set('total_price')} placeholder="0.00" />
             </Field>
             <Field label="Източник">
               <Select value={values.source} onChange={set('source')}>
@@ -281,13 +320,13 @@ export default function BookingFormModal({ open, onClose, onSaved, properties, i
             </Field>
           </div>
 
-          <div className={`grid gap-5 ${isOtaSource(values.source) ? 'sm:grid-cols-2' : ''}`}>
+          <div className={`grid gap-4 ${isOtaSource(values.source) ? 'sm:grid-cols-2' : ''}`}>
             {isOtaSource(values.source) && (
               <Field
                 label="Комисиона на платформата (€)"
                 hint={`Предложена от ${settings.ota_commission_pct}% за този имот — може да редактирате.`}
               >
-                <Input type="number" min={0} step="0.01" value={values.commission} onChange={setCommission} />
+                <Input type="number" min={0} step="0.01" inputMode="decimal" value={values.commission} onChange={setCommission} />
               </Field>
             )}
             <Field
@@ -298,35 +337,42 @@ export default function BookingFormModal({ open, onClose, onSaved, properties, i
                   : 'Задайте ставка в настройките на имота за автоматично предложение.'
               }
             >
-              <Input type="number" min={0} step="0.01" value={values.tourist_tax} onChange={setTouristTax} />
+              <Input type="number" min={0} step="0.01" inputMode="decimal" value={values.tourist_tax} onChange={setTouristTax} />
             </Field>
           </div>
+        </Section>
 
-          <Field label="Бележки">
+        <Section title="Бележки">
+          <Field label="Бележки за резервацията">
             <Textarea rows={3} value={values.notes} onChange={set('notes')} placeholder="Късно настаняване, домашен любимец…" />
           </Field>
+        </Section>
 
-          {isEdit && <PaymentsSection bookingId={initial.id} />}
+        {isEdit && <PaymentsSection bookingId={initial.id} />}
 
-          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line pt-5">
-            <div>
-              {isEdit && (
-                <Button type="button" variant="danger" onClick={handleDelete} loading={deleting}>
-                  Изтрий
-                </Button>
-              )}
-            </div>
-            <div className="flex gap-3">
-              <Button type="button" variant="secondary" onClick={onClose} disabled={saving}>
-                Отказ
+        {isEdit && (
+          <section className="border-t border-line pt-6">
+            {confirmDelete ? (
+              <div className="rounded-2xl bg-danger-soft p-4" role="group" aria-label="Потвърждение за изтриване">
+                <p className="text-sm font-semibold text-danger-ink">Да изтрием ли резервацията? Не може да се върне.</p>
+                <div className="mt-3 flex gap-2">
+                  <Button type="button" variant="secondary" onClick={() => setConfirmDelete(false)} disabled={deleting} className="flex-1 sm:flex-none">
+                    Не, запази я
+                  </Button>
+                  <Button type="button" variant="dangerSolid" onClick={handleDelete} loading={deleting} className="flex-1 sm:flex-none">
+                    Да, изтрий
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <Button type="button" variant="danger" onClick={() => setConfirmDelete(true)}>
+                <Trash2 className="h-4 w-4" aria-hidden="true" />
+                Изтрий резервацията
               </Button>
-              <Button type="submit" loading={saving}>
-                {isEdit ? 'Запази' : 'Създай резервация'}
-              </Button>
-            </div>
-          </div>
-        </form>
-      </div>
-    </div>
+            )}
+          </section>
+        )}
+      </form>
+    </Modal>
   )
 }

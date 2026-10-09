@@ -641,6 +641,25 @@
     border-radius: 999px;
     background: var(--color-line-strong);
   }
+  /* Действията остават видими при дълъг формуляр (залепват за долния ръб на прозореца) */
+  .modal-foot {
+    position: sticky;
+    bottom: 0;
+    z-index: 1;
+    margin: 1.5rem -1.25rem calc(-1 * max(1.25rem, env(safe-area-inset-bottom)));
+    padding: 0.875rem 1.25rem max(1rem, env(safe-area-inset-bottom));
+    border-top: 1px solid var(--color-line);
+    background: var(--color-card);
+  }
+  /* на телефон бутоните в действията делят реда поравно; на голям екран са с естествена ширина */
+  .modal-foot .btn {
+    flex: 1 1 0;
+  }
+  @media (min-width: 640px) {
+    .modal-foot .btn {
+      flex: 0 0 auto;
+    }
+  }
   .modal-head {
     display: flex;
     align-items: flex-start;
@@ -677,6 +696,16 @@
     }
     .modal-root-sheet .modal-panel::before {
       display: block;
+    }
+    .modal-root-sheet .modal-foot {
+      margin: 1.5rem -1.25rem calc(-1 * max(1.25rem, env(safe-area-inset-bottom)));
+      padding: 0.875rem 1.25rem max(1rem, env(safe-area-inset-bottom));
+      border-radius: 0;
+    }
+    .modal-foot {
+      margin: 1.5rem -1.5rem -1.5rem;
+      padding: 1rem 1.5rem;
+      border-radius: 0 0 var(--modal-radius) var(--modal-radius);
     }
     .modal-lg {
       max-width: 40rem;
@@ -742,8 +771,10 @@
      prefers-reduced-motion base.css скъсява всяка анимация до 0 и се вижда крайното състояние. */
 
   /* преход между екрани ≤ 200 ms */
+  /* ВАЖНО: само „backwards“ (не „both“/„forwards“) — анимираният transform, който остава след края,
+     прави елемента „родител“ на fixed потомците и всеки прозорец (Modal) се измества и излиза извън екрана. */
   .page-in {
-    animation: page-in var(--duration-base) var(--ease-out) both;
+    animation: page-in var(--duration-base) var(--ease-out) backwards;
   }
   @keyframes page-in {
     from {
@@ -754,7 +785,7 @@
 
   /* първите ~8 карти/редове се появяват меко, стъпка 32 ms */
   [data-rise] {
-    animation: rise-in var(--duration-base) var(--ease-out) both;
+    animation: rise-in var(--duration-base) var(--ease-out) backwards;
   }
   [data-rise="1"] { animation-delay: 32ms; }
   [data-rise="2"] { animation-delay: 64ms; }

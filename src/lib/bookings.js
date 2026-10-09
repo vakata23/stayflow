@@ -15,10 +15,10 @@ export const BOOKING_STATUSES = [
 
 /** Цветове по източник — ползват се в календара и в списъка. */
 export const SOURCE_STYLES = {
-  manual: { chip: 'bg-sunken text-ink', bar: 'bg-ink-muted', dot: 'bg-ink-muted', ring: 'ring-ink-muted' },
-  airbnb: { chip: 'bg-accent-soft text-accent-ink', bar: 'bg-src-airbnb', dot: 'bg-src-airbnb', ring: 'ring-src-airbnb' },
-  booking: { chip: 'bg-info-soft text-info-ink', bar: 'bg-src-booking', dot: 'bg-src-booking', ring: 'ring-src-booking' },
-  direct: { chip: 'bg-success-soft text-success-ink', bar: 'bg-src-direct', dot: 'bg-src-direct', ring: 'ring-src-direct' },
+  manual: { chip: 'bg-sunken text-ink', bar: 'bg-ink-muted', dot: 'bg-ink-muted', ring: 'ring-ink-muted', edge: 'border-ink-muted' },
+  airbnb: { chip: 'bg-accent-soft text-accent-ink', bar: 'bg-src-airbnb', dot: 'bg-src-airbnb', ring: 'ring-src-airbnb', edge: 'border-src-airbnb' },
+  booking: { chip: 'bg-info-soft text-info-ink', bar: 'bg-src-booking', dot: 'bg-src-booking', ring: 'ring-src-booking', edge: 'border-src-booking' },
+  direct: { chip: 'bg-success-soft text-success-ink', bar: 'bg-src-direct', dot: 'bg-src-direct', ring: 'ring-src-direct', edge: 'border-src-direct' },
 }
 
 export const STATUS_STYLES = {
