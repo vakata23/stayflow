@@ -48,7 +48,7 @@ async function suite(label, vp, args = [], ctxOpts = {}) {
   ok(L('Tab/Shift+Tab не изкарват фокуса извън прозореца (9 натискания)'), leaked === 0, `изтекли: ${leaked}`)
 
   await page.keyboard.press('Escape')
-  await page.waitForTimeout(150)
+  await page.waitForTimeout(350)
   const after = await page.evaluate(() => ({ open: !!document.querySelector('[role="dialog"]'), overflow: document.body.style.overflow, active: document.activeElement?.textContent?.trim() }))
   ok(L('Esc затваря прозореца и връща скрола'), !after.open && after.overflow !== 'hidden')
   ok(L('фокусът се връща на бутона, който го е отворил'), /Отвори прозорец/.test(after.active || ''), after.active)
@@ -56,7 +56,7 @@ async function suite(label, vp, args = [], ctxOpts = {}) {
   await opener.click()
   await page.waitForSelector('[role="dialog"]')
   await page.mouse.click(vp.width < 640 ? 187 : 30, 40) // върху фона зад прозореца
-  await page.waitForTimeout(150)
+  await page.waitForTimeout(350)
   ok(L('клик върху фона затваря прозореца'), (await page.locator('[role="dialog"]').count()) === 0)
 
   // ---- бутони: натискане и фокус
@@ -87,7 +87,7 @@ async function suite(label, vp, args = [], ctxOpts = {}) {
   })
   ok(L('текстът в полетата е 16 px (iOS не увеличава)'), inp.fs === '16px', inp.fs)
   ok(L('полето е ≥ 44 px високо'), inp.h >= 44, `${inp.h} px`)
-  ok(L('невалидно поле: червена граница + грешка с role=alert'), /rgb\(193, 42, 31\)/.test(inp.badBorder) && inp.alert, inp.badBorder)
+  ok(L('невалидно поле: червена граница + грешка с role=alert'), /rgb\(179, 38, 30\)/.test(inp.badBorder) && inp.alert, inp.badBorder)
 
   // ---- превключвател без „отметка“
   const sw = await page.evaluate(() => { const i = document.querySelector('.switch input'); return { checked: i.checked, after: getComputedStyle(i, '::after').content } })

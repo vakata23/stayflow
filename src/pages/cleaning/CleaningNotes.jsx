@@ -25,19 +25,19 @@ function NotePhoto({ path }) {
 
   if (failed) {
     return (
-      <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-slate-100">
-        <ImageOff className="h-5 w-5 text-slate-300" />
+      <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-sunken">
+        <ImageOff className="h-5 w-5 text-ink-muted" />
       </div>
     )
   }
-  if (!url) return <div className="h-16 w-16 animate-pulse rounded-lg bg-slate-100" />
+  if (!url) return <div className="h-16 w-16 animate-pulse rounded-lg bg-sunken" />
 
   return (
     <a href={url} target="_blank" rel="noreferrer" className="shrink-0">
       <img
         src={url}
         alt="Снимка към забележка"
-        className="h-16 w-16 rounded-lg border border-slate-200 object-cover transition-opacity hover:opacity-80"
+        className="h-16 w-16 rounded-lg border border-line object-cover transition-opacity hover:opacity-80"
       />
     </a>
   )
@@ -136,6 +136,7 @@ export default function CleaningNotes() {
             <Select
               value={propertyId}
               onChange={(e) => setPropertyId(e.target.value)}
+              aria-label="Имот"
               className="w-auto min-w-52"
             >
               <option value="all">Всички имоти</option>
@@ -177,19 +178,19 @@ export default function CleaningNotes() {
                         >
                           {issueTypeLabel(note.issue_type)}
                         </span>
-                        <span className="text-sm font-medium text-slate-700">
+                        <span className="text-sm font-medium text-ink">
                           {propertyName(note.property_id)}
                         </span>
-                        <span className="text-xs text-slate-400">
+                        <span className="text-xs text-ink-muted">
                           {formatDateBG(note.created_at.slice(0, 10))}
                         </span>
                       </div>
-                      <p className="mt-2 text-sm text-slate-600">{note.note_text}</p>
+                      <p className="mt-2 text-sm text-ink-soft">{note.note_text}</p>
                     </div>
 
                     <button
                       onClick={() => setToDelete(note)}
-                      className="shrink-0 self-start rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                      className="icon-btn shrink-0 self-start text-ink-muted hover:text-danger"
                       aria-label="Изтрий забележката"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -210,7 +211,7 @@ export default function CleaningNotes() {
       />
 
       <Modal open={Boolean(toDelete)} onClose={() => setToDelete(null)} title="Изтриване на забележка">
-        <p className="text-sm leading-relaxed text-slate-600">
+        <p className="text-sm leading-relaxed text-ink-soft">
           Сигурни ли сте, че искате да изтриете тази забележка? Действието е необратимо.
         </p>
         <div className="mt-6 flex justify-end gap-3">

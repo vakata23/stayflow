@@ -71,8 +71,8 @@ export default function ListingPreview() {
   }
   if (!property) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-100">
-        <Loader2 className="h-7 w-7 animate-spin text-brand-600" />
+      <div className="flex min-h-screen items-center justify-center bg-sunken">
+        <Loader2 className="h-7 w-7 animate-spin text-accent" />
       </div>
     )
   }
@@ -81,7 +81,7 @@ export default function ListingPreview() {
     <>
       <Link
         to={`/properties/${id}/setup`}
-        className="fixed bottom-24 left-4 z-50 flex items-center gap-1.5 rounded-full bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white shadow-lg sm:bottom-6"
+        className="fixed bottom-24 left-4 z-50 flex items-center gap-1.5 rounded-full bg-ink px-4 py-2.5 text-sm font-semibold text-white shadow-lg sm:bottom-6"
       >
         <ArrowLeft className="h-4 w-4" />
         Обратно към редакцията

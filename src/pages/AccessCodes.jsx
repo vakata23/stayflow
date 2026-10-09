@@ -7,7 +7,7 @@ import { PageHeader, Card, EmptyState, Spinner, Button, Alert } from '../compone
 function CopyValue({ value, mono }) {
   const [copied, setCopied] = useState(false)
 
-  if (!value) return <span className="text-sm text-slate-300">—</span>
+  if (!value) return <span className="text-sm text-ink-muted">—</span>
 
   const copy = async () => {
     try {
@@ -22,14 +22,14 @@ function CopyValue({ value, mono }) {
   return (
     <button
       onClick={copy}
-      className="group inline-flex items-center gap-1.5 rounded-md px-1.5 py-0.5 text-sm text-slate-700 hover:bg-slate-100"
+      className="group inline-flex items-center gap-1.5 rounded-md px-1.5 py-0.5 text-sm text-ink hover:bg-sunken"
       title="Копирай"
     >
       <span className={mono ? 'font-mono' : ''}>{value}</span>
       {copied ? (
-        <Check className="h-3.5 w-3.5 text-emerald-600" />
+        <Check className="h-3.5 w-3.5 text-success" />
       ) : (
-        <Copy className="h-3.5 w-3.5 text-slate-300 group-hover:text-slate-500" />
+        <Copy className="h-3.5 w-3.5 text-ink-muted group-hover:text-ink-soft" />
       )}
     </button>
   )
@@ -90,39 +90,39 @@ export default function AccessCodes() {
           />
         ) : (
           <Card className="overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left">
+            <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Кодове за достъп (таблица)">
+              <table className="min-w-[36rem] w-full text-left">
                 <thead>
-                  <tr className="border-b border-slate-100 bg-slate-50/60">
-                    <th className="px-6 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  <tr className="border-b border-line bg-sunken/60">
+                    <th className="px-6 py-3 text-[0.8125rem] font-semibold text-ink-soft">
                       Имот
                     </th>
-                    <th className="px-6 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    <th className="px-6 py-3 text-[0.8125rem] font-semibold text-ink-soft">
                       WiFi мрежа
                     </th>
-                    <th className="px-6 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    <th className="px-6 py-3 text-[0.8125rem] font-semibold text-ink-soft">
                       WiFi парола
                     </th>
-                    <th className="px-6 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    <th className="px-6 py-3 text-[0.8125rem] font-semibold text-ink-soft">
                       Код за достъп
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-line">
                   {properties.map((p) => (
-                    <tr key={p.id} className="hover:bg-slate-50/60">
+                    <tr key={p.id} className="hover:bg-sunken/60">
                       <td className="px-6 py-4">
                         <Link
                           to={`/properties/${p.id}`}
-                          className="text-sm font-medium text-slate-900 hover:text-brand-700"
+                          className="text-sm font-medium text-ink hover:text-accent-ink"
                         >
                           {p.name}
                         </Link>
-                        {p.city && <p className="text-xs text-slate-400">{p.city}</p>}
+                        {p.city && <p className="text-xs text-ink-muted">{p.city}</p>}
                       </td>
                       <td className="px-6 py-4">
                         <span className="inline-flex items-center gap-1.5">
-                          {p.wifi_name && <Wifi className="h-3.5 w-3.5 text-slate-300" />}
+                          {p.wifi_name && <Wifi className="h-3.5 w-3.5 text-ink-muted" />}
                           <CopyValue value={p.wifi_name} />
                         </span>
                       </td>

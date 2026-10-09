@@ -15,16 +15,16 @@ export const BOOKING_STATUSES = [
 
 /** Цветове по източник — ползват се в календара и в списъка. */
 export const SOURCE_STYLES = {
-  manual: { chip: 'bg-slate-100 text-slate-700', bar: 'bg-slate-400', dot: 'bg-slate-400' },
-  airbnb: { chip: 'bg-rose-100 text-rose-700', bar: 'bg-rose-400', dot: 'bg-rose-400' },
-  booking: { chip: 'bg-blue-100 text-blue-700', bar: 'bg-blue-400', dot: 'bg-blue-400' },
-  direct: { chip: 'bg-emerald-100 text-emerald-700', bar: 'bg-emerald-400', dot: 'bg-emerald-400' },
+  manual: { chip: 'bg-sunken text-ink', bar: 'bg-ink-muted', dot: 'bg-ink-muted', ring: 'ring-ink-muted' },
+  airbnb: { chip: 'bg-accent-soft text-accent-ink', bar: 'bg-src-airbnb', dot: 'bg-src-airbnb', ring: 'ring-src-airbnb' },
+  booking: { chip: 'bg-info-soft text-info-ink', bar: 'bg-src-booking', dot: 'bg-src-booking', ring: 'ring-src-booking' },
+  direct: { chip: 'bg-success-soft text-success-ink', bar: 'bg-src-direct', dot: 'bg-src-direct', ring: 'ring-src-direct' },
 }
 
 export const STATUS_STYLES = {
-  confirmed: 'bg-emerald-100 text-emerald-700',
-  pending: 'bg-amber-100 text-amber-700',
-  cancelled: 'bg-slate-100 text-slate-500',
+  confirmed: 'bg-success-soft text-success-ink',
+  pending: 'bg-warning-soft text-warning-ink',
+  cancelled: 'bg-sunken text-ink-soft',
 }
 
 export function sourceLabel(v) {

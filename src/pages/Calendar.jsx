@@ -158,22 +158,22 @@ export default function Calendar() {
             <div className="flex items-center gap-2">
               <button
                 onClick={goPrev}
-                className="rounded-lg border border-slate-300 bg-white p-2 text-slate-600 hover:bg-slate-50"
+                className="icon-btn border border-line-strong bg-card text-ink-soft"
                 aria-label="Предишен месец"
               >
                 <ChevronLeft className="h-4 w-4" />
               </button>
-              <span className="min-w-44 text-center text-base font-bold">
+              <span className="min-w-32 text-center sm:min-w-44 text-base font-bold">
                 {MONTHS_BG[month]} {year}
               </span>
               <button
                 onClick={goNext}
-                className="rounded-lg border border-slate-300 bg-white p-2 text-slate-600 hover:bg-slate-50"
+                className="icon-btn border border-line-strong bg-card text-ink-soft"
                 aria-label="Следващ месец"
               >
                 <ChevronRight className="h-4 w-4" />
               </button>
-              <Button variant="secondary" onClick={goToday} className="ml-1 !py-2">
+              <Button variant="secondary" onClick={goToday} className="ml-1">
                 Днес
               </Button>
             </div>
@@ -181,6 +181,7 @@ export default function Calendar() {
             <Select
               value={propertyId}
               onChange={(e) => setPropertyId(e.target.value)}
+              aria-label="Имот"
               className="w-auto min-w-52"
             >
               <option value="all">Всички имоти</option>
@@ -197,11 +198,11 @@ export default function Calendar() {
               <Spinner />
             ) : (
               <>
-                <div className="grid grid-cols-7 border-b border-slate-100 bg-slate-50/60">
+                <div className="grid grid-cols-7 border-b border-line bg-sunken/60">
                   {WEEKDAYS_BG.map((d) => (
                     <div
                       key={d}
-                      className="px-2 py-2.5 text-center text-xs font-semibold uppercase tracking-wide text-slate-500"
+                      className="px-2 py-2.5 text-center text-xs font-semibold uppercase tracking-wide text-ink-soft"
                     >
                       {d}
                     </div>
@@ -217,14 +218,14 @@ export default function Calendar() {
                     return (
                       <div
                         key={iso}
-                        className={`min-h-24 border-b border-r border-slate-100 p-1.5 transition-colors last:border-r-0 ${
-                          inMonth ? 'bg-white' : 'bg-slate-50/50'
-                        } ${dayBookings.length === 0 ? 'cursor-pointer hover:bg-brand-50/50' : ''}`}
+                        className={`min-h-24 border-b border-r border-line p-1.5 transition-colors last:border-r-0 ${
+                          inMonth ? 'bg-card' : 'bg-sunken/50'
+                        } ${dayBookings.length === 0 ? 'cursor-pointer hover:bg-accent-soft/50' : ''}`}
                         onClick={() => dayBookings.length === 0 && openNewBooking(iso)}
                       >
                         <div className="flex items-center justify-between">
                           {rule && inMonth ? (
-                            <span className="rounded bg-brand-50 px-1 text-[10px] font-semibold text-brand-700">
+                            <span className="rounded bg-accent-soft px-1 text-[10px] font-semibold text-accent-ink">
                               {Number(rule.price_per_night).toFixed(0)} €
                             </span>
                           ) : (
@@ -233,10 +234,10 @@ export default function Calendar() {
                           <span
                             className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium ${
                               isToday
-                                ? 'bg-brand-600 font-bold text-white'
+                                ? 'bg-accent font-bold text-white'
                                 : inMonth
-                                  ? 'text-slate-600'
-                                  : 'text-slate-300'
+                                  ? 'text-ink-soft'
+                                  : 'text-ink-muted'
                             }`}
                           >
                             {date.getDate()}
@@ -254,8 +255,8 @@ export default function Calendar() {
                                   e.stopPropagation()
                                   openEditBooking(b)
                                 }}
-                                className={`block w-full truncate rounded px-1.5 py-0.5 text-left text-[11px] font-medium text-white ${style.bar} ${
-                                  b.status === 'pending' ? 'opacity-60' : ''
+                                className={`block w-full truncate rounded px-1.5 py-0.5 text-left text-[11px] font-medium ${
+                                  b.status === 'pending' ? `bg-card text-ink ring-2 ring-inset ${style.ring}` : `text-white ${style.bar}`
                                 }`}
                                 title={`${b.guest_name} — ${propertyName(b.property_id)}`}
                               >
@@ -268,7 +269,7 @@ export default function Calendar() {
                             )
                           })}
                           {dayBookings.length > 3 && (
-                            <p className="px-1.5 text-[10px] text-slate-400">
+                            <p className="px-1.5 text-[10px] text-ink-muted">
                               +{dayBookings.length - 3} още
                             </p>
                           )}
@@ -281,7 +282,7 @@ export default function Calendar() {
             )}
           </Card>
 
-          <div className="flex flex-wrap items-center gap-4 px-1 text-xs text-slate-500">
+          <div className="flex flex-wrap items-center gap-4 px-1 text-xs text-ink-soft">
             <span className="font-medium">Източник:</span>
             {BOOKING_SOURCES.map((s) => (
               <span key={s.value} className="flex items-center gap-1.5">
@@ -289,6 +290,10 @@ export default function Calendar() {
                 {s.label}
               </span>
             ))}
+            <span className="flex items-center gap-1.5">
+              <span className="h-2.5 w-2.5 rounded-sm bg-card ring-2 ring-inset ring-ink-muted" />
+              Чакаща (само контур)
+            </span>
           </div>
         </div>
       )}

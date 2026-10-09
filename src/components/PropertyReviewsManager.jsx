@@ -61,35 +61,35 @@ export default function PropertyReviewsManager({ propertyId }) {
 
   return (
     <Card className="p-6">
-      <h2 className="flex items-center gap-1.5 text-sm font-semibold uppercase tracking-wide text-slate-700">
-        <MessageSquareQuote className="h-4 w-4 text-slate-400" />
+      <h2 className="flex items-center gap-2 type-heading">
+        <MessageSquareQuote className="h-4 w-4 text-ink-muted" />
         Отзиви
       </h2>
-      <p className="mt-1 text-xs text-slate-400">
+      <p className="mt-1 text-xs text-ink-muted">
         Въведете само реални отзиви от действителни гости — те се показват на публичната страница.
       </p>
 
       {!loading && reviews.length > 0 && (
         <ul className="mt-4 space-y-3">
           {reviews.map((r) => (
-            <li key={r.id} className="rounded-xl bg-slate-50 p-3.5">
+            <li key={r.id} className="rounded-xl bg-sunken p-3.5">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <div className="flex items-center gap-1.5">
-                    <span className="font-medium text-slate-900">{r.guest_name}</span>
-                    <span className="flex items-center text-amber-500">
+                    <span className="font-medium text-ink">{r.guest_name}</span>
+                    <span className="flex items-center text-warning">
                       {Array.from({ length: r.rating }).map((_, i) => (
-                        <Star key={i} className="h-3.5 w-3.5 fill-amber-500" />
+                        <Star key={i} className="h-3.5 w-3.5 fill-warning" />
                       ))}
                     </span>
                   </div>
-                  {r.stayed_on && <p className="text-xs text-slate-400">Престой: {formatDateBG(r.stayed_on)}</p>}
-                  <p className="mt-1.5 text-sm text-slate-600">{r.comment}</p>
+                  {r.stayed_on && <p className="text-xs text-ink-muted">Престой: {formatDateBG(r.stayed_on)}</p>}
+                  <p className="mt-1.5 text-sm text-ink-soft">{r.comment}</p>
                 </div>
                 <button
                   type="button"
                   onClick={() => handleDelete(r.id)}
-                  className="shrink-0 rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                  className="icon-btn shrink-0 text-ink-muted hover:text-danger"
                   aria-label="Изтрий"
                 >
                   <Trash2 className="h-4 w-4" />
@@ -100,7 +100,7 @@ export default function PropertyReviewsManager({ propertyId }) {
         </ul>
       )}
 
-      <form onSubmit={handleAdd} className="mt-5 space-y-4 border-t border-slate-100 pt-5">
+      <form onSubmit={handleAdd} className="mt-5 space-y-4 border-t border-line pt-5">
         {error && <Alert>{error}</Alert>}
         <div className="grid gap-4 sm:grid-cols-3">
           <Field label="Име на госта" required>

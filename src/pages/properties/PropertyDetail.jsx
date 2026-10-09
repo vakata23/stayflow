@@ -45,8 +45,8 @@ function UpcomingBookings({ propertyId, reloadKey }) {
   if (bookings.length === 0) {
     return (
       <div className="px-6 py-12 text-center">
-        <p className="text-sm text-slate-500">Няма предстоящи резервации за този имот.</p>
-        <p className="mt-1 text-xs text-slate-400">
+        <p className="text-sm text-ink-soft">Няма предстоящи резервации за този имот.</p>
+        <p className="mt-1 text-xs text-ink-muted">
           Резервации ще можете да добавяте след Етап 4 (Календар и Резервации).
         </p>
       </div>
@@ -54,11 +54,11 @@ function UpcomingBookings({ propertyId, reloadKey }) {
   }
 
   return (
-    <ul className="divide-y divide-slate-100">
+    <ul className="divide-y divide-line">
       {bookings.map((b) => (
         <li key={b.id} className="flex items-center justify-between px-6 py-3.5 text-sm">
-          <span className="font-medium text-slate-800">{b.guest_name}</span>
-          <span className="text-slate-500">
+          <span className="font-medium text-ink">{b.guest_name}</span>
+          <span className="text-ink-soft">
             {b.check_in} → {b.check_out}
           </span>
         </li>
@@ -158,7 +158,7 @@ export default function PropertyDetail() {
     <div>
       <Link
         to="/properties"
-        className="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-800"
+        className="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-ink-soft hover:text-ink"
       >
         <ArrowLeft className="h-4 w-4" />
         Всички имоти
@@ -224,9 +224,9 @@ export default function PropertyDetail() {
         />
 
         <Card>
-          <header className="flex items-center gap-2 border-b border-slate-100 px-6 py-4">
-            <CalendarDays className="h-4 w-4 text-slate-400" />
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-700">
+          <header className="flex items-center gap-2 border-b border-line px-6 py-4">
+            <CalendarDays className="h-4 w-4 text-ink-muted" />
+            <h2 className="type-heading">
               Предстоящи резервации
             </h2>
           </header>
@@ -235,7 +235,7 @@ export default function PropertyDetail() {
       </div>
 
       <Modal open={confirmOpen} onClose={() => setConfirmOpen(false)} title="Изтриване на имот">
-        <p className="text-sm leading-relaxed text-slate-600">
+        <p className="text-sm leading-relaxed text-ink-soft">
           Сигурни ли сте, че искате да изтриете <strong>{property.name}</strong>? Заедно с имота
           ще бъдат изтрити всички свързани резервации, ценови правила, камериерски задачи и
           забележки. Действието е необратимо.

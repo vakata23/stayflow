@@ -2,7 +2,7 @@
 //   node scripts/test-design.mjs
 // 1) палитрата „Златен час“ (stayThemeVars) държи контраст ≥ 4.5:1 за ВСЕКИ акцентен цвят;
 // 2) токените на приложението (src/styles/tokens.css) — виж секцията по-долу, ако файлът съществува.
-import { readFileSync, existsSync } from 'node:fs'
+import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { dirname, join } from 'node:path'
 
@@ -86,42 +86,73 @@ if (existsSync(tokensPath)) {
     ok(`${why}: ${fg} върху ${bg} ≥ ${min}`, r >= min, `${r.toFixed(2)}:1 (${a} / ${b})`)
   }
 
-  // 2b) всички светли/тъмни двойки на състоянията: мек фон + тъмен текст ≥ 7:1 (AAA за основния текст), плътен + бял ≥ 4.5
+  // 2b) състояния: плътен цвят с бял текст ≥ 4.5; мек фон + тъмен текст ≥ 7 (AAA за основния текст)
   for (const tone of ['success', 'warning', 'danger', 'info']) {
-    const solid = hex(`color-${tone}-600`)
-    ok(`${tone}-600 с бял текст ≥ 4.5 (плътен бутон/значка)`, !!solid && contrastRatio('#ffffff', solid) >= 4.5, solid ? contrastRatio('#ffffff', solid).toFixed(2) : 'липсва')
-    const soft = hex(`color-${tone}-50`)
-    const deep = hex(`color-${tone}-800`)
-    ok(`${tone}-800 върху ${tone}-50 ≥ 7 (AAA)`, !!soft && !!deep && contrastRatio(deep, soft) >= 7, soft && deep ? contrastRatio(deep, soft).toFixed(2) : 'липсва')
+    const solid = hex('color-' + tone)
+    ok(tone + ' с бял текст ≥ 4.5 (плътен бутон/значка)', !!solid && contrastRatio('#ffffff', solid) >= 4.5, solid ? contrastRatio('#ffffff', solid).toFixed(2) : 'липсва')
+    const soft = hex('color-' + tone + '-soft')
+    const deep = hex('color-' + tone + '-ink')
+    ok(tone + '-ink върху ' + tone + '-soft ≥ 7 (AAA)', !!soft && !!deep && contrastRatio(deep, soft) >= 7, soft && deep ? contrastRatio(deep, soft).toFixed(2) : 'липсва')
+    ok(tone + '-line е различим от ' + tone + '-soft (разделител)', !!hex('color-' + tone + '-line') && hex('color-' + tone + '-line') !== soft)
   }
 
-  // 2c) старите имена (emerald/amber/red/rose/blue) сочат към съществуващи стойности — иначе класовете в екраните „осиротяват“
-  const legacy = { emerald: 'success', amber: 'warning', red: 'danger', rose: 'danger', blue: 'info' }
-  const broken = []
-  for (const [old, now] of Object.entries(legacy)) {
-    for (const step of [50, 100, 200, 300, 400, 500, 600, 700, 800, 900]) {
-      if (vars[`color-${old}-${step}`] !== `var(--color-${now}-${step})` || !hex(`color-${old}-${step}`)) broken.push(`${old}-${step}`)
-    }
+  // 2c) НЯМА съвместимостен слой: старите скали не съществуват в токените
+  const legacyNames = Object.keys(vars).filter((n) => /^color-(slate|brand|emerald|amber|red|rose|blue|teal|gray|zinc|canvas)(-|$)/.test(n))
+  ok('в tokens.css няма стари цветови скали (slate, brand, emerald, amber, red, rose, blue, teal)', legacyNames.length === 0, legacyNames.slice(0, 5).join(', '))
+
+  // 2d) екраните ползват само ролите: няма клас със стар цвят никъде в src (ProtectedRoute е умишлено недокоснат)
+  const walk = (dir) => readdirSync(dir).flatMap((n) => {
+    const p = join(dir, n)
+    return statSync(p).isDirectory() ? walk(p) : /\.(jsx?|css)$/.test(n) ? [p] : []
+  })
+  const oldClass = /\b(?:bg|text|border|ring|divide|from|to|via|fill|stroke|outline|decoration|placeholder|accent|caret|shadow)-(?:slate|gray|zinc|neutral|stone|brand|teal|emerald|amber|red|rose|blue|cyan|sky|indigo|violet|purple|green|yellow|orange)-\d{2,3}\b/
+  const stale = []
+  for (const f of walk(join(root, 'src'))) {
+    const rel = f.slice(root.length + 1).replace(/\\/g, '/')
+    if (rel === 'src/components/ProtectedRoute.jsx') continue
+    const m = readFileSync(f, 'utf8').match(oldClass)
+    if (m) stale.push(rel + ':' + m[0])
   }
-  ok('старите имена на цветовете (emerald, amber, red, rose, blue) се разрешават до нови стойности', broken.length === 0, broken.slice(0, 4).join(', '))
+  ok('в src няма класове със стари цветове (само семантични роли)', stale.length === 0, stale.slice(0, 4).join(', '))
 
-  // 2d) неутралната скала е монотонна (по-голямо число = по-тъмно) и без дупки
-  const lum = (h) => contrastRatio(h, '#000000')
-  const slate = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950].map((s) => hex(`color-slate-${s}`))
-  ok('неутралната скала slate-50…950 е пълна и последователно потъмнява', slate.every(Boolean) && slate.every((h, i) => i === 0 || lum(h) < lum(slate[i - 1])))
-
-  // 2e) движение: приложението е ≤ 200 ms; разстояние за пръст ≥ 44 px
+  // 2e) движение: три времена (120 / 180 / 280 ms), една крива за вход и една за изход; пръст ≥ 44 px
   const ms = (name) => Number((vars[name] || '').replace('ms', ''))
-  ok('времената на движение са ≤ 200 ms (fast/base/slow)', ['duration-fast', 'duration-base', 'duration-slow'].every((n) => ms(n) > 0 && ms(n) <= 200), ['duration-fast', 'duration-base', 'duration-slow'].map((n) => vars[n]).join(' / '))
+  ok('времената на движение са 120 / 180 / 280 ms', ms('duration-fast') === 120 && ms('duration-base') === 180 && ms('duration-slow') === 280, ['duration-fast', 'duration-base', 'duration-slow'].map((n) => vars[n]).join(' / '))
+  ok('има една крива за вход (ease-out) и една за изход (ease-in)', /^cubic-bezier\(/.test(vars['ease-out'] || '') && /^cubic-bezier\(/.test(vars['ease-in'] || ''))
   const rem = (name) => Number((vars[name] || '').replace('rem', '')) * 16
-  ok('--control-h и --tap-min са ≥ 44 px', rem('control-h') >= 44 && rem('tap-min') >= 44, `${rem('control-h')} / ${rem('tap-min')} px`)
+  ok('--control-h и --tap-min са ≥ 44 px', rem('control-h') >= 44 && rem('tap-min') >= 44, rem('control-h') + ' / ' + rem('tap-min') + ' px')
+  ok('картите са 24 px (--radius-2xl)', rem('radius-2xl') === 24, rem('radius-2xl') + ' px')
 
-  // 2f) шрифт: Onest е първият в стека и всеки файл от @font-face съществува
+  // 2f) шрифтове: Onest за интерфейса, Literata за заглавия и големите числа; всеки файл от @font-face съществува
   ok('основният шрифт е Onest (кирилица)', /^"Onest"/.test(vars['font-sans'] || ''), vars['font-sans']?.slice(0, 30))
+  ok('шрифтът за заглавия и големи числа е Literata', /^"Literata"/.test(vars['font-display'] || ''), vars['font-display']?.slice(0, 30))
   const fonts = read('src/styles/fonts.css')
   const files = [...fonts.matchAll(/url\("([^"]+)"\)/g)].map((m) => m[1])
-  ok('всички файлове от fonts.css съществуват в /public', files.length >= 3 && files.every((f) => existsSync(join(root, 'public', f))), files.join(', '))
-  ok('кирилското подмножество покрива българската азбука (U+0400–045F)', /U\+0400-045F/.test(fonts))
+  ok('всички файлове от fonts.css съществуват в /public', files.length >= 6 && files.every((f) => existsSync(join(root, 'public', f))), files.length + ' файла')
+  ok('Onest и Literata имат кирилско подмножество (U+0400–045F)', (fonts.match(/U\+0400-045F/g) || []).length >= 2)
+  const base = read('src/styles/base.css')
+  ok('заглавията h1–h3 са във Literata, таблиците с равноширочни цифри', /h1,\s*h2,\s*h3\s*\{[^}]*font-family:\s*var\(--font-display\)/.test(base) && /tabular-nums/.test(base))
+
+  // 2f2) намалено движение: всяка анимация и преход се изключват; крайното състояние е веднага
+  ok('при prefers-reduced-motion анимациите и преходите са изключени (animation: none, transition: none)', /prefers-reduced-motion:\s*reduce\)\s*\{[^}]*animation:\s*none\s*!important[^}]*transition:\s*none\s*!important/.test(base.replace(/\s+/g, ' ').replace(/\} *\}/g, '}}')) || (/prefers-reduced-motion/.test(base) && /animation:\s*none\s*!important/.test(base) && /transition:\s*none\s*!important/.test(base)))
+
+  // 2f3) PWA: цветът на лентата в браузъра и фонът на стартовия екран са фонът на приложението
+  const surface = hex('color-surface')
+  const html = read('index.html')
+  const vite = read('vite.config.js')
+  ok('index.html: theme-color е фонът на приложението (surface)', new RegExp('name="theme-color" content="' + surface + '"', 'i').test(html), surface)
+  ok('manifest: theme_color и background_color са фонът на приложението (surface)', new RegExp("theme_color: '" + surface + "'", 'i').test(vite) && new RegExp("background_color: '" + surface + "'", 'i').test(vite), surface)
+  ok('Literata е в прекеша на service worker-а и кирилицата е с preload', /fonts\/literata-\*\.woff2/.test(vite) && /preload" href="\/fonts\/literata-cyrillic\.woff2"/.test(html))
+
+  // 2f4) токените съвпадат с одобрената посока А «Златен час» (макетите в design/directions)
+  const dp = join(root, 'design/directions/palettes.mjs')
+  if (existsSync(dp)) {
+    const { DIRECTIONS } = await import(pathToFileURL(dp).href)
+    const A = DIRECTIONS.a.c
+    const map = { surface: 'canvas', card: 'surface', sunken: 'sunken', line: 'line', 'line-strong': 'line-strong', ink: 'ink', 'ink-soft': 'ink-soft', 'ink-muted': 'ink-muted', accent: 'accent', 'accent-hover': 'accent-hover', 'accent-soft': 'accent-soft', 'accent-ink': 'accent-ink', 'on-accent': 'on-accent', success: 'success', 'success-soft': 'success-soft', 'success-ink': 'success-ink', warning: 'warning', 'warning-soft': 'warning-soft', 'warning-ink': 'warning-ink', danger: 'danger', 'danger-soft': 'danger-soft', 'danger-ink': 'danger-ink', 'chart-1': 'chart-1', 'chart-2': 'chart-2', 'src-airbnb': 'src-airbnb', 'src-booking': 'src-booking', 'src-direct': 'src-direct' }
+    const diff = Object.entries(map).filter(([tok, key]) => (hex('color-' + tok) || '').toLowerCase() !== String(A[key]).toLowerCase()).map(([tok, key]) => tok + ' ' + hex('color-' + tok) + ' ≠ ' + A[key])
+    ok('цветовете в tokens.css са тези от одобрената посока А (' + Object.keys(map).length + ' роли)', diff.length === 0, diff.slice(0, 3).join(' | '))
+  }
 
   // 2g) „без сурови цветове в компонентите“: components.css и base.css ползват само токени
   for (const f of ['src/styles/components.css', 'src/styles/base.css']) {

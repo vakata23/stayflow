@@ -32,18 +32,18 @@ function CopyRow({ label, value, mono }) {
   return (
     <button
       onClick={copy}
-      className="flex w-full items-center justify-between gap-3 rounded-xl bg-white px-4 py-3 text-left shadow-sm ring-1 ring-slate-100 transition-colors active:bg-slate-50"
+      className="flex w-full items-center justify-between gap-3 rounded-xl bg-card px-4 py-3 text-left shadow-sm ring-1 ring-line transition-colors active:bg-sunken"
     >
       <div className="min-w-0">
-        <p className="text-xs font-medium uppercase tracking-wide text-slate-400">{label}</p>
-        <p className={`mt-0.5 truncate text-base font-semibold text-slate-900 ${mono ? 'font-mono' : ''}`}>
+        <p className="text-xs font-medium uppercase tracking-wide text-ink-muted">{label}</p>
+        <p className={`mt-0.5 truncate text-base font-semibold text-ink ${mono ? 'font-mono' : ''}`}>
           {value}
         </p>
       </div>
       {copied ? (
-        <Check className="h-5 w-5 shrink-0 text-emerald-500" />
+        <Check className="h-5 w-5 shrink-0 text-success" />
       ) : (
-        <Copy className="h-5 w-5 shrink-0 text-slate-300" />
+        <Copy className="h-5 w-5 shrink-0 text-ink-muted" />
       )}
     </button>
   )
@@ -52,7 +52,7 @@ function CopyRow({ label, value, mono }) {
 function Section({ icon: Icon, title, children }) {
   return (
     <section>
-      <h2 className="mb-2 flex items-center gap-2 px-1 text-sm font-semibold text-slate-500">
+      <h2 className="mb-2 flex items-center gap-2 px-1 text-sm font-semibold text-ink-soft">
         <Icon className="h-4 w-4" />
         {title}
       </h2>
@@ -89,21 +89,21 @@ export default function GuestCard() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-100">
-        <Loader2 className="h-7 w-7 animate-spin text-brand-600" />
+      <div className="flex min-h-screen items-center justify-center bg-sunken">
+        <Loader2 className="h-7 w-7 animate-spin text-accent" />
       </div>
     )
   }
 
   if (notFound) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-100 p-6">
-        <div className="max-w-sm rounded-2xl bg-white p-8 text-center shadow-sm">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100">
-            <AlertCircle className="h-6 w-6 text-slate-400" />
+      <div className="flex min-h-screen items-center justify-center bg-sunken p-6">
+        <div className="max-w-sm rounded-2xl bg-card p-8 text-center shadow-sm">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-sunken">
+            <AlertCircle className="h-6 w-6 text-ink-muted" />
           </div>
           <h1 className="mt-4 text-lg font-bold">Страницата не е намерена</h1>
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="mt-1 text-sm text-ink-soft">
             Линкът може да е грешен или вече да не е активен. Проверете при вашия домакин.
           </p>
         </div>
@@ -117,9 +117,9 @@ export default function GuestCard() {
     : null
 
   return (
-    <div className="min-h-screen bg-slate-100 pb-12">
+    <div className="min-h-screen bg-sunken pb-12">
       {/* Hero */}
-      <div className="relative h-56 bg-brand-700">
+      <div className="relative h-56 bg-accent-hover">
         {card.cover_image_url && (
           <img
             src={card.cover_image_url}
@@ -127,7 +127,7 @@ export default function GuestCard() {
             className="h-full w-full object-cover"
           />
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/70 to-slate-900/10" />
+        <div className="absolute inset-0 bg-gradient-to-t from-ink/70 to-ink/10" />
         <div className="absolute bottom-4 left-0 right-0 px-5">
           <div className="mx-auto max-w-md">
             <h1 className="text-2xl font-bold text-white drop-shadow">{card.name}</h1>
@@ -142,7 +142,7 @@ export default function GuestCard() {
       </div>
 
       <div className="mx-auto max-w-md space-y-6 px-5 pt-6">
-        <div className="rounded-xl bg-brand-50 px-4 py-3 text-center text-sm font-medium text-brand-800">
+        <div className="rounded-xl bg-accent-soft px-4 py-3 text-center text-sm font-medium text-accent-ink">
           Добре дошли! Тук е всичко необходимо за престоя ви.
         </div>
 
@@ -167,21 +167,21 @@ export default function GuestCard() {
               href={mapsUrl}
               target="_blank"
               rel="noreferrer"
-              className="flex items-center justify-between rounded-xl bg-white px-4 py-3 shadow-sm ring-1 ring-slate-100 active:bg-slate-50"
+              className="flex items-center justify-between rounded-xl bg-card px-4 py-3 shadow-sm ring-1 ring-line active:bg-sunken"
             >
               <div>
-                <p className="text-base font-semibold text-slate-900">{fullAddress}</p>
-                <p className="mt-0.5 text-xs text-brand-600">Отвори в Google Maps →</p>
+                <p className="text-base font-semibold text-ink">{fullAddress}</p>
+                <p className="mt-0.5 text-xs text-accent">Отвори в Google Maps →</p>
               </div>
-              <MapPin className="h-5 w-5 shrink-0 text-slate-300" />
+              <MapPin className="h-5 w-5 shrink-0 text-ink-muted" />
             </a>
           </Section>
         )}
 
         {card.house_rules && (
           <Section icon={ScrollText} title="Правила на къщата">
-            <div className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-100">
-              <p className="whitespace-pre-line text-sm leading-relaxed text-slate-600">
+            <div className="rounded-xl bg-card p-4 shadow-sm ring-1 ring-line">
+              <p className="whitespace-pre-line text-sm leading-relaxed text-ink-soft">
                 {card.house_rules}
               </p>
             </div>
@@ -189,7 +189,7 @@ export default function GuestCard() {
         )}
 
         <Section icon={LogOut} title="При напускане">
-          <div className="rounded-xl bg-white p-4 text-sm leading-relaxed text-slate-600 shadow-sm ring-1 ring-slate-100">
+          <div className="rounded-xl bg-card p-4 text-sm leading-relaxed text-ink-soft shadow-sm ring-1 ring-line">
             <ul className="space-y-1.5">
               <li>• Оставете ключовете на договореното място.</li>
               <li>• Затворете прозорците и заключете вратата.</li>
@@ -202,20 +202,20 @@ export default function GuestCard() {
           <Section icon={Phone} title="Контакт при спешен случай">
             <a
               href={`tel:${card.contact_phone}`}
-              className="flex items-center justify-between rounded-xl bg-white px-4 py-3 shadow-sm ring-1 ring-slate-100 active:bg-slate-50"
+              className="flex items-center justify-between rounded-xl bg-card px-4 py-3 shadow-sm ring-1 ring-line active:bg-sunken"
             >
               <div>
                 {card.contact_name && (
-                  <p className="text-base font-semibold text-slate-900">{card.contact_name}</p>
+                  <p className="text-base font-semibold text-ink">{card.contact_name}</p>
                 )}
-                <p className="mt-0.5 text-sm text-brand-600">{card.contact_phone}</p>
+                <p className="mt-0.5 text-sm text-accent">{card.contact_phone}</p>
               </div>
-              <Phone className="h-5 w-5 shrink-0 text-slate-300" />
+              <Phone className="h-5 w-5 shrink-0 text-ink-muted" />
             </a>
           </Section>
         )}
 
-        <div className="flex items-center justify-center gap-1.5 pt-2 text-xs text-slate-400">
+        <div className="flex items-center justify-center gap-1.5 pt-2 text-xs text-ink-muted">
           <Waves className="h-3.5 w-3.5" />
           Изготвено със StayFlow
         </div>

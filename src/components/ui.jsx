@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useId, useRef } from 'react'
+import { forwardRef, useEffect, useId, useRef, useState } from 'react'
 import { Loader2, X, AlertCircle, AlertTriangle, CheckCircle2, Info } from 'lucide-react'
 
 /**
@@ -7,6 +7,8 @@ import { Loader2, X, AlertCircle, AlertTriangle, CheckCircle2, Info } from 'luci
  * Съществуващите имена и props (Field, Input, Select, Button, Alert, PageHeader,
  * Card, EmptyState, Spinner, Modal) са запазени — екраните не се променят.
  */
+
+import { DURATION, prefersReducedMotion } from '../lib/motion'
 
 export const cx = (...parts) => parts.filter(Boolean).join(' ')
 
@@ -141,7 +143,7 @@ export function Alert({ kind = 'error', title, children, className = '' }) {
   )
 }
 
-const BADGE_TONES = { neutral: '', brand: 'badge-brand', success: 'badge-success', warning: 'badge-warning', danger: 'badge-danger', info: 'badge-info' }
+const BADGE_TONES = { neutral: '', accent: 'badge-accent', success: 'badge-success', warning: 'badge-warning', danger: 'badge-danger', info: 'badge-info' }
 
 /** Значка със статус. Цветът никога не е единственият знак — винаги има текст. */
 export function Badge({ tone = 'neutral', dot, count, className = '', children }) {
@@ -150,19 +152,14 @@ export function Badge({ tone = 'neutral', dot, count, className = '', children }
 
 /* ----------------------------------------------------- страница и повърхности */
 
-export function PageHeader({ icon: Icon, title, description, action }) {
+/** Заглавие на екран: по желание италик „надзаглавие“ в акцент, голямо серифно заглавие, кратко описание, действие вдясно. */
+export function PageHeader({ eyebrow, title, description, action }) {
   return (
-    <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
-      <div className="flex min-w-0 items-start gap-3">
-        {Icon && (
-          <div className="page-icon">
-            <Icon className="h-6 w-6" strokeWidth={1.75} aria-hidden="true" />
-          </div>
-        )}
-        <div className="min-w-0">
-          <h1 className="type-title">{title}</h1>
-          {description && <p className="mt-1 text-sm text-ink-soft">{description}</p>}
-        </div>
+    <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
+      <div className="min-w-0">
+        {eyebrow && <p className="mb-1.5 font-display text-[1.0625rem] font-medium italic text-accent">{eyebrow}</p>}
+        <h1 className="type-display">{title}</h1>
+        {description && <p className="mt-2 max-w-[56ch] text-[1.0625rem] leading-relaxed text-ink-soft">{description}</p>}
       </div>
       {action}
     </div>
@@ -261,10 +258,22 @@ const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), selec
  * Достъпен прозорец: роля dialog, заглавие за екранен четец, Esc и клик извън
  * го затварят, фокусът влиза вътре, не излиза с Tab и се връща където е бил,
  * страницата отзад не се скролира. На телефон е долен лист, на голям екран —
- * центриран прозорец. size: md (по подразбиране) | lg | xl.
+ * центриран прозорец. size: md (по подразбиране) | lg | xl. variant="sheet" — долен лист на всички размери
+ * (меню „Още“). Влиза с плъзгане (280 ms), излиза по-бързо (180 ms, ease-in); при намалено движение — веднага.
  */
-export function Modal({ open, onClose, title, description, size = 'md', footer, children }) {
+export function Modal({ open, onClose, title, description, size = 'md', variant, footer, children }) {
   const panel = useRef(null)
+  // Оставаме в DOM-а, докато върви анимацията за затваряне.
+  const [present, setPresent] = useState(open)
+  useEffect(() => {
+    if (open) {
+      setPresent(true)
+      return undefined
+    }
+    const t = setTimeout(() => setPresent(false), prefersReducedMotion() ? 0 : DURATION.base)
+    return () => clearTimeout(t)
+  }, [open])
+  const closing = !open && present
   const titleId = useId()
   const descId = useId()
   // onClose обикновено е нова функция при всеки рендер на родителя — държим я в ref,
@@ -308,9 +317,9 @@ export function Modal({ open, onClose, title, description, size = 'md', footer, 
     }
   }, [open])
 
-  if (!open) return null
+  if (!open && !present) return null
   return (
-    <div className="modal-root">
+    <div className={cx('modal-root', variant === 'sheet' && 'modal-root-sheet')} data-state={closing ? 'closing' : 'open'} inert={closing ? '' : undefined}>
       <div className="modal-scrim" onClick={onClose} aria-hidden="true" />
       <div
         ref={panel}

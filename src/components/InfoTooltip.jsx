@@ -24,16 +24,16 @@ export default function InfoTooltip({ text }) {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="rounded-full text-slate-300 hover:text-slate-500"
+        className="rounded-full text-ink-muted hover:text-ink-soft"
         aria-label="Обяснение"
         aria-expanded={open}
       >
         <Info className="h-3.5 w-3.5" />
       </button>
       {open && (
-        <div className="absolute bottom-full left-1/2 z-10 mb-2 w-48 -translate-x-1/2 rounded-lg bg-slate-800 px-3 py-2 text-xs leading-relaxed text-white shadow-lg">
+        <div className="absolute bottom-full left-1/2 z-10 mb-2 w-48 -translate-x-1/2 rounded-lg bg-ink px-3 py-2 text-xs leading-relaxed text-white shadow-lg">
           {text}
-          <span className="absolute left-1/2 top-full -ml-1 h-2 w-2 -translate-y-1 rotate-45 bg-slate-800" />
+          <span className="absolute left-1/2 top-full -ml-1 h-2 w-2 -translate-y-1 rotate-45 bg-ink" />
         </div>
       )}
     </span>

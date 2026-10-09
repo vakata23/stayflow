@@ -44,18 +44,20 @@ import {
 /* Помощници                                                                  */
 /* -------------------------------------------------------------------------- */
 
-const SCALES = {
-  'Неутрална (slate)': ['slate', [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950]],
-  'Бранд (тюркоаз)': ['brand', [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950]],
-  Успех: ['success', [50, 100, 200, 300, 400, 500, 600, 700, 800, 900]],
-  Внимание: ['warning', [50, 100, 200, 300, 400, 500, 600, 700, 800, 900]],
-  Грешка: ['danger', [50, 100, 200, 300, 400, 500, 600, 700, 800, 900]],
-  Информация: ['info', [50, 100, 200, 300, 400, 500, 600, 700, 800, 900]],
+// Състоянията имат по четири роли: плътен цвят, мек фон, текст върху мекия фон, линия.
+const STATES = {
+  Акцент: ['accent', ['', '-hover', '-press', '-soft', '-soft-hover', '-ink']],
+  Успех: ['success', ['', '-soft', '-ink', '-line']],
+  Внимание: ['warning', ['', '-soft', '-ink', '-line']],
+  Грешка: ['danger', ['', '-hover', '-soft', '-ink', '-line']],
+  Информация: ['info', ['', '-soft', '-ink', '-line']],
+  'Графики и източници': ['', ['chart-1', 'chart-2', 'src-airbnb', 'src-booking', 'src-direct']],
 }
+const stateRoles = (base, parts) => (base ? parts.map((p) => base + p) : parts)
 
 const ROLES = [
-  ['canvas', 'Фон на страницата'],
-  ['surface', 'Карти, полета, менюта'],
+  ['surface', 'Фон на страницата'],
+  ['card', 'Карти, полета, менюта'],
   ['sunken', 'Вдълбнати зони'],
   ['line', 'Тънки разделители'],
   ['line-strong', 'Граница на контроли'],
@@ -151,8 +153,8 @@ export default function DesignSystem() {
   const roleVals = useTokenValues(roleNames)
   const pairNames = useMemo(() => [...new Set(PAIRS.flatMap(([a, b]) => [a, b]))], [])
   const pairVals = useTokenValues(pairNames)
-  const scaleNames = useMemo(() => Object.values(SCALES).flatMap(([base, steps]) => steps.map((s) => `${base}-${s}`)), [])
-  const scaleVals = useTokenValues(scaleNames)
+  const stateNames = useMemo(() => Object.values(STATES).flatMap(([base, parts]) => stateRoles(base, parts)), [])
+  const stateVals = useTokenValues(stateNames)
 
   const results = useMemo(
     () =>
@@ -178,12 +180,12 @@ export default function DesignSystem() {
   }, [period])
 
   return (
-    <div className="min-h-dvh bg-canvas text-ink">
-      <a href="#colors" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-ink focus:px-4 focus:py-2 focus:text-surface">
+    <div className="min-h-dvh bg-surface text-ink">
+      <a href="#colors" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-ink focus:px-4 focus:py-2 focus:text-card">
         Към съдържанието
       </a>
 
-      <header className="sticky top-0 z-20 border-b border-line bg-surface/90 backdrop-blur">
+      <header className="sticky top-0 z-20 border-b border-line bg-card/90 backdrop-blur">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2 sm:flex-nowrap sm:px-6 sm:py-2.5">
           <Link to="/" className="icon-btn -ml-2" aria-label="Към приложението">
             <ArrowLeft className="h-5 w-5" aria-hidden="true" />
@@ -210,8 +212,8 @@ export default function DesignSystem() {
           </p>
           <h1 className="type-display max-w-3xl">Дизайн система на StayFlow</h1>
           <p className="mt-3 max-w-2xl text-ink-soft">
-            Два режима, една система. <strong className="font-semibold text-ink">Приложението</strong> (табло, календар, резервации,
-            приходи) е чисто, бързо и удобно за пръст — само фини преходи до 200 ms. <strong className="font-semibold text-ink">Публичните страници</strong>{' '}
+            Посока „Златен час“: топъл крем, мек теракот и големи карти. <strong className="font-semibold text-ink">Приложението</strong> (табло, календар,
+            резервации, приходи) е чисто, бързо и удобно за пръст — само фино движение (120 / 180 / 280 ms). <strong className="font-semibold text-ink">Публичните страници</strong>{' '}
             (/stay/…) са кинематографични. Тази страница показва живите токени и компонентите на приложението.
           </p>
         </div>
@@ -221,7 +223,7 @@ export default function DesignSystem() {
           <Card padded>
             <Sub>Роли</Sub>
             <p className="mb-4 max-w-2xl text-sm text-ink-soft">
-              Екраните четат ролите (bg-surface, text-ink-soft, border-line), не суровите цветове. Сменя се на едно място — в tokens.css.
+              Екраните четат ролите (bg-card, text-ink-soft, border-line), не суровите цветове. Сменя се на едно място — в tokens.css.
             </p>
             <div className="grid grid-cols-2 gap-x-4 gap-y-5 sm:grid-cols-4 lg:grid-cols-6">
               {ROLES.map(([name, label]) => (
@@ -259,7 +261,7 @@ export default function DesignSystem() {
                           ) : (
                             <span
                               className="inline-block rounded-md px-2.5 py-1 text-xs font-semibold"
-                              style={{ color: `var(--color-${r.fg})`, background: `var(--color-${r.bg})`, boxShadow: 'inset 0 0 0 1px rgb(10 40 42 / 0.12)' }}
+                              style={{ color: `var(--color-${r.fg})`, background: `var(--color-${r.bg})`, boxShadow: 'inset 0 0 0 1px rgb(90 55 20 / 0.14)' }}
                             >
                               Аа 123
                             </span>
@@ -282,12 +284,12 @@ export default function DesignSystem() {
             </div>
           </Card>
 
-          {Object.entries(SCALES).map(([title, [base, steps]]) => (
-            <Card padded key={base}>
+          {Object.entries(STATES).map(([title, [base, parts]]) => (
+            <Card padded key={title}>
               <Sub>{title}</Sub>
-              <div className="grid grid-cols-3 gap-x-3 gap-y-4 sm:grid-cols-6 lg:grid-cols-11">
-                {steps.map((s) => (
-                  <Swatch key={s} name={`${base}-${s}`} value={scaleVals[`${base}-${s}`]} light={String(s)} />
+              <div className="grid grid-cols-2 gap-x-3 gap-y-4 sm:grid-cols-3 lg:grid-cols-6">
+                {stateRoles(base, parts).map((name) => (
+                  <Swatch key={name} name={name} value={stateVals[name]} light={name} />
                 ))}
               </div>
             </Card>
@@ -300,20 +302,21 @@ export default function DesignSystem() {
             <div className="grid gap-8 lg:grid-cols-[1.2fr_1fr]">
               <div className="space-y-5">
                 <p className="text-sm text-ink-soft">
-                  <strong className="font-semibold text-ink">Onest</strong> — самохостван променлив шрифт с кирилица (400–800), обичайните български форми на буквите
-                  (т, д, и, л) за ясно четене в малък текст. Цифрите са таблични — сумите се подреждат една под друга.
+                  <strong className="font-semibold text-ink">Onest</strong> — интерфейсът: самохостван променлив шрифт с кирилица (400–800) и обичайните български форми на
+                  буквите за ясно четене в малък текст. <strong className="font-semibold text-ink">Literata</strong> — само заглавията и големите числа (като „Печалба“).
+                  Цифрите в таблиците са равноширочни — сумите се подреждат една под друга.
                 </p>
                 <div className="space-y-4">
                   <div>
-                    <p className="type-caption text-ink-muted">type-display · 28–40 px · 700</p>
+                    <p className="type-caption text-ink-muted">type-display · 32–48 px · 600 · Literata</p>
                     <p className="type-display">Приходи октомври</p>
                   </div>
                   <div>
-                    <p className="type-caption text-ink-muted">type-title · 22–28 px · 700</p>
+                    <p className="type-caption text-ink-muted">type-title · 22–28 px · 600 · Literata</p>
                     <p className="type-title">Настанявания и напускания</p>
                   </div>
                   <div>
-                    <p className="type-caption text-ink-muted">type-heading · 18 px · 600</p>
+                    <p className="type-caption text-ink-muted">type-heading · 18 px · 600 · Literata</p>
                     <p className="type-heading">Предстоящи резервации</p>
                   </div>
                   <div>
@@ -338,7 +341,7 @@ export default function DesignSystem() {
                     <span className="font-bold">Резервация </span>
                     <span className="font-extrabold">Резервация</span>
                   </p>
-                  <p className="mt-2 text-lg tracking-wide text-ink-soft">АБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЬЮЯ абвгдежзийклмнопрстуфхцчшщъьюя № €</p>
+                  <p className="mt-2 text-lg tracking-wide text-ink-soft [overflow-wrap:anywhere]">АБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЬЮЯ абвгдежзийклмнопрстуфхцчшщъьюя № €</p>
                 </div>
               </div>
 
@@ -373,7 +376,7 @@ export default function DesignSystem() {
 
         {/* ------------------------------------------------ форма и движение */}
         <Section id="shape" kicker="03" title="Форма, дълбочина и движение">
-          <div className="grid gap-6 lg:grid-cols-2">
+          <div className="grid gap-6 lg:grid-cols-2 [&>*]:min-w-0">
             <Card padded>
               <Sub>Радиуси</Sub>
               <div className="grid grid-cols-3 gap-4 sm:grid-cols-6 lg:grid-cols-3 xl:grid-cols-6">
@@ -386,11 +389,11 @@ export default function DesignSystem() {
               </div>
             </Card>
             <Card padded>
-              <Sub>Сенки (отгоре, оцветени в мастилото)</Sub>
-              <div className="grid grid-cols-3 gap-4 bg-canvas p-3">
+              <Sub>Сенки (топли, светлина отгоре)</Sub>
+              <div className="grid grid-cols-3 gap-4 bg-surface p-3">
                 {Object.entries(SHADOWS).map(([s, cls]) => (
                   <div key={s} className="text-center">
-                    <div className={`mx-auto h-14 w-full rounded-lg bg-surface ${cls}`} />
+                    <div className={`mx-auto h-14 w-full rounded-lg bg-card ${cls}`} />
                     <p className="mt-1.5 text-xs font-semibold">{s}</p>
                   </div>
                 ))}
@@ -410,7 +413,7 @@ export default function DesignSystem() {
               </div>
             </Card>
             <Card padded>
-              <Sub>Движение — до 200 ms, само opacity и transform</Sub>
+              <Sub>Движение — 120 / 180 / 280 ms, само opacity и transform</Sub>
               <div className="flex flex-wrap items-center gap-4">
                 <Button variant="secondary" onClick={() => setShown((v) => !v)}>
                   {shown ? 'Скрий' : 'Покажи'}
@@ -429,8 +432,8 @@ export default function DesignSystem() {
               <dl className="mt-4 grid grid-cols-3 gap-3 text-sm">
                 {[
                   ['fast', '120 ms', 'натискане'],
-                  ['base', '160 ms', 'цвят, фокус'],
-                  ['slow', '200 ms', 'прозорец'],
+                  ['base', '180 ms', 'цвят, фокус, екрани'],
+                  ['slow', '280 ms', 'панели, графика'],
                 ].map(([k, v, d]) => (
                   <div key={k} className="rounded-lg bg-sunken p-3">
                     <dt className="type-label">{k}</dt>
@@ -439,7 +442,7 @@ export default function DesignSystem() {
                   </div>
                 ))}
               </dl>
-              <p className="mt-3 text-xs text-ink-muted">При „намалено движение“ в системата всички преходи се изключват. Силната крива: cubic-bezier(0.23, 1, 0.32, 1). Бутоните при натискане: scale(0.98).</p>
+              <p className="mt-3 text-xs text-ink-muted">При „намалено движение“ в системата всички преходи се изключват. Вход: cubic-bezier(0.23, 1, 0.32, 1); изход: cubic-bezier(0.4, 0, 1, 1). Бутоните при натискане: scale(0.98).</p>
             </Card>
           </div>
         </Section>
@@ -542,14 +545,14 @@ export default function DesignSystem() {
               </div>
             </Card>
 
-            <div className="grid gap-6 lg:grid-cols-2">
+            <div className="grid gap-6 lg:grid-cols-2 [&>*]:min-w-0">
               <Card padded>
                 <Sub>Значки и избор</Sub>
                 <div className="space-y-5">
                   <Demo label="Значки — цветът не е единствен знак, винаги има текст">
                     <div className="flex flex-wrap gap-2">
                       <Badge>Ръчна</Badge>
-                      <Badge tone="brand" dot>
+                      <Badge tone="accent" dot>
                         Потвърдена
                       </Badge>
                       <Badge tone="success" dot>
@@ -597,7 +600,7 @@ export default function DesignSystem() {
 
             <div>
               <Sub>Карти и показатели</Sub>
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 [&>*]:min-w-0">
                 <Stat label="Приходи" value="12 345,67 €" hint="октомври 2026" icon={TrendingUp} />
                 <Stat label="Нетно" value="10 482,00 €" hint="след комисиони" />
                 <Stat label="Заетост" value="78,4 %" hint="41 от 52 нощувки" icon={CalendarDays} />
@@ -672,7 +675,7 @@ export default function DesignSystem() {
               </Table>
             </div>
 
-            <div className="grid gap-6 lg:grid-cols-2">
+            <div className="grid gap-6 lg:grid-cols-2 [&>*]:min-w-0">
               <EmptyState
                 icon={Inbox}
                 title="Още няма заявки"

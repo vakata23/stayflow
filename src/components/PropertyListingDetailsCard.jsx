@@ -76,11 +76,11 @@ export default function PropertyListingDetailsCard({ property, onSaved }) {
 
   return (
     <Card className="p-6">
-      <h2 className="flex items-center gap-1.5 text-sm font-semibold uppercase tracking-wide text-slate-700">
-        <Home className="h-4 w-4 text-slate-400" />
+      <h2 className="flex items-center gap-2 type-heading">
+        <Home className="h-4 w-4 text-ink-muted" />
         Детайли за гостите
       </h2>
-      <p className="mt-1 text-xs text-slate-400">
+      <p className="mt-1 text-xs text-ink-muted">
         Стаи, удобства и правила — показват се на публичната страница за резервации.
       </p>
 
@@ -104,15 +104,15 @@ export default function PropertyListingDetailsCard({ property, onSaved }) {
         </div>
 
         <div>
-          <p className="mb-2.5 text-sm font-medium text-slate-700">Удобства</p>
+          <p className="mb-2.5 text-sm font-medium text-ink">Удобства</p>
           <div className="grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-3">
             {AMENITIES.map((a) => (
-              <label key={a.key} className="flex items-center gap-2 text-sm text-slate-600">
+              <label key={a.key} className="flex items-center gap-2 text-sm text-ink-soft">
                 <input
                   type="checkbox"
                   checked={amenities.includes(a.key)}
                   onChange={() => toggleAmenity(a.key)}
-                  className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+                  className="h-4 w-4 rounded border-line-strong text-accent focus:ring-accent"
                 />
                 {a.label}
               </label>
@@ -130,21 +130,21 @@ export default function PropertyListingDetailsCard({ property, onSaved }) {
         </div>
 
         <div className="flex flex-wrap gap-6">
-          <label className="flex items-center gap-2 text-sm text-slate-600">
+          <label className="flex items-center gap-2 text-sm text-ink-soft">
             <input
               type="checkbox"
               checked={smokingAllowed}
               onChange={(e) => setSmokingAllowed(e.target.checked)}
-              className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+              className="h-4 w-4 rounded border-line-strong text-accent focus:ring-accent"
             />
             Пушенето е разрешено
           </label>
-          <label className="flex items-center gap-2 text-sm text-slate-600">
+          <label className="flex items-center gap-2 text-sm text-ink-soft">
             <input
               type="checkbox"
               checked={partiesAllowed}
               onChange={(e) => setPartiesAllowed(e.target.checked)}
-              className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+              className="h-4 w-4 rounded border-line-strong text-accent focus:ring-accent"
             />
             Партита са разрешени
           </label>
@@ -158,15 +158,15 @@ export default function PropertyListingDetailsCard({ property, onSaved }) {
               </option>
             ))}
           </Select>
-          <p className="mt-1 text-xs text-slate-400">
+          <p className="mt-1 text-xs text-ink-muted">
             {CANCELLATION_POLICIES.find((p) => p.value === cancellationPolicy)?.hint}
           </p>
         </Field>
 
         <div>
           <div className="mb-2.5 flex items-center justify-between">
-            <p className="flex items-center gap-1.5 text-sm font-medium text-slate-700">
-              <MapPin className="h-4 w-4 text-slate-400" />
+            <p className="flex items-center gap-1.5 text-sm font-medium text-ink">
+              <MapPin className="h-4 w-4 text-ink-muted" />
               Приблизително местоположение
             </p>
             <Button type="button" variant="secondary" className="!py-1.5 !text-xs" onClick={useMyLocation} loading={locating}>
@@ -174,7 +174,7 @@ export default function PropertyListingDetailsCard({ property, onSaved }) {
               Моето местоположение
             </Button>
           </div>
-          <p className="mb-3 text-xs text-slate-400">
+          <p className="mb-3 text-xs text-ink-muted">
             Гостите виждат само приблизителна зона (~300м размазване) — точният адрес се дава след потвърждение.
           </p>
           <div className="grid gap-3 sm:grid-cols-2">
@@ -192,7 +192,7 @@ export default function PropertyListingDetailsCard({ property, onSaved }) {
           )}
         </div>
 
-        <div className="flex justify-end border-t border-slate-100 pt-5">
+        <div className="flex justify-end border-t border-line pt-5">
           <Button type="submit" loading={saving}>
             Запази
           </Button>

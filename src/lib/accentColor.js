@@ -70,11 +70,6 @@ export function ensureContrast(hex) {
   return out
 }
 
-function mix(hex, withRgb, amount) {
-  const a = hexToRgb(hex)
-  return rgbToHex(a.map((v, i) => v + (withRgb[i] - v) * amount))
-}
-
 /** Съотношение на контраст между два цвята (WCAG), 1…21. */
 export function contrastRatio(hexA, hexB) {
   const a = luminance(hexToRgb(hexA))
@@ -126,24 +121,6 @@ export function stayThemeVars(hex) {
     '--stay-muted': muted,
     '--stay-shade': shade,
     '--stay-glow': glow,
-  }
-}
-
-/** CSS променливи за обвивка — пренасочват bg-brand-*, text-brand-* и т.н. */
-export function accentCssVars(hex) {
-  if (!hex) return undefined
-  const white = [255, 255, 255]
-  const black = [0, 0, 0]
-  return {
-    '--color-brand-50': mix(hex, white, 0.93),
-    '--color-brand-100': mix(hex, white, 0.85),
-    '--color-brand-200': mix(hex, white, 0.7),
-    '--color-brand-300': mix(hex, white, 0.5),
-    '--color-brand-400': mix(hex, white, 0.25),
-    '--color-brand-500': mix(hex, white, 0.1),
-    '--color-brand-600': hex,
-    '--color-brand-700': mix(hex, black, 0.18),
-    '--color-brand-800': mix(hex, black, 0.32),
   }
 }
 

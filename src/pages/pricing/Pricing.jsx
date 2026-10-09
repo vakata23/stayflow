@@ -100,6 +100,7 @@ export default function Pricing() {
             <Select
               value={propertyId}
               onChange={(e) => setPropertyId(e.target.value)}
+              aria-label="Имот"
               className="w-auto min-w-52"
             >
               <option value="all">Всички имоти</option>
@@ -129,10 +130,10 @@ export default function Pricing() {
             />
           ) : (
             <Card className="overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm">
+              <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Ценови правила (таблица)">
+                <table className="min-w-[36rem] w-full text-left text-sm">
                   <thead>
-                    <tr className="border-b border-slate-100 bg-slate-50/60 text-xs uppercase tracking-wide text-slate-500">
+                    <tr className="border-b border-line bg-sunken/60 text-[0.8125rem] font-semibold text-ink-soft">
                       <th className="px-5 py-3 font-semibold">Имот</th>
                       <th className="px-5 py-3 font-semibold">Период</th>
                       <th className="px-5 py-3 font-semibold">Цена/нощувка</th>
@@ -140,42 +141,42 @@ export default function Pricing() {
                       <th className="px-5 py-3 font-semibold">Статус</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100">
+                  <tbody className="divide-y divide-line">
                     {rules.map((rule) => (
                       <tr
                         key={rule.id}
                         onClick={() => openEdit(rule)}
-                        className={`cursor-pointer hover:bg-slate-50/60 ${isPast(rule) ? 'opacity-50' : ''}`}
+                        className={`cursor-pointer hover:bg-sunken/60 ${isPast(rule) ? 'opacity-50' : ''}`}
                       >
-                        <td className="px-5 py-3.5 font-medium text-slate-900">
+                        <td className="px-5 py-3.5 font-medium text-ink">
                           {propertyName(rule.property_id)}
                         </td>
-                        <td className="px-5 py-3.5 text-slate-600">
+                        <td className="px-5 py-3.5 text-ink-soft">
                           <span className="flex items-center gap-1.5">
-                            <CalendarRange className="h-3.5 w-3.5 text-slate-400" />
+                            <CalendarRange className="h-3.5 w-3.5 text-ink-muted" />
                             {formatDateBG(rule.start_date)} – {formatDateBG(rule.end_date)}
                           </span>
                         </td>
-                        <td className="px-5 py-3.5 font-semibold text-slate-900">
+                        <td className="px-5 py-3.5 font-semibold text-ink">
                           {formatMoney(rule.price_per_night)}
                         </td>
-                        <td className="px-5 py-3.5 text-slate-600">
+                        <td className="px-5 py-3.5 text-ink-soft">
                           <span className="flex items-center gap-1.5">
-                            <Moon className="h-3.5 w-3.5 text-slate-400" />
+                            <Moon className="h-3.5 w-3.5 text-ink-muted" />
                             {rule.min_nights}
                           </span>
                         </td>
                         <td className="px-5 py-3.5">
                           {isActive(rule) ? (
-                            <span className="inline-flex rounded-md bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">
+                            <span className="inline-flex rounded-md bg-success-soft px-2 py-0.5 text-xs font-medium text-success-ink">
                               Активно
                             </span>
                           ) : isPast(rule) ? (
-                            <span className="inline-flex rounded-md bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500">
+                            <span className="inline-flex rounded-md bg-sunken px-2 py-0.5 text-xs font-medium text-ink-soft">
                               Изтекло
                             </span>
                           ) : (
-                            <span className="inline-flex rounded-md bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
+                            <span className="inline-flex rounded-md bg-info-soft px-2 py-0.5 text-xs font-medium text-info-ink">
                               Предстоящо
                             </span>
                           )}

@@ -53,15 +53,15 @@ export default function Login() {
           />
         </Field>
         <div className="flex justify-end">
-          <Link to="/reset-password" className="text-sm font-medium text-brand-600 hover:text-brand-700">
+          <Link to="/reset-password" className="text-sm font-medium text-accent hover:text-accent-ink">
             Забравена парола?
           </Link>
         </div>
         <Button type="submit" loading={loading} className="w-full">Вход</Button>
       </form>
-      <p className="mt-6 text-center text-sm text-slate-500">
+      <p className="mt-6 text-center text-sm text-ink-soft">
         Нямате акаунт?{' '}
-        <Link to="/signup" className="font-semibold text-brand-600 hover:text-brand-700">
+        <Link to="/signup" className="font-semibold text-accent hover:text-accent-ink">
           Регистрирайте се
         </Link>
       </p>

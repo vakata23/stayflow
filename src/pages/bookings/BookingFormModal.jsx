@@ -199,10 +199,10 @@ export default function BookingFormModal({ open, onClose, onSaved, properties, i
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-4 sm:p-8">
-      <div className="fixed inset-0 bg-slate-900/40" onClick={onClose} />
+      <div className="fixed inset-0 bg-ink/40" onClick={onClose} />
 
-      <div className="relative w-full max-w-2xl rounded-2xl border border-slate-200 bg-white shadow-xl">
-        <header className="border-b border-slate-100 px-6 py-4">
+      <div className="relative w-full max-w-2xl rounded-2xl border border-line bg-card shadow-xl">
+        <header className="border-b border-line px-6 py-4">
           <h2 className="text-lg font-bold">
             {isEdit ? 'Редакция на резервация' : 'Нова резервация'}
           </h2>
@@ -308,7 +308,7 @@ export default function BookingFormModal({ open, onClose, onSaved, properties, i
 
           {isEdit && <PaymentsSection bookingId={initial.id} />}
 
-          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-5">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line pt-5">
             <div>
               {isEdit && (
                 <Button type="button" variant="danger" onClick={handleDelete} loading={deleting}>

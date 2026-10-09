@@ -25,10 +25,10 @@ function CopyField({ value }) {
         readOnly
         value={value}
         onFocus={(e) => e.target.select()}
-        className="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 font-mono text-xs text-slate-600 outline-none"
+        className="w-full rounded-lg border border-line-strong bg-sunken px-3 py-2 font-mono text-xs text-ink-soft outline-none"
       />
       <Button type="button" variant="secondary" onClick={copy} className="shrink-0 !py-2">
-        {copied ? <Check className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
+        {copied ? <Check className="h-4 w-4 text-success" /> : <Copy className="h-4 w-4" />}
         {copied ? 'Копирано' : 'Копирай'}
       </Button>
     </div>
@@ -174,18 +174,18 @@ export default function IcalSync({ property, onBookingsChanged }) {
 
   return (
     <Card className="p-6">
-      <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-700">
+      <h2 className="type-heading">
         Синхронизация с Airbnb / Booking.com
       </h2>
 
       <div className="mt-5 space-y-6">
         <div>
-          <p className="mb-2 flex items-center gap-1.5 text-sm font-medium text-slate-700">
-            <Link2 className="h-4 w-4 text-slate-400" />
+          <p className="mb-2 flex items-center gap-1.5 text-sm font-medium text-ink">
+            <Link2 className="h-4 w-4 text-ink-muted" />
             Експорт — дайте този адрес на Airbnb/Booking
           </p>
           <CopyField value={exportUrl} />
-          <p className="mt-2 text-xs text-slate-400">
+          <p className="mt-2 text-xs text-ink-muted">
             Външните платформи ще блокират тези дати автоматично. Линкът показва само заетите
             периоди — имена и контакти на гостите не се публикуват.
           </p>
@@ -195,7 +195,7 @@ export default function IcalSync({ property, onBookingsChanged }) {
           </Button>
         </div>
 
-        <div className="border-t border-slate-100 pt-6">
+        <div className="border-t border-line pt-6">
           <Field
             label="Импорт — iCal адрес от Airbnb/Booking"
             hint="Намира се в настройките на обявата, раздел „Наличност“ → „Синхронизиране на календари“."

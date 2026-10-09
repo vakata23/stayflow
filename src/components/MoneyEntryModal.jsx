@@ -112,10 +112,10 @@ export default function MoneyEntryModal({ open, onClose, onSaved, kind, properti
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-4 sm:p-8">
-      <div className="fixed inset-0 bg-slate-900/40" onClick={onClose} />
+      <div className="fixed inset-0 bg-ink/40" onClick={onClose} />
 
-      <div className="relative w-full max-w-lg rounded-2xl border border-slate-200 bg-white shadow-xl">
-        <header className="border-b border-slate-100 px-6 py-4">
+      <div className="relative w-full max-w-lg rounded-2xl border border-line bg-card shadow-xl">
+        <header className="border-b border-line px-6 py-4">
           <h2 className="text-lg font-bold">{title}</h2>
         </header>
 
@@ -167,19 +167,19 @@ export default function MoneyEntryModal({ open, onClose, onSaved, kind, properti
 
           <Field label="Снимка на касова бележка" hint="По избор, до 5 MB.">
             {existingReceiptPath && !removeExisting && !receiptFile ? (
-              <div className="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm">
-                <Paperclip className="h-4 w-4 shrink-0 text-slate-400" />
+              <div className="flex items-center gap-2 rounded-lg border border-line px-3 py-2 text-sm">
+                <Paperclip className="h-4 w-4 shrink-0 text-ink-muted" />
                 {existingReceiptUrl ? (
-                  <a href={existingReceiptUrl} target="_blank" rel="noreferrer" className="text-brand-600 hover:underline">
+                  <a href={existingReceiptUrl} target="_blank" rel="noreferrer" className="text-accent hover:underline">
                     Преглед на бележката
                   </a>
                 ) : (
-                  <span className="text-slate-500">Прикачена бележка</span>
+                  <span className="text-ink-soft">Прикачена бележка</span>
                 )}
                 <button
                   type="button"
                   onClick={() => setRemoveExisting(true)}
-                  className="ml-auto rounded-lg p-1 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                  className="ml-auto rounded-lg p-1 text-ink-muted hover:bg-danger-soft hover:text-danger"
                   aria-label="Премахни"
                 >
                   <X className="h-4 w-4" />
@@ -191,12 +191,12 @@ export default function MoneyEntryModal({ open, onClose, onSaved, kind, properti
                 type="file"
                 accept="image/*"
                 onChange={handleFile}
-                className="block w-full text-sm text-slate-500 file:mr-3 file:cursor-pointer file:rounded-lg file:border-0 file:bg-brand-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-brand-700 hover:file:bg-brand-100"
+                className="block w-full text-sm text-ink-soft file:mr-3 file:cursor-pointer file:rounded-lg file:border-0 file:bg-accent-soft file:px-4 file:py-2 file:text-sm file:font-semibold file:text-accent-ink hover:file:bg-accent-soft"
               />
             )}
           </Field>
 
-          <div className="flex justify-end gap-3 border-t border-slate-100 pt-5">
+          <div className="flex justify-end gap-3 border-t border-line pt-5">
             <Button type="button" variant="secondary" onClick={onClose} disabled={saving}>
               Отказ
             </Button>

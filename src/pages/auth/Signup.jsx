@@ -42,8 +42,8 @@ export default function Signup() {
           Изпратихме линк за потвърждение на <strong>{email}</strong>. Отворете го, за да
           активирате акаунта си, след което влезте.
         </Alert>
-        <p className="mt-6 text-center text-sm text-slate-500">
-          <Link to="/login" className="font-semibold text-brand-600 hover:text-brand-700">
+        <p className="mt-6 text-center text-sm text-ink-soft">
+          <Link to="/login" className="font-semibold text-accent hover:text-accent-ink">
             Към входа
           </Link>
         </p>
@@ -88,9 +88,9 @@ export default function Signup() {
         </Field>
         <Button type="submit" loading={loading} className="w-full">Създай акаунт</Button>
       </form>
-      <p className="mt-6 text-center text-sm text-slate-500">
+      <p className="mt-6 text-center text-sm text-ink-soft">
         Вече имате акаунт?{' '}
-        <Link to="/login" className="font-semibold text-brand-600 hover:text-brand-700">
+        <Link to="/login" className="font-semibold text-accent hover:text-accent-ink">
           Вход
         </Link>
       </p>

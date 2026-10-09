@@ -30,7 +30,7 @@ import { formatMoney } from '../../lib/money'
 import { channelLabel, channelHref } from '../../lib/propertySettings'
 import { isValidPhone, isValidEmail } from '../../lib/bookingRequestServer'
 import { AMENITIES, cancellationLabel } from '../../lib/amenities'
-import { accentCssVars, stayThemeVars } from '../../lib/accentColor'
+import { stayThemeVars } from '../../lib/accentColor'
 import StayHero from './StayHero'
 import Gallery from './Gallery'
 import Lightbox from './Lightbox'
@@ -234,7 +234,7 @@ export default function ListingView({ property, reviews, slug, loadBusy, preview
   )
 
   const themeVars = useMemo(
-    () => ({ ...accentCssVars(property.accent_color), ...stayThemeVars(property.accent_color) }),
+    () => stayThemeVars(property.accent_color),
     [property.accent_color]
   )
 
