@@ -29,6 +29,7 @@ node scripts/visual/server.mjs /tmp/stayflow-dist 4174
 | Поведение на компонентите (прозорец, фокус, Esc, размери, намалено движение) | `node scripts/visual/ui-behavior.mjs http://localhost:4174` |
 | Движение: броене, каскада, график, лист „Още“, хапче в лентата, намалено движение (+ кадри в `out/motion/`) | `node scripts/visual/motion.mjs http://localhost:4174 --frames` |
 | Хоризонтално препълване на всички екрани (360 / 375 / 768 / 1440 px) | `node scripts/visual/overflow.mjs http://localhost:4174` |
+| Скелет на екраните: пропускане към съдържанието, скрол в началото, скелети при зареждане, празни състояния, 404, „назад“ | `node scripts/visual/shell.mjs http://localhost:4174` |
 
 Резултатите (снимки, JSON) са в `scripts/visual/out/` (в `.gitignore`). На Windows с Git Bash добавете
 `MSYS_NO_PATHCONV=1` пред командата, ако подавате пътища като `/design`.

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { Building2, Plus, Users, MapPin, CalendarCheck } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { propertyTypeLabel } from '../../lib/constants'
-import { PageHeader, Card, EmptyState, Spinner, Button, Alert } from '../../components/ui'
+import { PageHeader, Card, EmptyState, Button, Alert, LoadingCard } from '../../components/ui'
 
 function PropertyCard({ property, activeBookings }) {
   return (
@@ -113,6 +113,7 @@ export default function PropertiesList() {
     <div>
       <PageHeader
         icon={Building2}
+        eyebrow="Настройки"
         title="Поддръжка на имоти"
         description="Всички имоти, които управлявате."
         action={
@@ -129,9 +130,7 @@ export default function PropertiesList() {
         {error && <Alert>{error}</Alert>}
 
         {loading ? (
-          <Card>
-            <Spinner />
-          </Card>
+          <LoadingCard />
         ) : properties.length === 0 ? (
           <EmptyState
             icon={Building2}

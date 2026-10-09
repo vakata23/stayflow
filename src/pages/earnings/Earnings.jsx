@@ -4,6 +4,7 @@ import {
   TrendingUp,
   PiggyBank,
   Wallet,
+  CheckCircle2,
   BedDouble,
   Receipt,
   Building2,
@@ -35,7 +36,7 @@ import {
 import { fetchMoneyEntries, deleteMoneyEntry, signedReceiptUrl, removeReceiptImage } from '../../lib/moneyEntries'
 import { fetchRules, generateMyAutoEntries, countAutoEntriesInRange, ruleTooltip } from '../../lib/recurringRules'
 import SetupWizard from './SetupWizard'
-import { PageHeader, Card, Select, Input, Button, Alert, Spinner, EmptyState, Modal, Segmented } from '../../components/ui'
+import { PageHeader, Card, Select, Input, Button, Alert, EmptyState, Modal, Segmented, LoadingCard } from '../../components/ui'
 import InfoTooltip from '../../components/InfoTooltip'
 import MoneyEntryModal from '../../components/MoneyEntryModal'
 import CountUp from '../../components/CountUp'
@@ -350,9 +351,7 @@ export default function Earnings() {
             }
           />
         ) : loading ? (
-          <Card>
-            <Spinner />
-          </Card>
+          <LoadingCard />
         ) : (
           <>
             {/* Героят на екрана: печалбата. До нея — спестената комисиона (най-видимата поука за директните резервации). */}
@@ -449,7 +448,7 @@ export default function Earnings() {
                 </Button>
               </div>
               {propertyRows.length === 0 ? (
-                <p className="card px-6 py-10 text-center text-sm text-ink-soft">Няма данни за избрания период.</p>
+                <EmptyState compact className="card" icon={Building2} title="Няма данни за периода" description="Опитайте с друг период или добавете резервации." />
               ) : (
                 <>
                   {/* Телефон: ред на имот с лента на заетостта и трите главни числа */}
@@ -524,7 +523,7 @@ export default function Earnings() {
                 <p className="mt-1 text-[0.8125rem] text-ink-muted">Всички резервации с неплатен остатък, независимо от избрания период.</p>
               </header>
               {unpaid.length === 0 ? (
-                <p className="px-6 pb-8 pt-4 text-center text-sm text-ink-soft">Няма неплатени остатъци — всичко е уредено.</p>
+                <EmptyState compact icon={CheckCircle2} title="Всичко е уредено" description="Няма неплатени остатъци." />
               ) : (
                 <ul className="divide-y divide-line border-t border-line">
                   {unpaid.map((b) => (
@@ -562,9 +561,9 @@ export default function Earnings() {
           )}
 
           {ledgerLoading ? (
-            <Spinner />
+            <LoadingCard rows={3} className="rounded-none shadow-none" />
           ) : ledgerEntries.length === 0 ? (
-            <p className="px-6 pb-8 pt-4 text-center text-sm text-ink-soft">Няма разходи или приходи за избрания месец.</p>
+            <EmptyState compact icon={Receipt} title="Няма записи за месеца" description="Разходите и допълнителните приходи се показват тук." />
           ) : (
             <ul className="divide-y divide-line border-t border-line">
               {ledgerEntries.map((entry) => (

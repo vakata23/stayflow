@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { KeyRound, Wifi, Copy, Check, Building2, Plus } from 'lucide-react'
 import { supabase } from '../lib/supabase'
-import { PageHeader, Card, EmptyState, Spinner, Button, Alert } from '../components/ui'
+import { PageHeader, Card, EmptyState, Button, Alert, LoadingCard } from '../components/ui'
 
 function CopyValue({ value, mono }) {
   const [copied, setCopied] = useState(false)
@@ -63,6 +63,7 @@ export default function AccessCodes() {
     <div>
       <PageHeader
         icon={KeyRound}
+        eyebrow="За гостите"
         title="Кодове за достъп"
         description="WiFi данни и кодове за самонастаняване по имоти."
       />
@@ -71,9 +72,7 @@ export default function AccessCodes() {
         {error && <Alert>{error}</Alert>}
 
         {loading ? (
-          <Card>
-            <Spinner />
-          </Card>
+          <LoadingCard />
         ) : properties.length === 0 ? (
           <EmptyState
             icon={Building2}

@@ -13,7 +13,7 @@ import {
   sourceLabel,
   statusLabel,
 } from '../../lib/bookings'
-import { PageHeader, Card, Select, Input, Button, Alert, Spinner, EmptyState } from '../../components/ui'
+import { PageHeader, Card, Select, Input, Button, Alert, EmptyState, LoadingCard } from '../../components/ui'
 import BookingFormModal from './BookingFormModal'
 import { rise, useIntro } from '../../lib/motion'
 
@@ -232,9 +232,7 @@ export default function BookingsList() {
         </Card>
 
         {loading ? (
-          <Card>
-            <Spinner />
-          </Card>
+          <LoadingCard />
         ) : bookings.length === 0 ? (
           <EmptyState
             icon={incompleteOnly ? AlertTriangle : hasFilters ? Filter : BookMarked}

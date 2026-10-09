@@ -16,7 +16,7 @@ import {
   countAutoEntries,
   generateMyAutoEntries,
 } from '../../lib/recurringRules'
-import { PageHeader, Card, Button, Alert, Spinner, EmptyState, Modal, Field, Input, Select } from '../../components/ui'
+import { PageHeader, Card, Button, Alert, EmptyState, Modal, Field, Input, Select, PageSkeleton, BackLink } from '../../components/ui'
 import SetupWizard from './SetupWizard'
 
 export default function Rules() {
@@ -82,14 +82,11 @@ export default function Rules() {
     }
   }
 
-  if (loading) return <Spinner />
+  if (loading) return <PageSkeleton />
 
   return (
     <div>
-      <Link to="/earnings" className="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-ink-soft hover:text-ink">
-        <ArrowLeft className="h-4 w-4" />
-        Приходи
-      </Link>
+      <BackLink to="/earnings">Приходи</BackLink>
 
       <PageHeader
         icon={Repeat}

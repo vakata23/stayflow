@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { MapPin, Building2, Plus, Copy, Check, ExternalLink } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { appOrigin } from '../lib/appUrl'
-import { PageHeader, Card, EmptyState, Spinner, Button, Alert } from '../components/ui'
+import { PageHeader, Card, EmptyState, Button, Alert, LoadingCard } from '../components/ui'
 
 function GuestCardRow({ property }) {
   const [copied, setCopied] = useState(false)
@@ -72,6 +72,7 @@ export default function GuestCards() {
     <div>
       <PageHeader
         icon={MapPin}
+        eyebrow="За гостите"
         title="Адресни карти"
         description="Публичен линк за всеки имот с информация за гостите. Изпратете го преди настаняване."
       />
@@ -80,9 +81,7 @@ export default function GuestCards() {
         {error && <Alert>{error}</Alert>}
 
         {loading ? (
-          <Card>
-            <Spinner />
-          </Card>
+          <LoadingCard />
         ) : properties.length === 0 ? (
           <EmptyState
             icon={Building2}

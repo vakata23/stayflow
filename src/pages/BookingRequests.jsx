@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabase'
 import { formatDateBG, nightsBetween } from '../lib/dates'
 import { formatMoney } from '../lib/money'
 import { translateBookingError, suggestTouristTax } from '../lib/bookings'
-import { PageHeader, Card, Button, Alert, Spinner, EmptyState } from '../components/ui'
+import { PageHeader, Card, Button, Alert, EmptyState, LoadingCard } from '../components/ui'
 
 const STATUS_TABS = [
   { value: 'pending', label: 'Чакащи' },
@@ -127,6 +127,7 @@ export default function BookingRequests() {
     <div>
       <PageHeader
         icon={Inbox}
+        eyebrow="Директни резервации"
         title="Заявки за резервация"
         description="Заявки от публичната страница за резервации — приемете или откажете."
       />
@@ -150,9 +151,7 @@ export default function BookingRequests() {
         </div>
 
         {loading ? (
-          <Card>
-            <Spinner />
-          </Card>
+          <LoadingCard />
         ) : requests.length === 0 ? (
           <EmptyState
             icon={Inbox}

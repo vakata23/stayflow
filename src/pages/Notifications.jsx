@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { Bell, Mail, Send, Trash2, CheckCircle2, XCircle, Clock } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
-import { PageHeader, Card, Field, Input, Select, Button, Alert, Spinner, EmptyState } from '../components/ui'
+import { PageHeader, Card, Field, Input, Select, Button, Alert, EmptyState, PageSkeleton } from '../components/ui'
 
 const CHANNEL_LABELS = { email: 'Имейл', telegram: 'Telegram' }
 const CHANNEL_ICONS = { email: Mail, telegram: Send }
@@ -126,12 +126,13 @@ export default function Notifications() {
     }
   }
 
-  if (loading) return <Spinner />
+  if (loading) return <PageSkeleton />
 
   return (
     <div>
       <PageHeader
         icon={Bell}
+        eyebrow="Настройки"
         title="Известия"
         description="Получавайте известие в Telegram или по имейл при нова заявка за резервация."
       />

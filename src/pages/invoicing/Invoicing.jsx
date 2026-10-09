@@ -6,7 +6,7 @@ import { useAuth } from '../../context/AuthContext'
 import { formatDateBG, nightsBetween } from '../../lib/dates'
 import { formatMoney } from '../../lib/money'
 import { generateInvoicePdf, downloadBlob } from '../../lib/invoicePdf'
-import { PageHeader, Card, Button, Alert, Spinner, EmptyState } from '../../components/ui'
+import { PageHeader, Card, Button, Alert, EmptyState, LoadingCard } from '../../components/ui'
 import InvoiceModal from './InvoiceModal'
 
 export default function Invoicing() {
@@ -88,6 +88,7 @@ export default function Invoicing() {
     <div>
       <PageHeader
         icon={FileText}
+        eyebrow="Документи"
         title="Издаване на фактура към гост"
         description="Генерирайте PDF фактури от резервации."
         action={
@@ -102,9 +103,7 @@ export default function Invoicing() {
         {error && <Alert>{error}</Alert>}
 
         {loading ? (
-          <Card>
-            <Spinner />
-          </Card>
+          <LoadingCard />
         ) : properties.length === 0 ? (
           <EmptyState
             icon={Building2}

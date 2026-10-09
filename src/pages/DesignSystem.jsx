@@ -19,6 +19,10 @@ import pairs from '../../scripts/token-pairs.json'
 import {
   Alert,
   Badge,
+  BackLink,
+  LoadingCard,
+  PageHeader,
+  PageSkeleton,
   Button,
   Card,
   Checkbox,
@@ -726,6 +730,29 @@ export default function DesignSystem() {
                 </Field>
               </Modal>
             </Card>
+          <Card padded>
+            <Sub>Скелет на екран</Sub>
+            <p className="mb-4 max-w-2xl text-sm text-ink-soft">
+              Всеки екран е един и същ скелет: „назад“ (само във вложени екрани), надзаглавие, заглавие, описание и действие; после съдържание в карти.
+              Празното състояние казва какво липсва и какво да се направи; зареждането е скелет с формата на съдържанието, а лентата и менюто остават на мястото си.
+            </p>
+            <div className="space-y-6 rounded-2xl bg-sunken p-4 sm:p-6">
+              <div>
+                <BackLink to="/design">Всички имоти</BackLink>
+                <PageHeader eyebrow="Настройки" title="Поддръжка на имоти" description="Всички имоти, които управлявате." action={<Button>Добави имот</Button>} />
+              </div>
+              <div className="grid gap-4 lg:grid-cols-2 [&>*]:min-w-0">
+                <div className="card">
+                  <EmptyState compact icon={Inbox} title="Още няма заявки" description="Когато гост изпрати заявка, ще я видите тук." />
+                </div>
+                <LoadingCard rows={3} />
+              </div>
+              <div>
+                <p className="type-label mb-2 text-ink-soft">Скелет на цял екран (докато се зарежда частта на екрана)</p>
+                <div className="rounded-2xl bg-surface p-5"><PageSkeleton /></div>
+              </div>
+            </div>
+          </Card>
           </div>
         </Section>
 

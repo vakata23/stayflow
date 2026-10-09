@@ -17,7 +17,7 @@ import {
   NEXT_STATUS,
   taskStatusLabel,
 } from '../../lib/cleaning'
-import { PageHeader, Card, Select, Button, Alert, Spinner, EmptyState } from '../../components/ui'
+import { PageHeader, Card, Select, Button, Alert, EmptyState, LoadingCard } from '../../components/ui'
 import TaskFormModal from './TaskFormModal'
 
 function TaskCard({ task, propertyName, onToggle, onEdit }) {
@@ -141,6 +141,7 @@ export default function CleaningTasks() {
     <div>
       <PageHeader
         icon={ClipboardCheck}
+        eyebrow="Почистване"
         title="Камериерски задачи"
         description="Планиране и проследяване на почистванията по имоти."
         action={
@@ -188,9 +189,7 @@ export default function CleaningTasks() {
           </div>
 
           {loading ? (
-            <Card>
-              <Spinner />
-            </Card>
+            <LoadingCard />
           ) : tasks.length === 0 ? (
             <EmptyState
               icon={ClipboardCheck}

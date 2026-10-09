@@ -4,7 +4,7 @@ import { BadgePercent, Plus, Building2, Moon, CalendarRange } from 'lucide-react
 import { supabase } from '../../lib/supabase'
 import { formatDateBG, fromISODate, todayISO } from '../../lib/dates'
 import { formatMoney } from '../../lib/money'
-import { PageHeader, Card, Select, Button, Alert, Spinner, EmptyState } from '../../components/ui'
+import { PageHeader, Card, Select, Button, Alert, EmptyState, LoadingCard } from '../../components/ui'
 import PricingRuleModal from './PricingRuleModal'
 
 export default function Pricing() {
@@ -66,6 +66,7 @@ export default function Pricing() {
     <div>
       <PageHeader
         icon={BadgePercent}
+        eyebrow="Цени"
         title="Ценови планове"
         description="Цени на нощувка по периоди и минимален престой."
         action={
@@ -113,9 +114,7 @@ export default function Pricing() {
           </div>
 
           {loading ? (
-            <Card>
-              <Spinner />
-            </Card>
+            <LoadingCard />
           ) : rules.length === 0 ? (
             <EmptyState
               icon={BadgePercent}

@@ -4,7 +4,7 @@ import { ArrowLeft, Building2, Trash2, CalendarDays, Sparkles } from 'lucide-rea
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
 import { uploadPropertyImage } from '../../lib/storage'
-import { PageHeader, Card, Spinner, Button, Alert, Modal, EmptyState } from '../../components/ui'
+import { PageHeader, Card, Spinner, Button, Alert, Modal, EmptyState, PageSkeleton, BackLink } from '../../components/ui'
 import IcalSync from '../../components/IcalSync'
 import PropertySettingsCard from '../../components/PropertySettingsCard'
 import PublicListingCard from '../../components/PublicListingCard'
@@ -44,12 +44,7 @@ function UpcomingBookings({ propertyId, reloadKey }) {
 
   if (bookings.length === 0) {
     return (
-      <div className="px-6 py-12 text-center">
-        <p className="text-sm text-ink-soft">Няма предстоящи резервации за този имот.</p>
-        <p className="mt-1 text-xs text-ink-muted">
-          Резервации ще можете да добавяте след Етап 4 (Календар и Резервации).
-        </p>
-      </div>
+      <EmptyState compact icon={CalendarDays} title="Няма предстоящи резервации" description="Когато добавите резервация за този имот, тя ще се покаже тук." />
     )
   }
 
@@ -137,7 +132,7 @@ export default function PropertyDetail() {
     navigate('/properties')
   }
 
-  if (loading) return <Spinner />
+  if (loading) return <PageSkeleton />
 
   if (!property) {
     return (
@@ -156,13 +151,7 @@ export default function PropertyDetail() {
 
   return (
     <div>
-      <Link
-        to="/properties"
-        className="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-ink-soft hover:text-ink"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Всички имоти
-      </Link>
+      <BackLink to="/properties">Всички имоти</BackLink>
 
       <PageHeader
         icon={Building2}

@@ -12,7 +12,7 @@ import {
 } from '../lib/dates'
 import { SOURCE_STYLES, BOOKING_SOURCES } from '../lib/bookings'
 import { priceForDay } from '../lib/pricing'
-import { PageHeader, Card, Select, Button, Alert, Spinner, EmptyState } from '../components/ui'
+import { PageHeader, Card, Select, Button, Alert, EmptyState, Skeleton } from '../components/ui'
 import BookingFormModal from './bookings/BookingFormModal'
 
 export default function Calendar() {
@@ -124,6 +124,7 @@ export default function Calendar() {
     <div>
       <PageHeader
         icon={CalendarDays}
+        eyebrow="Планиране"
         title="Календар"
         description="Заетост по дни. Кликнете на свободен ден, за да добавите резервация."
         action={
@@ -195,7 +196,14 @@ export default function Calendar() {
 
           <Card className="overflow-hidden">
             {loading ? (
-              <Spinner />
+              <div role="status" aria-busy="true" className="p-4">
+                <span className="sr-only">Зареждане</span>
+                <div className="grid grid-cols-7 gap-1.5" aria-hidden="true">
+                  {Array.from({ length: 35 }, (_, i) => (
+                    <Skeleton key={i} className="h-16 sm:h-24" />
+                  ))}
+                </div>
+              </div>
             ) : (
               <>
                 <div className="grid grid-cols-7 border-b border-line bg-sunken/60">

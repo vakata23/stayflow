@@ -4,7 +4,7 @@ import { StickyNote, Plus, Building2, Trash2, ImageOff } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { formatDateBG } from '../../lib/dates'
 import { ISSUE_STYLES, issueTypeLabel, signedPhotoUrl } from '../../lib/cleaning'
-import { PageHeader, Card, Select, Button, Alert, Spinner, EmptyState, Modal } from '../../components/ui'
+import { PageHeader, Card, Select, Button, Alert, EmptyState, Modal, LoadingCard } from '../../components/ui'
 import NoteFormModal from './NoteFormModal'
 
 function NotePhoto({ path }) {
@@ -102,6 +102,7 @@ export default function CleaningNotes() {
     <div>
       <PageHeader
         icon={StickyNote}
+        eyebrow="Почистване"
         title="Забележки от почистване"
         description="Щети, липсващи вещи и други бележки от екипа."
         action={
@@ -149,9 +150,7 @@ export default function CleaningNotes() {
           </div>
 
           {loading ? (
-            <Card>
-              <Spinner />
-            </Card>
+            <LoadingCard />
           ) : notes.length === 0 ? (
             <EmptyState
               icon={StickyNote}

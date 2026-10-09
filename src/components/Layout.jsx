@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import { NavLink, Link, Outlet, useNavigate, useLocation } from 'react-router-dom'
+import { Suspense, useState, useEffect } from 'react'
+import { NavLink, Link, Outlet, useNavigate, useLocation, useNavigationType } from 'react-router-dom'
 import {
   LayoutDashboard,
   TrendingUp,
@@ -20,7 +20,7 @@ import {
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
-import { Modal } from './ui'
+import { Modal, PageSkeleton } from './ui'
 import BottomNav from './BottomNav'
 
 /* Пет места в долната лента на телефон; всичко останало е в листа „Още“. */
@@ -121,6 +121,7 @@ export default function Layout() {
   const { user, profile, signOut } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
+  const navType = useNavigationType()
   const [moreOpen, setMoreOpen] = useState(false)
   const [pendingRequests, setPendingRequests] = useState(0)
 
@@ -134,10 +135,12 @@ export default function Layout() {
       .then(({ count }) => setPendingRequests(count ?? 0))
   }, [location.pathname])
 
-  // Листът се затваря при всяка смяна на страница
+  // Листът се затваря при всяка смяна на страница; новият екран започва отгоре
+  // (при „назад“ на браузъра скролът не се пипа).
   useEffect(() => {
     setMoreOpen(false)
-  }, [location.pathname])
+    if (navType !== 'POP') window.scrollTo(0, 0)
+  }, [location.pathname, navType])
 
   const displayName = profile?.full_name?.trim() || user?.email || ''
   const initials = (profile?.full_name?.trim() || user?.email || '?')
@@ -156,6 +159,13 @@ export default function Layout() {
 
   return (
     <div className="min-h-dvh bg-surface">
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[60] focus:rounded-xl focus:bg-ink focus:px-4 focus:py-2.5 focus:text-sm focus:font-semibold focus:text-card"
+      >
+        Към съдържанието
+      </a>
+
       {/* Голям екран: светла странична лента в крем */}
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-[17.25rem] flex-col border-r border-line bg-surface px-5 pb-5 pt-8 lg:flex">
         <Brand className="px-3 pb-3" />
@@ -181,11 +191,14 @@ export default function Layout() {
         <Brand />
       </header>
 
-      <main className="lg:pl-[17.25rem]">
+      <main id="main" tabIndex={-1} className="outline-none lg:pl-[17.25rem]">
         <div className="mx-auto max-w-[72rem] px-4 pb-[calc(7.5rem+env(safe-area-inset-bottom))] pt-2 sm:px-6 lg:px-12 lg:pb-20 lg:pt-12">
-          <div key={location.pathname} className="page-in">
-            <Outlet />
-          </div>
+          {/* Екраните се зареждат при нужда; докато идват, лентата и менюто остават, а на мястото на екрана има скелет */}
+          <Suspense fallback={<PageSkeleton />}>
+            <div key={location.pathname} className="page-in">
+              <Outlet />
+            </div>
+          </Suspense>
         </div>
       </main>
 

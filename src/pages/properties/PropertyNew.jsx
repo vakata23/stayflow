@@ -6,7 +6,7 @@ import { useAuth } from '../../context/AuthContext'
 import { savePropertySettings } from '../../lib/propertySettings'
 import { slugify } from '../../lib/slug'
 import { PROPERTY_TYPES } from '../../lib/constants'
-import { PageHeader, Spinner, Alert, Card, Field, Input, Select, Button } from '../../components/ui'
+import { PageHeader, Alert, Card, Field, Input, Select, Button, PageSkeleton, BackLink } from '../../components/ui'
 
 /**
  * Стъпка 1 от „Качи снимки → страницата се прави сама“: само най-нужното,
@@ -61,7 +61,7 @@ export default function PropertyNew() {
     }
   }
 
-  if (profileLoading) return <Spinner />
+  if (profileLoading) return <PageSkeleton />
 
   if (!profile) {
     return (
@@ -74,13 +74,7 @@ export default function PropertyNew() {
 
   return (
     <div className="mx-auto max-w-lg">
-      <Link
-        to="/properties"
-        className="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-ink-soft hover:text-ink"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Всички имоти
-      </Link>
+      <BackLink to="/properties">Всички имоти</BackLink>
 
       <PageHeader
         icon={Building2}

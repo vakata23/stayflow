@@ -532,6 +532,15 @@
     box-shadow: var(--shadow-card);
     text-align: center;
   }
+  /* вътре в карта: без собствена повърхност, по-ниско */
+  .empty-compact {
+    padding: 2.25rem 1.5rem;
+  }
+  .empty-compact:not(.card) {
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
   .empty-icon {
     display: grid;
     place-items: center;

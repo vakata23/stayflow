@@ -1,10 +1,12 @@
 import { lazy, Suspense } from 'react'
+import { Compass } from 'lucide-react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { isSupabaseConfigured } from './lib/supabase'
 import { AuthProvider } from './context/AuthContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import ConfigNotice from './components/ConfigNotice'
 import Layout from './components/Layout'
+import { EmptyState, Button } from './components/ui'
 
 // Auth страниците остават eager — малки са и трябват веднага при първо зареждане.
 import Login from './pages/auth/Login'
@@ -110,12 +112,19 @@ export default function App() {
 
 function NotFound() {
   return (
-    <div className="flex min-h-[60vh] flex-col items-center justify-center text-center">
-      <p className="text-5xl font-bold text-accent">404</p>
-      <p className="mt-3 text-lg font-semibold text-ink">Страницата не е намерена</p>
-      <a href="/" className="mt-4 text-sm font-medium text-accent hover:text-accent-ink">
-        ← Към таблото
-      </a>
+    <div className="mx-auto flex min-h-[60vh] max-w-md items-center">
+      <EmptyState
+        icon={Compass}
+        title="Страницата не е намерена"
+        titleAs="h1"
+        description="Адресът може да е грешен или страницата да е преместена."
+        action={
+          <a href="/">
+            <Button>Към таблото</Button>
+          </a>
+        }
+        className="w-full"
+      />
     </div>
   )
 }

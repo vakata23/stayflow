@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { LogIn, LogOut, Building2, Plus, Moon } from 'lucide-react'
+import { LogIn, LogOut, Building2, Plus, Moon, CalendarDays } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { todayISO, formatDateBG, addDays, toISODate, nightsBetween } from '../lib/dates'
 import { SOURCE_STYLES, sourceLabel } from '../lib/bookings'
-import { Card, Spinner, Alert, EmptyState, Button, PageHeader } from '../components/ui'
+import { Card, Alert, EmptyState, Button, PageHeader, LoadingCard } from '../components/ui'
 import CountUp from '../components/CountUp'
 import { rise, useIntro } from '../lib/motion'
 
@@ -203,9 +203,7 @@ export default function Dashboard() {
       {error && <Alert>{error}</Alert>}
 
       {loading ? (
-        <Card>
-          <Spinner />
-        </Card>
+        <LoadingCard />
       ) : properties.length === 0 ? (
         <EmptyState
           icon={Building2}
@@ -230,7 +228,7 @@ export default function Dashboard() {
 
           <Panel title="Сега в имотите" count={nowItems.length}>
             {nowItems.length === 0 ? (
-              <p className="card px-6 py-12 text-center text-sm text-ink-soft">Няма движения за днес и няма настанени гости.</p>
+              <EmptyState compact className="card" icon={Moon} title="Днес е спокойно" description="Няма движения за днес и няма настанени гости." />
             ) : (
               <ul className="grid gap-4 sm:grid-cols-[repeat(auto-fill,minmax(17.5rem,1fr))]">
                 {nowItems.map((b, i) => (
@@ -242,7 +240,7 @@ export default function Dashboard() {
 
           <Panel title={`Следващите ${HORIZON_DAYS} дни`} count={upcomingShown.length}>
             {byDay.length === 0 ? (
-              <p className="card px-6 py-12 text-center text-sm text-ink-soft">Няма предстоящи настанявания или напускания.</p>
+              <EmptyState compact className="card" icon={CalendarDays} title="Нищо в следващите дни" description="Няма предстоящи настанявания или напускания." />
             ) : (
               <ul className="card px-5 sm:px-7">
                 {byDay.map((d, i) => (

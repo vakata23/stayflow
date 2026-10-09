@@ -1,5 +1,6 @@
 import { forwardRef, useEffect, useId, useRef, useState } from 'react'
-import { Loader2, X, AlertCircle, AlertTriangle, CheckCircle2, Info } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { Loader2, X, AlertCircle, AlertTriangle, CheckCircle2, Info, ArrowLeft } from 'lucide-react'
 
 /**
  * Общи компоненти на приложението. Стиловете са в src/styles/components.css и
@@ -189,15 +190,16 @@ export function Stat({ label, value, hint, icon: Icon, className = '' }) {
   )
 }
 
-export function EmptyState({ icon: Icon, title, description, action }) {
+/** Празно състояние: икона, какво липсва, какво да се направи. compact — вътре в карта (без собствена повърхност). */
+export function EmptyState({ icon: Icon, title, description, action, compact, className = '', titleAs: Title = 'p' }) {
   return (
-    <div className="empty">
+    <div className={cx('empty', compact && 'empty-compact', className)}>
       {Icon && (
         <div className="empty-icon">
-          <Icon className="h-7 w-7" strokeWidth={1.6} aria-hidden="true" />
+          <Icon className={compact ? 'h-5 w-5' : 'h-7 w-7'} strokeWidth={1.6} aria-hidden="true" />
         </div>
       )}
-      <p className="type-heading mt-4">{title}</p>
+      <Title className={cx('type-heading', compact ? 'mt-3' : 'mt-4')}>{title}</Title>
       {description && <p className="mt-1 max-w-sm text-sm text-ink-soft">{description}</p>}
       {action && <div className="mt-5">{action}</div>}
     </div>
@@ -216,6 +218,60 @@ export function Spinner({ className = '', label = 'Зареждане' }) {
 /** Скелет със същата форма като съдържанието — вместо въртящ се кръг за целия екран. */
 export function Skeleton({ className = '', style }) {
   return <div aria-hidden="true" className={cx('skeleton', className)} style={style} />
+}
+
+function SkeletonRows({ rows }) {
+  return (
+    <div className="space-y-5" aria-hidden="true">
+      {Array.from({ length: rows }, (_, i) => (
+        <div key={i} className="flex items-center gap-3.5">
+          <Skeleton className="h-11 w-11 shrink-0 rounded-full" />
+          <div className="min-w-0 flex-1 space-y-2">
+            <Skeleton className="h-3.5 w-2/5" />
+            <Skeleton className="h-3 w-3/5" />
+          </div>
+          <Skeleton className="h-3.5 w-14" />
+        </div>
+      ))}
+    </div>
+  )
+}
+
+/** Зареждане на списък вътре в екран: карта със скелет с формата на редовете (вместо въртящ се кръг). */
+export function LoadingCard({ rows = 4, className = '' }) {
+  return (
+    <div role="status" aria-busy="true" className={cx('card p-5 sm:p-6', className)}>
+      <span className="sr-only">Зареждане</span>
+      <SkeletonRows rows={rows} />
+    </div>
+  )
+}
+
+/** Зареждане на цял екран: заглавие + карти. Обвивката (лентата, менюто) остава на мястото си. */
+export function PageSkeleton() {
+  return (
+    <div role="status" aria-busy="true">
+      <span className="sr-only">Зареждане</span>
+      <div aria-hidden="true">
+        <Skeleton className="h-4 w-28" />
+        <Skeleton className="mt-3 h-10 w-64 max-w-full" />
+        <Skeleton className="mt-3 h-4 w-80 max-w-full" />
+      </div>
+      <div className="card mt-8 p-5 sm:mt-10 sm:p-6">
+        <SkeletonRows rows={4} />
+      </div>
+    </div>
+  )
+}
+
+/** „Назад“ към родителския екран — един и същ вид навсякъде, ≥ 44 px. */
+export function BackLink({ to, children }) {
+  return (
+    <Link to={to} className="-ml-2 mb-3 inline-flex min-h-11 items-center gap-1.5 rounded-lg px-2 text-sm font-semibold text-ink-soft transition-colors hover:text-ink">
+      <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+      {children}
+    </Link>
+  )
 }
 
 export function Divider({ className = '' }) {

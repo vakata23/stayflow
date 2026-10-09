@@ -24,7 +24,7 @@ import { buildDescription } from '../../lib/descriptionTemplate'
 import { accentFromImage } from '../../lib/accentColor'
 import { slugify, SLUG_RE } from '../../lib/slug'
 import { appOrigin } from '../../lib/appUrl'
-import { PageHeader, Card, Button, Alert, Spinner, Field, Input, Select, Textarea } from '../../components/ui'
+import { PageHeader, Card, Button, Alert, Field, Input, Select, Textarea, PageSkeleton, BackLink } from '../../components/ui'
 import PropertyPhotosManager from '../../components/PropertyPhotosManager'
 
 const POLL_MS = 3000
@@ -275,7 +275,7 @@ export default function ListingSetup() {
   }, [step, run?.id])
 
   // ---------------------------------------------------------------- UI
-  if (loading) return <Spinner />
+  if (loading) return <PageSkeleton />
   if (!property) return <Alert>{error}</Alert>
 
   const { unlabeled } = roomCounts(photos)
@@ -284,13 +284,7 @@ export default function ListingSetup() {
 
   return (
     <div className="mx-auto max-w-3xl">
-      <Link
-        to={`/properties/${id}`}
-        className="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-ink-soft hover:text-ink"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        {property.name}
-      </Link>
+      <BackLink to={`/properties/${id}`}>{property.name}</BackLink>
 
       <PageHeader
         icon={Sparkles}
