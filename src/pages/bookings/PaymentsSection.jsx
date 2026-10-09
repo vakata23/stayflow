@@ -73,9 +73,9 @@ export default function PaymentsSection({ bookingId }) {
   }
 
   return (
-    <div className="border-t border-slate-100 pt-5">
-      <p className="mb-3 flex items-center gap-1.5 text-sm font-medium text-slate-700">
-        <Wallet className="h-4 w-4 text-slate-400" />
+    <div className="border-t border-line pt-5">
+      <p className="mb-3 flex items-center gap-1.5 text-sm font-medium text-ink">
+        <Wallet className="h-4 w-4 text-ink-muted" />
         Плащания
       </p>
 
@@ -90,7 +90,7 @@ export default function PaymentsSection({ bookingId }) {
       ) : (
         <>
           {balance && (
-            <div className="mb-3 flex flex-wrap gap-4 rounded-lg bg-slate-50 px-4 py-3 text-sm">
+            <div className="mb-3 flex flex-wrap gap-4 rounded-lg bg-sunken px-4 py-3 text-sm">
               <span>
                 Дължимо: <strong>{formatMoney(balance.due)}</strong>
               </span>
@@ -100,8 +100,8 @@ export default function PaymentsSection({ bookingId }) {
               <span
                 className={
                   Number(balance.outstanding) > 0
-                    ? 'font-semibold text-amber-700'
-                    : 'font-semibold text-emerald-700'
+                    ? 'font-semibold text-warning-ink'
+                    : 'font-semibold text-success-ink'
                 }
               >
                 Остатък: {formatMoney(balance.outstanding)}
@@ -110,24 +110,24 @@ export default function PaymentsSection({ bookingId }) {
           )}
 
           {payments.length > 0 && (
-            <ul className="mb-3 divide-y divide-slate-100 rounded-lg border border-slate-200">
+            <ul className="mb-3 divide-y divide-line rounded-lg border border-line">
               {payments.map((p) => (
                 <li key={p.id} className="flex items-center justify-between gap-3 px-3 py-2 text-sm">
                   <div className="min-w-0">
-                    <span className="font-medium text-slate-800">{paymentKindLabel(p.kind)}</span>
-                    <span className="ml-2 text-xs text-slate-400">
+                    <span className="font-medium text-ink">{paymentKindLabel(p.kind)}</span>
+                    <span className="ml-2 text-xs text-ink-muted">
                       {paymentMethodLabel(p.method)} · {formatDateBG(p.paid_at.slice(0, 10))}
                     </span>
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
-                    <span className="font-semibold text-slate-900">
+                    <span className="font-semibold text-ink">
                       {p.kind === 'refund' ? '−' : ''}
                       {formatMoney(p.amount)}
                     </span>
                     <button
                       type="button"
                       onClick={() => handleDelete(p.id)}
-                      className="rounded p-1 text-slate-300 hover:bg-red-50 hover:text-red-600"
+                      className="rounded p-1 text-ink-muted hover:bg-danger-soft hover:text-danger"
                       aria-label="Изтрий плащането"
                     >
                       <Trash2 className="h-3.5 w-3.5" />

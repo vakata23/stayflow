@@ -52,8 +52,8 @@ export default function ResetPassword() {
           <Button type="submit" loading={loading} className="w-full">Изпрати линк</Button>
         </form>
       )}
-      <p className="mt-6 text-center text-sm text-slate-500">
-        <Link to="/login" className="font-semibold text-brand-600 hover:text-brand-700">
+      <p className="mt-6 text-center text-sm text-ink-soft">
+        <Link to="/login" className="font-semibold text-accent hover:text-accent-ink">
           Обратно към входа
         </Link>
       </p>

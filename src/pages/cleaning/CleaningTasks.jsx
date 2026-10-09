@@ -25,20 +25,20 @@ function TaskCard({ task, propertyName, onToggle, onEdit }) {
   const overdue = task.status !== 'done' && task.due_date < today
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-3.5 shadow-sm transition-shadow hover:shadow-md">
+    <div className="rounded-xl border border-line bg-card p-3.5 shadow-sm transition-shadow hover:shadow-md">
       <div className="flex items-start justify-between gap-2">
         <button
           onClick={() => onEdit(task)}
-          className="text-left text-sm font-semibold text-slate-900 hover:text-brand-700"
+          className="text-left text-sm font-semibold text-ink hover:text-accent-ink"
         >
           {propertyName}
         </button>
         <button
           onClick={() => onToggle(task)}
-          className={`shrink-0 rounded-lg p-1.5 transition-colors ${
+          className={`icon-btn shrink-0 transition-colors ${
             task.status === 'done'
-              ? 'bg-emerald-100 text-emerald-600 hover:bg-emerald-200'
-              : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+              ? 'bg-success-soft text-success hover:bg-success-line'
+              : 'bg-sunken text-ink-soft hover:bg-line'
           }`}
           title={`Смени статус (сега: ${taskStatusLabel(task.status)})`}
         >
@@ -46,8 +46,8 @@ function TaskCard({ task, propertyName, onToggle, onEdit }) {
         </button>
       </div>
 
-      <div className="mt-2.5 space-y-1.5 text-xs text-slate-500">
-        <p className={`flex items-center gap-1.5 ${overdue ? 'font-semibold text-red-600' : ''}`}>
+      <div className="mt-2.5 space-y-1.5 text-xs text-ink-soft">
+        <p className={`flex items-center gap-1.5 ${overdue ? 'font-semibold text-danger' : ''}`}>
           <CalendarClock className="h-3.5 w-3.5" />
           {formatDateBG(task.due_date)}
           {overdue && ' · просрочена'}
@@ -60,7 +60,7 @@ function TaskCard({ task, propertyName, onToggle, onEdit }) {
         )}
       </div>
 
-      {task.notes && <p className="mt-2 line-clamp-2 text-xs text-slate-400">{task.notes}</p>}
+      {task.notes && <p className="mt-2 line-clamp-2 text-xs text-ink-muted">{task.notes}</p>}
     </div>
   )
 }
@@ -175,6 +175,7 @@ export default function CleaningTasks() {
             <Select
               value={propertyId}
               onChange={(e) => setPropertyId(e.target.value)}
+              aria-label="Имот"
               className="w-auto min-w-52"
             >
               <option value="all">Всички имоти</option>
@@ -205,21 +206,21 @@ export default function CleaningTasks() {
           ) : (
             <div className="grid gap-4 md:grid-cols-3">
               {columns.map((col) => (
-                <div key={col.value} className="rounded-2xl bg-slate-100/60 p-3">
+                <div key={col.value} className="rounded-2xl bg-sunken/60 p-3">
                   <div className="mb-3 flex items-center justify-between px-1">
-                    <span className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                    <span className="flex items-center gap-2 text-sm font-semibold text-ink">
                       <span
                         className={`inline-flex rounded-md px-2 py-0.5 text-xs ${TASK_STATUS_STYLES[col.value]}`}
                       >
                         {col.label}
                       </span>
                     </span>
-                    <span className="text-xs font-medium text-slate-400">{col.tasks.length}</span>
+                    <span className="text-xs font-medium text-ink-muted">{col.tasks.length}</span>
                   </div>
 
                   <div className="space-y-2.5">
                     {col.tasks.length === 0 ? (
-                      <p className="px-1 py-6 text-center text-xs text-slate-400">Няма задачи</p>
+                      <p className="px-1 py-6 text-center text-xs text-ink-muted">Няма задачи</p>
                     ) : (
                       col.tasks.map((task) => (
                         <TaskCard

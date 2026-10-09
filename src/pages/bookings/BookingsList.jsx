@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { BookMarked, Plus, ArrowUpDown, Building2, Filter, AlertTriangle } from 'lucide-react'
+import { BookMarked, Plus, ArrowUpDown, Filter, AlertTriangle } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { formatDateBG, nightsBetween } from '../../lib/dates'
 import { formatMoney } from '../../lib/money'
@@ -15,6 +15,15 @@ import {
 } from '../../lib/bookings'
 import { PageHeader, Card, Select, Input, Button, Alert, Spinner, EmptyState } from '../../components/ui'
 import BookingFormModal from './BookingFormModal'
+import { rise, useIntro } from '../../lib/motion'
+
+const initials = (name) =>
+  (name || '?')
+    .split(/\s+/)
+    .map((w) => w[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase()
 
 export default function BookingsList() {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -33,6 +42,7 @@ export default function BookingsList() {
 
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState(null)
+  const animate = useIntro('screen-bookings', !loading)
 
   useEffect(() => {
     supabase
@@ -88,11 +98,11 @@ export default function BookingsList() {
       if (to) query = query.lte('check_in', to)
     }
 
-    const { data, error } = await query
+    // Броят „чакат цена“ се взема едновременно със списъка — бележката не измества списъка, след като е показан.
+    const [{ data, error }] = await Promise.all([query, refreshIncompleteCount()])
     if (error) setError('Неуспешно зареждане: ' + error.message)
     setBookings(data ?? [])
     setLoading(false)
-    refreshIncompleteCount()
   }, [propertyId, status, from, to, sortAsc, incompleteOnly, refreshIncompleteCount])
 
   useEffect(() => {
@@ -115,12 +125,17 @@ export default function BookingsList() {
     setIncompleteOnly((v) => !v)
   }
 
+  const openEditor = (b) => {
+    setEditing(b)
+    setModalOpen(true)
+  }
+
   return (
     <div>
       <PageHeader
-        icon={BookMarked}
+        eyebrow="Всички резервации"
         title="Резервации"
-        description="Всички резервации с филтри и сортиране."
+        description="Филтри, сортиране и бързо редактиране."
         action={
           <Button
             onClick={() => {
@@ -135,20 +150,18 @@ export default function BookingsList() {
         }
       />
 
-      <div className="mt-8 space-y-4">
+      <div className="mt-8 space-y-5 sm:mt-10">
         {error && <Alert>{error}</Alert>}
 
         {incompleteCount > 0 && (
           <button
+            type="button"
             onClick={toggleIncomplete}
-            className={`flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left text-sm transition-colors ${
-              incompleteOnly
-                ? 'border-amber-300 bg-amber-100 text-amber-900'
-                : 'border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100'
-            }`}
+            aria-pressed={incompleteOnly}
+            className="flex min-h-11 w-full flex-wrap items-center gap-x-3 gap-y-2 rounded-2xl bg-warning-soft px-5 py-3.5 text-left text-sm text-warning-ink shadow-card transition-transform active:scale-[0.99]"
           >
-            <AlertTriangle className="h-4 w-4 shrink-0" />
-            <span className="flex-1">
+            <AlertTriangle className="h-[1.125rem] w-[1.125rem] shrink-0" aria-hidden="true" />
+            <span className="min-w-0 flex-1 basis-[12rem]">
               <strong>{incompleteCount}</strong>{' '}
               {incompleteCount === 1 ? 'резервация от платформа чака' : 'резервации от платформи чакат'}{' '}
               цена/комисиона — иначе приходите ще се смятат грешно.
@@ -159,25 +172,25 @@ export default function BookingsList() {
           </button>
         )}
 
-        <Card className="p-4">
-          <div className="flex flex-wrap items-end gap-3">
-            <div className="flex items-center gap-1.5 pb-2 text-sm font-medium text-slate-500">
-              <Filter className="h-4 w-4" />
+        <Card className="p-4 sm:p-5">
+          <div className="flex flex-wrap items-end gap-x-3 gap-y-3">
+            <div className="flex w-full items-center gap-1.5 text-sm font-semibold text-ink-soft sm:w-auto sm:pb-3">
+              <Filter className="h-4 w-4" aria-hidden="true" />
               Филтри
             </div>
 
             {incompleteOnly && (
-              <span className="pb-2 text-xs text-slate-400">
+              <span className="w-full pb-1 text-xs text-ink-muted sm:w-auto sm:pb-3">
                 Филтрите по-долу са изключени, докато преглеждате непопълнените резервации.
               </span>
             )}
 
             <div
-              className={`flex flex-wrap items-end gap-3 ${incompleteOnly ? 'pointer-events-none opacity-40' : ''}`}
+              className={`grid w-full grid-cols-2 gap-3 sm:flex sm:w-auto sm:flex-wrap sm:items-end ${incompleteOnly ? 'pointer-events-none opacity-40' : ''}`}
             >
-              <label className="block">
-                <span className="mb-1 block text-xs font-medium text-slate-500">Имот</span>
-                <Select value={propertyId} onChange={(e) => setPropertyId(e.target.value)} className="w-auto min-w-44">
+              <label className="block min-w-0">
+                <span className="mb-1 block text-xs font-semibold text-ink-soft">Имот</span>
+                <Select value={propertyId} onChange={(e) => setPropertyId(e.target.value)} className="sm:w-auto sm:min-w-44">
                   <option value="all">Всички</option>
                   {properties.map((p) => (
                     <option key={p.id} value={p.id}>
@@ -187,9 +200,9 @@ export default function BookingsList() {
                 </Select>
               </label>
 
-              <label className="block">
-                <span className="mb-1 block text-xs font-medium text-slate-500">Статус</span>
-                <Select value={status} onChange={(e) => setStatus(e.target.value)} className="w-auto min-w-36">
+              <label className="block min-w-0">
+                <span className="mb-1 block text-xs font-semibold text-ink-soft">Статус</span>
+                <Select value={status} onChange={(e) => setStatus(e.target.value)} className="sm:w-auto sm:min-w-36">
                   <option value="all">Всички</option>
                   {BOOKING_STATUSES.map((s) => (
                     <option key={s.value} value={s.value}>
@@ -199,19 +212,19 @@ export default function BookingsList() {
                 </Select>
               </label>
 
-              <label className="block">
-                <span className="mb-1 block text-xs font-medium text-slate-500">Настаняване от</span>
-                <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="w-auto" />
+              <label className="block min-w-0">
+                <span className="mb-1 block text-xs font-semibold text-ink-soft">Настаняване от</span>
+                <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="sm:w-auto" />
               </label>
 
-              <label className="block">
-                <span className="mb-1 block text-xs font-medium text-slate-500">до</span>
-                <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="w-auto" />
+              <label className="block min-w-0">
+                <span className="mb-1 block text-xs font-semibold text-ink-soft">до</span>
+                <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="sm:w-auto" />
               </label>
             </div>
 
             {hasFilters && !incompleteOnly && (
-              <Button variant="secondary" onClick={clearFilters} className="!py-2">
+              <Button variant="secondary" onClick={clearFilters}>
                 Изчисти
               </Button>
             )}
@@ -271,94 +284,123 @@ export default function BookingsList() {
             }
           />
         ) : (
-          <Card className="overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
+          <>
+            {/* Телефон: карта на резервация (гост, дати, цена); цялата карта е бутон за редакция */}
+            <ul className="space-y-3 md:hidden">
+              {bookings.map((b, i) => (
+                <li key={b.id} {...rise(i, animate)}>
+                  <button type="button" onClick={() => openEditor(b)} className="card card-interactive grid w-full grid-cols-2 gap-x-4 gap-y-3 p-4 text-left">
+                    <span className="col-span-2 flex items-center gap-3">
+                      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-accent-soft text-[0.9375rem] font-bold text-accent-ink" aria-hidden="true">
+                        {initials(b.guest_name)}
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate font-semibold leading-tight">{b.guest_name}</span>
+                        <span className="block truncate text-sm text-ink-soft">{propertyName(b.property_id)}</span>
+                      </span>
+                      <span className={`inline-flex shrink-0 rounded-md px-2 py-0.5 text-xs font-semibold ${STATUS_STYLES[b.status]}`}>{statusLabel(b.status)}</span>
+                    </span>
+                    <span>
+                      <span className="block text-xs text-ink-muted">Настаняване</span>
+                      <span className="num font-medium">{formatDateBG(b.check_in)}</span>
+                    </span>
+                    <span>
+                      <span className="block text-xs text-ink-muted">Напускане</span>
+                      <span className="num font-medium">{formatDateBG(b.check_out)}</span>
+                    </span>
+                    <span>
+                      <span className="block text-xs text-ink-muted">Нощувки</span>
+                      <span className="num font-medium">{nightsBetween(b.check_in, b.check_out)}</span>
+                    </span>
+                    <span className="text-right">
+                      <span className="block text-xs text-ink-muted">Цена</span>
+                      {b.total_price != null ? (
+                        <span className="num font-display text-lg font-semibold">{formatMoney(b.total_price)}</span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-sm font-semibold text-warning-ink">
+                          <AlertTriangle className="h-3.5 w-3.5" aria-hidden="true" />
+                          няма
+                        </span>
+                      )}
+                    </span>
+                    <span className="col-span-2 flex items-center justify-between gap-3">
+                      <span className={`inline-flex rounded-md px-2 py-0.5 text-xs font-semibold ${(SOURCE_STYLES[b.source] ?? SOURCE_STYLES.manual).chip}`}>{sourceLabel(b.source)}</span>
+                      {OTA_SOURCES.includes(b.source) && (
+                        <span className={`num text-sm ${Number(b.commission) > 0 ? 'text-ink-soft' : 'font-semibold text-warning-ink'}`}>
+                          Комисиона: {formatMoney(Number(b.commission) > 0 ? b.commission : 0)}
+                        </span>
+                      )}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+
+            {/* Голям екран: таблица */}
+            <div className="table-wrap hidden md:block" tabIndex={0} role="region" aria-label="Резервации (таблица)" {...rise(0, animate)}>
+              <table className="table">
                 <thead>
-                  <tr className="border-b border-slate-100 bg-slate-50/60 text-xs uppercase tracking-wide text-slate-500">
-                    <th className="px-5 py-3 font-semibold">Гост</th>
-                    <th className="px-5 py-3 font-semibold">Имот</th>
-                    <th className="px-5 py-3 font-semibold">
-                      <button
-                        onClick={() => setSortAsc((s) => !s)}
-                        className="inline-flex items-center gap-1 hover:text-slate-800"
-                        title="Сортирай по настаняване"
-                      >
+                  <tr>
+                    <th scope="col">Гост</th>
+                    <th scope="col">Имот</th>
+                    <th scope="col" aria-sort={sortAsc ? 'ascending' : 'descending'}>
+                      <button type="button" onClick={() => setSortAsc((s) => !s)} className="inline-flex min-h-8 items-center gap-1 hover:text-ink" title="Сортирай по настаняване">
                         Настаняване
-                        <ArrowUpDown className="h-3 w-3" />
+                        <ArrowUpDown className="h-3 w-3" aria-hidden="true" />
                       </button>
                     </th>
-                    <th className="px-5 py-3 font-semibold">Напускане</th>
-                    <th className="px-5 py-3 font-semibold">Нощувки</th>
-                    <th className="px-5 py-3 font-semibold">Цена</th>
-                    <th className="px-5 py-3 font-semibold">Комисиона</th>
-                    <th className="px-5 py-3 font-semibold">Източник</th>
-                    <th className="px-5 py-3 font-semibold">Статус</th>
+                    <th scope="col">Напускане</th>
+                    <th scope="col" className="num">Нощувки</th>
+                    <th scope="col" className="num">Цена</th>
+                    <th scope="col" className="num">Комисиона</th>
+                    <th scope="col">Източник</th>
+                    <th scope="col">Статус</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody>
                   {bookings.map((b) => (
-                    <tr
-                      key={b.id}
-                      onClick={() => {
-                        setEditing(b)
-                        setModalOpen(true)
-                      }}
-                      className="cursor-pointer hover:bg-slate-50/60"
-                    >
-                      <td className="px-5 py-3.5">
-                        <p className="font-medium text-slate-900">{b.guest_name}</p>
-                        {b.guest_phone && <p className="text-xs text-slate-400">{b.guest_phone}</p>}
+                    <tr key={b.id} onClick={() => openEditor(b)} className="cursor-pointer">
+                      <td>
+                        <p className="font-semibold text-ink">{b.guest_name}</p>
+                        {b.guest_phone && <p className="text-xs text-ink-muted">{b.guest_phone}</p>}
                       </td>
-                      <td className="px-5 py-3.5 text-slate-600">{propertyName(b.property_id)}</td>
-                      <td className="px-5 py-3.5 text-slate-600">{formatDateBG(b.check_in)}</td>
-                      <td className="px-5 py-3.5 text-slate-600">{formatDateBG(b.check_out)}</td>
-                      <td className="px-5 py-3.5 text-slate-600">
-                        {nightsBetween(b.check_in, b.check_out)}
-                      </td>
-                      <td className="px-5 py-3.5">
+                      <td className="text-ink-soft">{propertyName(b.property_id)}</td>
+                      <td className="text-ink-soft">{formatDateBG(b.check_in)}</td>
+                      <td className="text-ink-soft">{formatDateBG(b.check_out)}</td>
+                      <td className="num text-ink-soft">{nightsBetween(b.check_in, b.check_out)}</td>
+                      <td className="num">
                         {b.total_price != null ? (
-                          <span className="text-slate-600">{formatMoney(b.total_price)}</span>
+                          <span className="font-semibold">{formatMoney(b.total_price)}</span>
                         ) : (
-                          <span className="flex items-center gap-1 font-medium text-amber-700">
-                            <AlertTriangle className="h-3.5 w-3.5" />
+                          <span className="inline-flex items-center gap-1 font-semibold text-warning-ink">
+                            <AlertTriangle className="h-3.5 w-3.5" aria-hidden="true" />
                             няма
                           </span>
                         )}
                       </td>
-                      <td className="px-5 py-3.5 text-slate-600">
+                      <td className="num text-ink-soft">
                         {OTA_SOURCES.includes(b.source) ? (
                           Number(b.commission) > 0 ? (
                             formatMoney(b.commission)
                           ) : (
-                            <span className="font-medium text-amber-700">{formatMoney(0)}</span>
+                            <span className="font-semibold text-warning-ink">{formatMoney(0)}</span>
                           )
                         ) : (
                           '—'
                         )}
                       </td>
-                      <td className="px-5 py-3.5">
-                        <span
-                          className={`inline-flex rounded-md px-2 py-0.5 text-xs font-medium ${
-                            (SOURCE_STYLES[b.source] ?? SOURCE_STYLES.manual).chip
-                          }`}
-                        >
-                          {sourceLabel(b.source)}
-                        </span>
+                      <td>
+                        <span className={`inline-flex rounded-md px-2 py-0.5 text-xs font-semibold ${(SOURCE_STYLES[b.source] ?? SOURCE_STYLES.manual).chip}`}>{sourceLabel(b.source)}</span>
                       </td>
-                      <td className="px-5 py-3.5">
-                        <span
-                          className={`inline-flex rounded-md px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[b.status]}`}
-                        >
-                          {statusLabel(b.status)}
-                        </span>
+                      <td>
+                        <span className={`inline-flex rounded-md px-2 py-0.5 text-xs font-semibold ${STATUS_STYLES[b.status]}`}>{statusLabel(b.status)}</span>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-          </Card>
+          </>
         )}
       </div>
 

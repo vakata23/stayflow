@@ -21,24 +21,24 @@ function GuestCardRow({ property }) {
 
   return (
     <div className="flex flex-wrap items-center gap-4 px-5 py-4">
-      <div className="h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-slate-100">
+      <div className="h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-sunken">
         {property.cover_image_url ? (
           <img src={property.cover_image_url} alt="" className="h-full w-full object-cover" />
         ) : (
           <div className="flex h-full w-full items-center justify-center">
-            <Building2 className="h-5 w-5 text-slate-300" />
+            <Building2 className="h-5 w-5 text-ink-muted" />
           </div>
         )}
       </div>
 
       <div className="min-w-0 flex-1">
-        <p className="font-medium text-slate-900">{property.name}</p>
-        <p className="truncate font-mono text-xs text-slate-400">{link}</p>
+        <p className="font-medium text-ink">{property.name}</p>
+        <p className="truncate font-mono text-xs text-ink-muted">{link}</p>
       </div>
 
       <div className="flex gap-2">
         <Button variant="secondary" onClick={copy} className="!py-2">
-          {copied ? <Check className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
+          {copied ? <Check className="h-4 w-4 text-success" /> : <Copy className="h-4 w-4" />}
           {copied ? 'Копирано' : 'Копирай линк'}
         </Button>
         <a href={link} target="_blank" rel="noreferrer">
@@ -98,7 +98,7 @@ export default function GuestCards() {
             }
           />
         ) : (
-          <Card className="divide-y divide-slate-100">
+          <Card className="divide-y divide-line">
             {properties.map((p) => (
               <GuestCardRow key={p.id} property={p} />
             ))}

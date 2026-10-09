@@ -70,26 +70,57 @@ export function ensureContrast(hex) {
   return out
 }
 
-function mix(hex, withRgb, amount) {
-  const a = hexToRgb(hex)
-  return rgbToHex(a.map((v, i) => v + (withRgb[i] - v) * amount))
+/** Съотношение на контраст между два цвята (WCAG), 1…21. */
+export function contrastRatio(hexA, hexB) {
+  const a = luminance(hexToRgb(hexA))
+  const b = luminance(hexToRgb(hexB))
+  return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05)
 }
 
-/** CSS променливи за обвивка — пренасочват bg-brand-*, text-brand-* и т.н. */
-export function accentCssVars(hex) {
-  if (!hex) return undefined
-  const white = [255, 255, 255]
-  const black = [0, 0, 0]
+const hslHex = (h, s, l) => rgbToHex(hslToRgb([h, s, l]))
+const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v))
+
+/** Затъмнява цвета, докато стане четим (≥ min) върху даден светъл фон. */
+export function ensureContrastOn(hex, bgHex, min = MIN_CONTRAST) {
+  const [h, s, l0] = rgbToHsl(hexToRgb(hex))
+  let l = l0
+  let out = hex
+  while (contrastRatio(out, bgHex) < min && l > 0) {
+    l = Math.max(0, l - 0.02)
+    out = hslHex(h, s, l)
+  }
+  return out
+}
+
+/**
+ * Палитра „Златен час“ за публичната страница, изведена от един акцентен цвят:
+ * хартия (светла, леко оцветена), мастило, приглушен текст и акцент. Всяка
+ * комбинация текст/фон е с контраст ≥ 4.5:1:
+ *   • accent — бял текст върху акцента (бутони);
+ *   • accentText — акцентът като текст върху хартията и върху картите;
+ *   • ink, muted — основен и второстепенен текст върху хартията и картите.
+ * Без акцент се ползва основният тюркоаз на StayFlow.
+ */
+export function stayThemeVars(hex) {
+  const base = hex || '#1b787c'
+  const [h, s] = rgbToHsl(hexToRgb(base))
+  const paper = hslHex(h, clamp(s * 0.45, 0.06, 0.26), 0.955)
+  const paperDeep = hslHex(h, clamp(s * 0.5, 0.08, 0.3), 0.915)
+  const ink = hslHex(h, clamp(s * 0.35, 0.08, 0.3), 0.09)
+  const muted = ensureContrastOn(hslHex(h, clamp(s * 0.25, 0.06, 0.2), 0.42), paperDeep)
+  const accent = ensureContrast(base)
+  const accentText = ensureContrastOn(accent, paperDeep)
+  const shade = hslToRgb([h, clamp(s * 0.55, 0.2, 0.5), 0.06]).map(Math.round).join(',')
+  const glow = hslHex(h, clamp(s, 0.35, 0.7), 0.3)
   return {
-    '--color-brand-50': mix(hex, white, 0.93),
-    '--color-brand-100': mix(hex, white, 0.85),
-    '--color-brand-200': mix(hex, white, 0.7),
-    '--color-brand-300': mix(hex, white, 0.5),
-    '--color-brand-400': mix(hex, white, 0.25),
-    '--color-brand-500': mix(hex, white, 0.1),
-    '--color-brand-600': hex,
-    '--color-brand-700': mix(hex, black, 0.18),
-    '--color-brand-800': mix(hex, black, 0.32),
+    '--stay-accent': accent,
+    '--stay-accent-text': accentText,
+    '--stay-paper': paper,
+    '--stay-paper-deep': paperDeep,
+    '--stay-ink': ink,
+    '--stay-muted': muted,
+    '--stay-shade': shade,
+    '--stay-glow': glow,
   }
 }
 

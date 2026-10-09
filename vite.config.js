@@ -176,6 +176,8 @@ export default defineConfig(({ mode }) => {
       analyzePhotosDevPlugin(env),
       VitePWA({
         registerType: 'autoUpdate',
+        // Регистрацията на service worker-а не блокира първото изобразяване (script defer).
+        injectRegister: 'script-defer',
         includeAssets: ['apple-touch-icon.png', 'favicon-32.png'],
         manifest: {
           name: 'StayFlow — Управление на имоти',
@@ -183,8 +185,8 @@ export default defineConfig(({ mode }) => {
           description:
             'Управление на краткосрочни наеми — резервации, календар, почистване, фактури.',
           lang: 'bg',
-          theme_color: '#1b787c',
-          background_color: '#f8fafc',
+          theme_color: '#f6efe3',
+          background_color: '#f6efe3',
           display: 'standalone',
           orientation: 'portrait',
           start_url: '/',
@@ -196,10 +198,11 @@ export default defineConfig(({ mode }) => {
           ],
         },
         workbox: {
-          // Прекешираме само app shell-а (JS/CSS/HTML/икони). Шрифтът за
-          // фактурите (515KB) се тегли при нужда — не бива да тежи в SW.
-          globPatterns: ['**/*.{js,css,html,png,svg,ico}'],
-          globIgnores: ['**/fonts/**'],
+          // Прекешираме app shell-а (JS/CSS/HTML/икони) и шрифта на интерфейса
+          // Onest (~78 KB) и на заглавията Literata (~90 KB), за да не мига текстът офлайн. Шрифтът за фактурите
+          // (Roboto, 515KB) се тегли при нужда — не бива да тежи в SW.
+          globPatterns: ['**/*.{js,css,html,png,svg,ico}', 'fonts/onest-*.woff2', 'fonts/literata-*.woff2'],
+          globIgnores: ['**/fonts/Roboto*'],
           // API заявките към Supabase и /api/ical никога не се кешират.
           navigateFallbackDenylist: [/^\/api\//],
           maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,

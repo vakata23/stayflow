@@ -7,9 +7,9 @@ export const TASK_STATUSES = [
 ]
 
 export const TASK_STATUS_STYLES = {
-  pending: 'bg-slate-100 text-slate-600',
-  in_progress: 'bg-amber-100 text-amber-700',
-  done: 'bg-emerald-100 text-emerald-700',
+  pending: 'bg-sunken text-ink-soft',
+  in_progress: 'bg-warning-soft text-warning-ink',
+  done: 'bg-success-soft text-success-ink',
 }
 
 // Следващият статус при клик върху toggle бутона (кръгова смяна).
@@ -26,9 +26,9 @@ export const ISSUE_TYPES = [
 ]
 
 export const ISSUE_STYLES = {
-  damage: 'bg-red-100 text-red-700',
-  missing_item: 'bg-amber-100 text-amber-700',
-  other: 'bg-slate-100 text-slate-600',
+  damage: 'bg-danger-soft text-danger-ink',
+  missing_item: 'bg-warning-soft text-warning-ink',
+  other: 'bg-sunken text-ink-soft',
 }
 
 export function taskStatusLabel(v) {

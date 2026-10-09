@@ -33,11 +33,12 @@ const Rules = lazy(() => import('./pages/earnings/Rules'))
 const BookingRequests = lazy(() => import('./pages/BookingRequests'))
 const Notifications = lazy(() => import('./pages/Notifications'))
 const PublicStay = lazy(() => import('./pages/stay/PublicStay'))
+const DesignSystem = lazy(() => import('./pages/DesignSystem'))
 
 function PageFallback() {
   return (
     <div className="flex min-h-[60vh] items-center justify-center">
-      <div className="h-7 w-7 animate-spin rounded-full border-2 border-brand-600 border-t-transparent" />
+      <div className="h-7 w-7 animate-spin rounded-full border-2 border-accent border-t-transparent" />
     </div>
   )
 }
@@ -60,6 +61,9 @@ export default function App() {
 
             {/* Публична страница за резервации — без login */}
             <Route path="/stay/:slug" element={<PublicStay />} />
+
+            {/* Витрина на дизайн системата — без данни, noindex */}
+            <Route path="/design" element={<DesignSystem />} />
 
             {/* „Преглед като гост“ на собственика — без менюто, но само за логнат */}
             <Route
@@ -107,9 +111,9 @@ export default function App() {
 function NotFound() {
   return (
     <div className="flex min-h-[60vh] flex-col items-center justify-center text-center">
-      <p className="text-5xl font-bold text-brand-600">404</p>
-      <p className="mt-3 text-lg font-semibold text-slate-800">Страницата не е намерена</p>
-      <a href="/" className="mt-4 text-sm font-medium text-brand-600 hover:text-brand-700">
+      <p className="text-5xl font-bold text-accent">404</p>
+      <p className="mt-3 text-lg font-semibold text-ink">Страницата не е намерена</p>
+      <a href="/" className="mt-4 text-sm font-medium text-accent hover:text-accent-ink">
         ← Към таблото
       </a>
     </div>

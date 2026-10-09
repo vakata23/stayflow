@@ -78,7 +78,7 @@ export default function PropertyForm({ initial, onSubmit, submitLabel, saving, e
       {(error || localError) && <Alert>{error || localError}</Alert>}
 
       <Card className="p-6">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-700">
+        <h2 className="type-heading">
           Основна информация
         </h2>
         <div className="mt-5 grid gap-5 sm:grid-cols-2">
@@ -120,10 +120,10 @@ export default function PropertyForm({ initial, onSubmit, submitLabel, saving, e
       </Card>
 
       <Card className="p-6">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-700">
+        <h2 className="type-heading">
           Информация за гостите
         </h2>
-        <p className="mt-1 text-xs text-slate-400">
+        <p className="mt-1 text-xs text-ink-muted">
           Тези данни ще се показват на публичната адресна карта на имота (Етап 7).
         </p>
         <div className="mt-5 grid gap-5 sm:grid-cols-2">
@@ -150,16 +150,16 @@ export default function PropertyForm({ initial, onSubmit, submitLabel, saving, e
       </Card>
 
       <Card className="p-6">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-700">Снимка</h2>
+        <h2 className="type-heading">Снимка</h2>
         <div className="mt-5 flex flex-wrap items-center gap-5">
-          <div className="relative h-32 w-48 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+          <div className="relative h-32 w-48 shrink-0 overflow-hidden rounded-xl border border-line bg-sunken">
             {preview ? (
               <>
                 <img src={preview} alt="Преглед" className="h-full w-full object-cover" />
                 <button
                   type="button"
                   onClick={clearImage}
-                  className="absolute right-1.5 top-1.5 rounded-lg bg-slate-900/60 p-1 text-white hover:bg-slate-900/80"
+                  className="absolute right-1.5 top-1.5 rounded-lg bg-ink/60 p-1 text-white hover:bg-ink/80"
                   aria-label="Премахни снимката"
                 >
                   <X className="h-3.5 w-3.5" />
@@ -167,7 +167,7 @@ export default function PropertyForm({ initial, onSubmit, submitLabel, saving, e
               </>
             ) : (
               <div className="flex h-full w-full items-center justify-center">
-                <ImagePlus className="h-7 w-7 text-slate-300" />
+                <ImagePlus className="h-7 w-7 text-ink-muted" />
               </div>
             )}
           </div>
@@ -177,9 +177,9 @@ export default function PropertyForm({ initial, onSubmit, submitLabel, saving, e
               type="file"
               accept="image/*"
               onChange={handleFile}
-              className="block w-full text-sm text-slate-500 file:mr-3 file:cursor-pointer file:rounded-lg file:border-0 file:bg-brand-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-brand-700 hover:file:bg-brand-100"
+              className="block w-full text-sm text-ink-soft file:mr-3 file:cursor-pointer file:rounded-lg file:border-0 file:bg-accent-soft file:px-4 file:py-2 file:text-sm file:font-semibold file:text-accent-ink hover:file:bg-accent-soft"
             />
-            <p className="mt-2 text-xs text-slate-400">Снимка от телефона, до 25 MB — смаляваме я и махаме GPS данните автоматично.</p>
+            <p className="mt-2 text-xs text-ink-muted">Снимка от телефона, до 25 MB — смаляваме я и махаме GPS данните автоматично.</p>
           </div>
         </div>
       </Card>

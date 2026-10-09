@@ -20,7 +20,7 @@ export default function ListingPreview() {
     let cancelled = false
     Promise.all([
       supabase.from('properties').select('*').eq('id', id).maybeSingle(),
-      supabase.from('property_photos').select('photo_url').eq('property_id', id).order('position'),
+      supabase.from('property_photos').select('photo_url, thumb_url').eq('property_id', id).order('position').order('id'),
       supabase.from('property_settings').select('base_price').eq('property_id', id).maybeSingle(),
       supabase.from('reviews').select('*').eq('property_id', id).order('created_at', { ascending: false }),
     ]).then(([p, photos, settings, revs]) => {
@@ -29,6 +29,7 @@ export default function ListingPreview() {
       setProperty({
         ...p.data,
         photos: (photos.data ?? []).map((x) => x.photo_url),
+        photo_thumbs: (photos.data ?? []).map((x) => x.thumb_url || x.photo_url),
         base_price: settings.data?.base_price ?? 0,
         public_lat: p.data.lat,
         public_lng: p.data.lng,
@@ -70,8 +71,8 @@ export default function ListingPreview() {
   }
   if (!property) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-100">
-        <Loader2 className="h-7 w-7 animate-spin text-brand-600" />
+      <div className="flex min-h-screen items-center justify-center bg-sunken">
+        <Loader2 className="h-7 w-7 animate-spin text-accent" />
       </div>
     )
   }
@@ -80,7 +81,7 @@ export default function ListingPreview() {
     <>
       <Link
         to={`/properties/${id}/setup`}
-        className="fixed bottom-24 left-4 z-50 flex items-center gap-1.5 rounded-full bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white shadow-lg sm:bottom-6"
+        className="fixed bottom-24 left-4 z-50 flex items-center gap-1.5 rounded-full bg-ink px-4 py-2.5 text-sm font-semibold text-white shadow-lg sm:bottom-6"
       >
         <ArrowLeft className="h-4 w-4" />
         Обратно към редакцията

@@ -105,10 +105,10 @@ export default function PropertySettingsCard({ property, onSaved }) {
 
   return (
     <Card className="p-6">
-      <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-700">
+      <h2 className="type-heading">
         Настройки на имота
       </h2>
-      <p className="mt-1 text-xs text-slate-400">
+      <p className="mt-1 text-xs text-ink-muted">
         Тези стойности се ползват за предложената комисиона и туристическа такса при нова
         резервация, както и за изчисляване на приходите.
       </p>
@@ -135,7 +135,7 @@ export default function PropertySettingsCard({ property, onSaved }) {
                   onChange={set('ota_commission_pct')}
                   className="pr-8"
                 />
-                <Percent className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-300" />
+                <Percent className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted" />
               </div>
             </Field>
             <Field label="Туристически данък" hint="€ на гост на нощувка">
@@ -154,13 +154,13 @@ export default function PropertySettingsCard({ property, onSaved }) {
                   onChange={set('deposit_pct')}
                   className="pr-8"
                 />
-                <Percent className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-300" />
+                <Percent className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted" />
               </div>
             </Field>
           </div>
 
-          <div className="border-t border-slate-100 pt-5">
-            <p className="mb-3 text-sm font-medium text-slate-700">Канали за връзка с госта</p>
+          <div className="border-t border-line pt-5">
+            <p className="mb-3 text-sm font-medium text-ink">Канали за връзка с госта</p>
 
             {channels.length > 0 && (
               <ul className="mb-3 space-y-2">
@@ -169,17 +169,17 @@ export default function PropertySettingsCard({ property, onSaved }) {
                   return (
                     <li
                       key={i}
-                      className="flex items-center gap-3 rounded-lg border border-slate-200 px-3 py-2"
+                      className="flex items-center gap-3 rounded-lg border border-line px-3 py-2"
                     >
-                      <Icon className="h-4 w-4 shrink-0 text-slate-400" />
-                      <span className="w-24 shrink-0 text-xs font-medium text-slate-500">
+                      <Icon className="h-4 w-4 shrink-0 text-ink-muted" />
+                      <span className="w-24 shrink-0 text-xs font-medium text-ink-soft">
                         {channelLabel(ch.type)}
                       </span>
-                      <span className="flex-1 truncate text-sm text-slate-800">{ch.value}</span>
+                      <span className="flex-1 truncate text-sm text-ink">{ch.value}</span>
                       <button
                         type="button"
                         onClick={() => removeChannel(i)}
-                        className="shrink-0 rounded p-1 text-slate-300 hover:bg-red-50 hover:text-red-600"
+                        className="shrink-0 rounded p-1 text-ink-muted hover:bg-danger-soft hover:text-danger"
                         aria-label="Премахни канала"
                       >
                         <X className="h-4 w-4" />
@@ -217,7 +217,7 @@ export default function PropertySettingsCard({ property, onSaved }) {
             </div>
           </div>
 
-          <div className="flex justify-end border-t border-slate-100 pt-5">
+          <div className="flex justify-end border-t border-line pt-5">
             <Button type="submit" loading={saving}>
               Запази настройките
             </Button>

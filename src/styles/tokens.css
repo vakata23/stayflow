@@ -1,0 +1,157 @@
+/* ==========================================================================
+   StayFlow — дизайн токени (посока «Златен час»: топла, гостоприемна, просторна)
+   Единственият източник на истина за вида на приложението. Три слоя:
+
+     1. ПРИМИТИВИ   — суровите стойности (шрифтове, радиуси, сенки, движение).
+     2. СЕМАНТИЧНИ  — ролята: повърхност, текст, линия, акцент, състояние.
+     3. КОМПОНЕНТНИ — размери и радиуси на бутони, полета, карти (в :root долу).
+
+   Екраните и компонентите ползват САМО ролите (bg-surface, bg-card, text-ink-soft, border-line, bg-accent…),
+   никога суров цвят. Tailwind v4 превръща променливите от @theme в класове.
+   Контрастът се проверява от scripts/test-design.mjs (двойките са в scripts/token-pairs.json).
+   Тъмна тема (посока «Графит») ще се добави като втори набор стойности за същите роли — имената не се менят.
+   ========================================================================== */
+
+@theme static {
+  /* ----------------------------------------------------------------------
+     1. ПРИМИТИВИ
+     ---------------------------------------------------------------------- */
+
+  /* Шрифтове — самохоствани, с кирилица (виж fonts.css).
+     Onest — интерфейсът; Literata — само заглавия и големите числа. Сумите в таблици са с равноширочни цифри. */
+  --font-sans: "Onest", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-display: "Literata", "Iowan Old Style", "Palatino Linotype", Georgia, "Times New Roman", serif;
+  --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+
+  /* Радиуси — големи и меки; вътрешните елементи са по-стегнати от контейнерите */
+  --radius-xs: 0.375rem;
+  --radius-sm: 0.5rem;
+  --radius-md: 0.625rem;
+  --radius-lg: 0.875rem;   /* бутони, полета */
+  --radius-xl: 1.125rem;   /* вложени групи */
+  --radius-2xl: 1.5rem;    /* карти — 24 px */
+  --radius-3xl: 2rem;      /* прозорци, големи панели */
+
+  /* Сенки — топли (кафяв нюанс), една посока на светлината (отгоре); картите се делят със сянка, не с рамка */
+  --shadow-2xs: 0 1px 1px 0 rgb(90 55 20 / 0.04);
+  --shadow-xs: 0 1px 2px 0 rgb(90 55 20 / 0.06);
+  --shadow-sm: 0 1px 2px 0 rgb(90 55 20 / 0.06), 0 1px 3px 0 rgb(90 55 20 / 0.05);
+  --shadow-md: 0 4px 10px -2px rgb(90 55 20 / 0.10), 0 2px 4px -2px rgb(90 55 20 / 0.06);
+  --shadow-lg: 0 14px 28px -10px rgb(90 55 20 / 0.20), 0 4px 8px -4px rgb(90 55 20 / 0.08);
+  --shadow-xl: 0 28px 56px -18px rgb(90 55 20 / 0.32), 0 8px 16px -8px rgb(90 55 20 / 0.12);
+  --shadow-card: 0 1px 2px rgb(90 55 20 / 0.05), 0 16px 36px -22px rgb(90 55 20 / 0.30);
+  --shadow-pop: 0 0 0 1px rgb(90 55 20 / 0.08), 0 14px 34px -12px rgb(90 55 20 / 0.34);
+  --shadow-sheet: 0 -10px 44px -12px rgb(90 55 20 / 0.34);
+  --shadow-bar: 0 18px 40px -14px rgb(90 55 20 / 0.45), 0 0 0 1px rgb(90 55 20 / 0.07);
+  --shadow-accent: 0 8px 18px -8px rgb(166 62 30 / 0.7);
+
+  /* Движение — за приложението: кратко и фино. Три времена и две криви:
+     вход — силна ease-out (отзивчива), изход — по-кратък ease-in. */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --default-transition-duration: 180ms;
+  --default-transition-timing-function: var(--ease-out);
+
+  /* Контейнер на страниците */
+  --container-app: 72rem;
+
+  /* ----------------------------------------------------------------------
+     2. СЕМАНТИЧНИ — ролите, които ползват компонентите и екраните
+     ---------------------------------------------------------------------- */
+
+  /* Повърхности */
+  --color-surface: #f6efe3;        /* фон на страницата (пясък/крем) */
+  --color-card: #fffcf6;           /* карти, полета, менюта (топло бяло) */
+  --color-sunken: #efe5d3;         /* вдълбнати зони: заглавие на таблица, подложки, ховър */
+  --color-line: #e6dbc8;           /* тънки разделители (декоративни) */
+  --color-line-strong: #8b7d68;    /* граница на контроли — ≥ 3:1 */
+
+  /* Текст */
+  --color-ink: #241a11;            /* основен — 16.7:1 върху крем */
+  --color-ink-soft: #4f4235;       /* второстепенен — 9:1 */
+  --color-ink-muted: #6b5c4c;      /* подсказки, плейсхолдъри — ≥ 5:1 */
+
+  /* Акцент — дълбок теракот (основното действие) */
+  --color-accent: #a63e1e;
+  --color-accent-hover: #8c3216;
+  --color-accent-press: #762a12;
+  --color-accent-soft: #f8e2d6;
+  --color-accent-soft-hover: #f3d3c3;
+  --color-accent-ink: #7a2c12;     /* текст върху мек акцент */
+  --color-on-accent: #ffffff;
+  --color-focus: var(--color-accent);
+
+  /* Състояния: плътен (бутон/индикатор/текст върху карта), мек фон, текст върху мекия фон, линия */
+  --color-success: #2f6a3c;
+  --color-success-soft: #e2efdc;
+  --color-success-ink: #1d4a28;
+  --color-success-line: #bcd8b2;
+
+  --color-warning: #8a5600;
+  --color-warning-soft: #fbecc7;
+  --color-warning-ink: #5e3a00;
+  --color-warning-line: #ebd08b;
+
+  --color-danger: #b3261e;
+  --color-danger-hover: #8f1d17;
+  --color-danger-soft: #fbe1dc;
+  --color-danger-ink: #7a1a14;
+  --color-danger-line: #efb4ab;
+
+  --color-info: #2f62a8;
+  --color-info-soft: #e4edf8;
+  --color-info-ink: #1b3d6e;
+  --color-info-line: #b7cbe8;
+
+  /* Графики и източници — ≥ 3:1 върху карта */
+  --color-chart-1: #5f7f46;        /* директни */
+  --color-chart-2: #c4623f;        /* платформи */
+  --color-src-airbnb: #c4492f;
+  --color-src-booking: #2f62a8;
+  --color-src-direct: #4d7a3a;
+}
+
+/* --------------------------------------------------------------------------
+   3. КОМПОНЕНТНИ — размери и поведение на общите компоненти
+   -------------------------------------------------------------------------- */
+:root {
+  /* Контроли: 44 px е минимумът за пръст; по-малкият „sm“ важи само с мишка */
+  --control-h: 2.75rem;
+  --control-h-sm: 2.25rem;
+  --control-h-lg: 3.25rem;
+  --control-radius: var(--radius-lg);
+  --control-border: var(--color-line-strong);
+  --control-pad-x: 0.875rem;
+  --tap-min: 2.75rem;
+
+  --btn-radius: var(--radius-lg);
+  --btn-weight: 600;
+
+  --card-radius: var(--radius-2xl);
+  --card-pad: 1.5rem;
+  --card-pad-sm: 1.125rem;
+
+  --modal-radius: var(--radius-3xl);
+  --badge-radius: var(--radius-sm);
+
+  /* Пръстен на фокуса: тънък контур за клавиатура, мек ореол за полета */
+  --ring-width: 2px;
+  --ring-offset: 2px;
+  --ring-halo: 0 0 0 3px color-mix(in srgb, var(--color-focus) 24%, transparent);
+  --ring-halo-danger: 0 0 0 3px color-mix(in srgb, var(--color-danger) 22%, transparent);
+
+  /* Времена на движение: кратко (натискане) / обичайно (цвят, фокус, преход между екрани) / плавно (панели, графика) */
+  --duration-fast: 120ms;
+  --duration-base: 180ms;
+  --duration-slow: 280ms;
+
+  /* Слоеве — един ред на подреждане за цялото приложение */
+  --z-sticky: 20;
+  --z-nav: 30;
+  --z-overlay: 40;
+  --z-modal: 50;
+  --z-toast: 60;
+
+  --tracking-tight: -0.022em;
+  --tracking-snug: -0.012em;
+}

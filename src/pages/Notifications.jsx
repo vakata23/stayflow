@@ -8,9 +8,9 @@ const CHANNEL_LABELS = { email: 'Имейл', telegram: 'Telegram' }
 const CHANNEL_ICONS = { email: Mail, telegram: Send }
 
 const STATUS_ICONS = {
-  sent: <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />,
-  failed: <XCircle className="h-3.5 w-3.5 text-red-500" />,
-  queued: <Clock className="h-3.5 w-3.5 text-amber-500" />,
+  sent: <CheckCircle2 className="h-3.5 w-3.5 text-success" />,
+  failed: <XCircle className="h-3.5 w-3.5 text-danger" />,
+  queued: <Clock className="h-3.5 w-3.5 text-warning" />,
 }
 
 const botUsername = import.meta.env.VITE_TELEGRAM_BOT_USERNAME
@@ -138,7 +138,7 @@ export default function Notifications() {
 
       <div className="mt-8 space-y-6">
         <Card className="p-6">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-700">Адресати</h2>
+          <h2 className="type-heading">Адресати</h2>
 
           {targets.length === 0 ? (
             <EmptyState
@@ -147,19 +147,19 @@ export default function Notifications() {
               description="Добавете Telegram или имейл по-долу, за да получавате известия."
             />
           ) : (
-            <ul className="mt-4 divide-y divide-slate-100">
+            <ul className="mt-4 divide-y divide-line">
               {targets.map((t) => {
                 const Icon = CHANNEL_ICONS[t.channel]
                 const result = testResult?.targetId === t.id ? testResult : null
                 return (
                   <li key={t.id} className="py-3.5">
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-2.5 text-sm">
-                        <Icon className="h-4 w-4 text-slate-400" />
-                        <span className="font-medium text-slate-800">{CHANNEL_LABELS[t.channel]}</span>
-                        <span className="text-slate-500">{t.address}</span>
+                    <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+                      <div className="flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1 text-sm">
+                        <Icon className="h-4 w-4 text-ink-muted" />
+                        <span className="font-medium text-ink">{CHANNEL_LABELS[t.channel]}</span>
+                        <span className="text-ink-soft">{t.address}</span>
                         {!t.is_enabled && (
-                          <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-xs text-slate-400">
+                          <span className="rounded-md bg-sunken px-1.5 py-0.5 text-xs text-ink-muted">
                             изключено
                           </span>
                         )}
@@ -185,7 +185,7 @@ export default function Notifications() {
                         <button
                           type="button"
                           onClick={() => handleDelete(t)}
-                          className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                          className="icon-btn text-ink-muted hover:text-danger"
                           aria-label="Изтрий"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -193,7 +193,7 @@ export default function Notifications() {
                       </div>
                     </div>
                     {result && (
-                      <p className={`mt-2 text-xs ${result.ok ? 'text-emerald-600' : 'text-red-600'}`}>
+                      <p className={`mt-2 text-xs ${result.ok ? 'text-success' : 'text-danger'}`}>
                         {result.message}
                       </p>
                     )}
@@ -203,7 +203,7 @@ export default function Notifications() {
             </ul>
           )}
 
-          <form onSubmit={handleAdd} className="mt-5 flex flex-wrap items-end gap-3 border-t border-slate-100 pt-5">
+          <form onSubmit={handleAdd} className="mt-5 flex flex-wrap items-end gap-3 border-t border-line pt-5">
             {error && (
               <div className="w-full">
                 <Alert>{error}</Alert>
@@ -232,15 +232,15 @@ export default function Notifications() {
           </form>
 
           {channel === 'telegram' && (
-            <div className="mt-4 rounded-xl bg-slate-50 px-4 py-3 text-xs leading-relaxed text-slate-500">
-              <p className="font-medium text-slate-600">Как да намерите Chat ID-то си:</p>
+            <div className="mt-4 rounded-xl bg-sunken px-4 py-3 text-xs leading-relaxed text-ink-soft">
+              <p className="font-medium text-ink-soft">Как да намерите Chat ID-то си:</p>
               <p className="mt-1">
                 1. Отворете {botUsername ? (
                   <a
                     href={`https://t.me/${botUsername}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-brand-600 hover:underline"
+                    className="text-accent hover:underline"
                   >
                     @{botUsername}
                   </a>
@@ -257,24 +257,24 @@ export default function Notifications() {
 
         {history.length > 0 && (
           <Card className="p-6">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-700">
+            <h2 className="type-heading">
               Последни известия
             </h2>
-            <ul className="mt-3 divide-y divide-slate-100 text-sm">
+            <ul className="mt-3 divide-y divide-line text-sm">
               {history.map((h) => (
                 <li key={h.id} className="flex flex-col gap-1 py-2.5">
                   <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2 text-slate-600">
+                    <div className="flex items-center gap-2 text-ink-soft">
                       {STATUS_ICONS[h.status]}
                       <span>{h.event === 'new_booking_request' ? 'Нова заявка' : h.event === 'test' ? 'Тест' : h.event}</span>
-                      <span className="text-slate-400">· {CHANNEL_LABELS[h.channel] ?? h.channel}</span>
+                      <span className="text-ink-muted">· {CHANNEL_LABELS[h.channel] ?? h.channel}</span>
                     </div>
                     {h.attempts > 0 && (
-                      <span className="shrink-0 text-xs text-slate-400">опит {h.attempts}/5</span>
+                      <span className="shrink-0 text-xs text-ink-muted">опит {h.attempts}/5</span>
                     )}
                   </div>
                   {h.last_error && (
-                    <p className="truncate text-xs text-red-500" title={h.last_error}>
+                    <p className="truncate text-xs text-danger" title={h.last_error}>
                       {h.last_error}
                     </p>
                   )}

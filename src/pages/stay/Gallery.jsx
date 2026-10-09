@@ -1,120 +1,107 @@
-import { useEffect, useState } from 'react'
-import { X, ChevronLeft, ChevronRight, Images, Waves } from 'lucide-react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { prefersReducedMotion, Reveal } from './useStayEffects'
 
-export default function Gallery({ photos, alt }) {
-  const [lightboxIndex, setLightboxIndex] = useState(null)
+const pad = (n) => String(n).padStart(2, '0')
 
-  const open = (i) => setLightboxIndex(i)
-  const close = () => setLightboxIndex(null)
-  const prev = () => setLightboxIndex((i) => (i - 1 + photos.length) % photos.length)
-  const next = () => setLightboxIndex((i) => (i + 1) % photos.length)
+/**
+ * „Филмова лента“: хоризонтална лента от кадри (3:2) със scroll-snap. Първата
+ * снимка е в hero-то, затова лентата започва от втората. Всички кадри са lazy,
+ * с размери и srcset (миниатюра за телефон, пълен файл за по-голям екран);
+ * брояч „02 / 08“ показва къде си. items = [{ url, thumb }].
+ */
+export default function Gallery({ items, alt, onOpen }) {
+  const scroller = useRef(null)
+  const [active, setActive] = useState(0)
+  const frames = items.slice(1)
 
-  useEffect(() => {
-    if (lightboxIndex === null) return
-    const onKey = (e) => {
-      if (e.key === 'Escape') close()
-      if (e.key === 'ArrowLeft') prev()
-      if (e.key === 'ArrowRight') next()
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [lightboxIndex, photos.length])
-
-  if (photos.length === 0) {
-    return (
-      <div className="flex aspect-[4/3] w-full items-center justify-center bg-brand-700 sm:aspect-[21/9]">
-        <Waves className="h-10 w-10 text-white/40" />
-      </div>
-    )
+  const stepOf = () => {
+    const el = scroller.current
+    const first = el?.firstElementChild
+    if (!el || !first) return 0
+    const gap = parseFloat(getComputedStyle(el).columnGap) || 0
+    return first.getBoundingClientRect().width + gap
   }
 
+  const onScroll = useCallback(() => {
+    const el = scroller.current
+    const step = stepOf()
+    if (!el || !step) return
+    const max = frames.length - 1
+    // На края на лентата последният кадр е „активен“ дори да не се подравнява по средата.
+    const atEnd = el.scrollLeft + el.clientWidth >= el.scrollWidth - 4
+    setActive(atEnd ? max : Math.min(max, Math.max(0, Math.round(el.scrollLeft / step))))
+  }, [frames.length])
+
+  useEffect(() => {
+    const el = scroller.current
+    if (!el) return undefined
+    let raf = 0
+    const handler = () => {
+      cancelAnimationFrame(raf)
+      raf = requestAnimationFrame(onScroll)
+    }
+    el.addEventListener('scroll', handler, { passive: true })
+    return () => {
+      el.removeEventListener('scroll', handler)
+      cancelAnimationFrame(raf)
+    }
+  }, [onScroll])
+
+  if (frames.length === 0) return null
+
+  const go = (dir) =>
+    scroller.current?.scrollBy({ left: dir * stepOf(), behavior: prefersReducedMotion() ? 'auto' : 'smooth' })
+
   return (
-    <>
-      {/* Телефон: swipe лента */}
-      <div className="flex snap-x snap-mandatory overflow-x-auto sm:hidden">
-        {photos.map((url, i) => (
-          <button
-            key={i}
-            onClick={() => open(i)}
-            className="aspect-[4/3] w-full shrink-0 snap-center"
-            aria-label={`Отвори снимка ${i + 1}`}
-          >
-            <img src={url} alt={`${alt} — снимка ${i + 1}`} className="h-full w-full object-cover" />
-          </button>
-        ))}
-      </div>
-
-      {/* Десктоп: голяма + мрежа */}
-      <div className="relative hidden gap-2 sm:grid sm:aspect-[21/9] sm:grid-cols-4 sm:grid-rows-2">
-        <button onClick={() => open(0)} className="col-span-2 row-span-2 overflow-hidden rounded-l-2xl">
-          <img src={photos[0]} alt={alt} className="h-full w-full object-cover transition hover:brightness-95" />
-        </button>
-        {photos.slice(1, 5).map((url, i) => (
-          <button
-            key={i}
-            onClick={() => open(i + 1)}
-            className={`overflow-hidden ${i === 1 ? 'rounded-tr-2xl' : ''} ${i === 3 ? 'rounded-br-2xl' : ''} ${
-              photos.length === 2 ? 'rounded-r-2xl' : ''
-            }`}
-          >
-            <img src={url} alt={`${alt} — снимка ${i + 2}`} className="h-full w-full object-cover transition hover:brightness-95" />
-          </button>
-        ))}
-        {photos.length > 1 && (
-          <button
-            onClick={() => open(0)}
-            className="absolute bottom-4 right-4 flex items-center gap-1.5 rounded-lg bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow hover:bg-slate-50"
-          >
-            <Images className="h-3.5 w-3.5" />
-            Виж всички снимки ({photos.length})
-          </button>
-        )}
-      </div>
-
-      {lightboxIndex !== null && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/90" onClick={close}>
-          <button
-            onClick={close}
-            className="absolute right-4 top-4 rounded-full bg-white/10 p-2 text-white hover:bg-white/20"
-            aria-label="Затвори"
-          >
-            <X className="h-5 w-5" />
-          </button>
-          {photos.length > 1 && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation()
-                prev()
-              }}
-              className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-white/10 p-2 text-white hover:bg-white/20 sm:left-4"
-              aria-label="Предишна снимка"
-            >
-              <ChevronLeft className="h-6 w-6" />
-            </button>
-          )}
-          <img
-            src={photos[lightboxIndex]}
-            alt={`${alt} — снимка ${lightboxIndex + 1}`}
-            className="max-h-[85vh] max-w-[90vw] object-contain"
-            onClick={(e) => e.stopPropagation()}
-          />
-          {photos.length > 1 && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation()
-                next()
-              }}
-              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-white/10 p-2 text-white hover:bg-white/20 sm:right-4"
-              aria-label="Следваща снимка"
-            >
-              <ChevronRight className="h-6 w-6" />
-            </button>
-          )}
-          <p className="absolute bottom-4 text-xs text-white/70">
-            {lightboxIndex + 1} / {photos.length}
+    <Reveal as="section" className="stay-strip-wrap" aria-label="Снимки на имота">
+      <div className="stay-strip-head">
+        <h2 className="stay-h2">
+          <span className="stay-kicker">Кадри</span>
+        </h2>
+        <div className="stay-strip-tools">
+          <p className="stay-counter" aria-live="polite">
+            {pad(active + 2)} <span>/ {pad(items.length)}</span>
           </p>
+          {frames.length > 1 && (
+            <div className="stay-strip-nav">
+              <button type="button" onClick={() => go(-1)} aria-label="Предишна снимка" disabled={active === 0}>
+                <ChevronLeft className="h-5 w-5" strokeWidth={1.6} />
+              </button>
+              <button type="button" onClick={() => go(1)} aria-label="Следваща снимка" disabled={active >= frames.length - 1}>
+                <ChevronRight className="h-5 w-5" strokeWidth={1.6} />
+              </button>
+            </div>
+          )}
         </div>
-      )}
-    </>
+      </div>
+
+      <div className="stay-strip-stage">
+        <ul ref={scroller} className="stay-strip">
+          {frames.map((p, i) => {
+            const small = p.thumb && p.thumb !== p.url
+            return (
+              <li key={p.url} className="stay-frame">
+                <button type="button" onClick={() => onOpen(i + 1)} aria-label={`Отвори снимка ${i + 2} от ${items.length}`}>
+                  <img
+                    src={small ? p.thumb : p.url}
+                    srcSet={small ? `${p.thumb} 768w, ${p.url} 1600w` : undefined}
+                    sizes="(min-width: 640px) 560px, 78vw"
+                    width="768"
+                    height="512"
+                    loading="lazy"
+                    decoding="async"
+                    alt={`${alt} — снимка ${i + 2}`}
+                  />
+                  <span className="stay-frame__no" aria-hidden="true">
+                    {pad(i + 2)}
+                  </span>
+                </button>
+              </li>
+            )
+          })}
+        </ul>
+      </div>
+    </Reveal>
   )
 }

@@ -76,10 +76,10 @@ export default function NoteFormModal({ open, onClose, onSaved, properties }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-4 sm:p-8">
-      <div className="fixed inset-0 bg-slate-900/40" onClick={onClose} />
+      <div className="fixed inset-0 bg-ink/40" onClick={onClose} />
 
-      <div className="relative w-full max-w-lg rounded-2xl border border-slate-200 bg-white shadow-xl">
-        <header className="border-b border-slate-100 px-6 py-4">
+      <div className="relative w-full max-w-lg rounded-2xl border border-line bg-card shadow-xl">
+        <header className="border-b border-line px-6 py-4">
           <h2 className="text-lg font-bold">Нова забележка</h2>
         </header>
 
@@ -123,27 +123,27 @@ export default function NoteFormModal({ open, onClose, onSaved, properties }) {
                 <img
                   src={preview}
                   alt="Преглед"
-                  className="h-32 w-auto rounded-xl border border-slate-200 object-cover"
+                  className="h-32 w-auto rounded-xl border border-line object-cover"
                 />
                 <button
                   type="button"
                   onClick={clearImage}
-                  className="absolute right-1.5 top-1.5 rounded-lg bg-slate-900/60 p-1 text-white hover:bg-slate-900/80"
+                  className="absolute right-1.5 top-1.5 rounded-lg bg-ink/60 p-1 text-white hover:bg-ink/80"
                   aria-label="Премахни снимката"
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>
               </div>
             ) : (
-              <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-slate-300 px-4 py-3 text-sm text-slate-500 hover:border-brand-400 hover:bg-brand-50/40">
-                <ImagePlus className="h-5 w-5 text-slate-400" />
+              <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-line-strong px-4 py-3 text-sm text-ink-soft hover:border-accent hover:bg-accent-soft/40">
+                <ImagePlus className="h-5 w-5 text-ink-muted" />
                 Добави снимка
                 <input ref={fileRef} type="file" accept="image/*" onChange={handleFile} className="hidden" />
               </label>
             )}
           </Field>
 
-          <div className="flex justify-end gap-3 border-t border-slate-100 pt-5">
+          <div className="flex justify-end gap-3 border-t border-line pt-5">
             <Button type="button" variant="secondary" onClick={onClose} disabled={saving}>
               Отказ
             </Button>

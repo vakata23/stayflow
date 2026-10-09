@@ -1,0 +1,969 @@
+/* ==========================================================================
+   Общи компоненти на приложението (класове, изградени ИЗЦЯЛО върху токените).
+   React обвивките са в src/components/ui.jsx; витрината е на /design.
+   Движението е кратко (120 / 180 / 280 ms), само transform/opacity/цвят, и се
+   изключва при prefers-reduced-motion (виж base.css). Ховър ефектите важат
+   само с мишка — на тъч не залепват след докосване.
+   ========================================================================== */
+
+@layer components {
+  /* ------------------------------------------------------------ типография */
+  .type-display {
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 1.45rem + 2.4vw, 3rem);
+    line-height: 1.06;
+    font-weight: 600;
+    letter-spacing: -0.025em;
+  }
+  .type-title {
+    font-family: var(--font-display);
+    font-size: clamp(1.375rem, 1.2rem + 0.8vw, 1.75rem);
+    line-height: 1.2;
+    font-weight: 600;
+    letter-spacing: var(--tracking-tight);
+  }
+  .type-heading {
+    font-family: var(--font-display);
+    font-size: 1.125rem;
+    line-height: 1.35;
+    font-weight: 600;
+    letter-spacing: var(--tracking-snug);
+  }
+  .type-body {
+    font-size: 1rem;
+    line-height: 1.55;
+  }
+  .type-small {
+    font-size: 0.875rem;
+    line-height: 1.45;
+  }
+  .type-label {
+    font-size: 0.8125rem;
+    line-height: 1.3;
+    font-weight: 600;
+  }
+  .type-caption {
+    font-size: 0.75rem;
+    line-height: 1.35;
+  }
+
+  /* --------------------------------------------------------------- бутони */
+  .btn {
+    --btn-bg: var(--color-accent);
+    --btn-fg: var(--color-on-accent);
+    --btn-bd: transparent;
+    --btn-bg-hover: var(--color-accent-hover);
+    --btn-bg-press: var(--color-accent-press);
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: var(--control-h);
+    padding: 0 1.125rem;
+    border: 1px solid var(--btn-bd);
+    border-radius: var(--btn-radius);
+    background: var(--btn-bg);
+    color: var(--btn-fg);
+    font-family: var(--font-sans);
+    font-size: 0.9375rem;
+    font-weight: var(--btn-weight);
+    line-height: 1.2;
+    letter-spacing: 0.005em;
+    text-decoration: none;
+    white-space: nowrap;
+    user-select: none;
+    -webkit-user-select: none;
+    transition:
+      background-color var(--duration-base) var(--ease-out),
+      border-color var(--duration-base) var(--ease-out),
+      color var(--duration-base) var(--ease-out),
+      box-shadow var(--duration-base) var(--ease-out),
+      transform var(--duration-fast) var(--ease-out);
+  }
+  .btn:active:not(:disabled):not([aria-disabled="true"]) {
+    background: var(--btn-bg-press);
+    transform: scale(0.98);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .btn:hover:not(:disabled):not([aria-disabled="true"]) {
+      background: var(--btn-bg-hover);
+    }
+  }
+  .btn:disabled,
+  .btn[aria-disabled="true"] {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  .btn[aria-busy="true"] {
+    cursor: progress;
+  }
+
+  .btn-sm {
+    padding: 0 0.875rem;
+    font-size: 0.875rem;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .btn-sm {
+      min-height: var(--control-h-sm);
+    }
+  }
+  .btn-lg {
+    min-height: var(--control-h-lg);
+    padding: 0 1.5rem;
+    font-size: 1rem;
+  }
+  .btn-block {
+    width: 100%;
+  }
+
+  .btn-secondary {
+    --btn-bg: var(--color-card);
+    --btn-fg: var(--color-ink);
+    --btn-bd: var(--color-line-strong);
+    --btn-bg-hover: var(--color-sunken);
+    --btn-bg-press: var(--color-line);
+  }
+  .btn-ghost {
+    --btn-bg: transparent;
+    --btn-fg: var(--color-ink-soft);
+    --btn-bg-hover: var(--color-sunken);
+    --btn-bg-press: var(--color-line);
+  }
+  .btn-soft {
+    --btn-bg: var(--color-accent-soft);
+    --btn-fg: var(--color-accent-ink);
+    --btn-bg-hover: var(--color-accent-soft-hover);
+    --btn-bg-press: var(--color-accent-soft-hover);
+  }
+  .btn-danger {
+    --btn-bg: var(--color-card);
+    --btn-fg: var(--color-danger);
+    --btn-bd: var(--color-danger-line);
+    --btn-bg-hover: var(--color-danger-soft);
+    --btn-bg-press: var(--color-danger-line);
+  }
+  .btn-danger-solid {
+    --btn-bg: var(--color-danger);
+    --btn-fg: #ffffff;
+    --btn-bg-hover: var(--color-danger-hover);
+    --btn-bg-press: var(--color-danger-ink);
+  }
+  .btn-link {
+    --btn-bg: transparent;
+    --btn-fg: var(--color-accent-ink);
+    --btn-bg-hover: transparent;
+    --btn-bg-press: transparent;
+    padding: 0 0.5rem;
+    text-decoration: underline;
+    text-underline-offset: 4px;
+  }
+
+  /* Иконен бутон — област за докосване ≥ 44×44 px */
+  .icon-btn {
+    display: inline-grid;
+    place-items: center;
+    flex: none;
+    min-width: var(--tap-min);
+    min-height: var(--tap-min);
+    border: 0;
+    border-radius: var(--radius-lg);
+    background: transparent;
+    color: var(--color-ink-soft);
+    transition:
+      background-color var(--duration-base) var(--ease-out),
+      color var(--duration-base) var(--ease-out),
+      transform var(--duration-fast) var(--ease-out);
+  }
+  .icon-btn:active:not(:disabled) {
+    transform: scale(0.94);
+    background: var(--color-line);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .icon-btn:hover:not(:disabled) {
+      background: var(--color-sunken);
+      color: var(--color-ink);
+    }
+    .icon-btn-danger:hover:not(:disabled) {
+      background: var(--color-danger-soft);
+      color: var(--color-danger);
+    }
+  }
+  .icon-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  /* ------------------------------------------------------------- полета */
+  .field {
+    display: block;
+    min-width: 0;
+  }
+  .field-label {
+    display: block;
+    margin-bottom: 0.375rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    line-height: 1.3;
+    color: var(--color-ink);
+  }
+  .field-req {
+    margin-left: 2px;
+    color: var(--color-danger);
+  }
+  .field-hint {
+    display: block;
+    margin-top: 0.375rem;
+    font-size: 0.8125rem;
+    line-height: 1.4;
+    color: var(--color-ink-muted);
+  }
+  .field-error {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.375rem;
+    margin-top: 0.375rem;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    line-height: 1.4;
+    color: var(--color-danger-hover);
+  }
+
+  .control {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    min-height: var(--control-h);
+    padding: 0.6rem var(--control-pad-x);
+    border: 1px solid var(--control-border);
+    border-radius: var(--control-radius);
+    background: var(--color-card);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: 1rem; /* 16 px — iOS не увеличава полето при фокус */
+    font-weight: 400;
+    line-height: 1.4;
+    transition:
+      border-color var(--duration-base) var(--ease-out),
+      box-shadow var(--duration-base) var(--ease-out),
+      background-color var(--duration-base) var(--ease-out);
+  }
+  .control::placeholder {
+    color: var(--color-ink-muted);
+    opacity: 1;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .control:hover:not(:disabled):not(:focus):not([aria-invalid="true"]) {
+      border-color: var(--color-ink-soft);
+    }
+  }
+  .control:focus {
+    outline: none;
+    border-color: var(--color-accent);
+    box-shadow: var(--ring-halo);
+  }
+  .control[aria-invalid="true"] {
+    border-color: var(--color-danger);
+  }
+  .control[aria-invalid="true"]:focus {
+    box-shadow: var(--ring-halo-danger);
+  }
+  .control:disabled {
+    border-color: var(--color-line);
+    background: var(--color-sunken);
+    color: var(--color-ink-muted);
+    cursor: not-allowed;
+  }
+  .control[readonly] {
+    background: var(--color-sunken);
+  }
+  textarea.control {
+    min-height: 6.5rem;
+    padding-block: 0.75rem;
+    resize: vertical;
+  }
+  select.control {
+    padding-right: 2.5rem;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23465558' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.875rem center;
+    background-size: 1rem;
+  }
+
+  /* Отметка и превключвател — целият ред е ≥ 44 px висок */
+  .check {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-height: var(--tap-min);
+    cursor: pointer;
+  }
+  .check > input {
+    appearance: none;
+    -webkit-appearance: none;
+    display: grid;
+    place-content: center;
+    flex: none;
+    width: 1.375rem;
+    height: 1.375rem;
+    margin: 0;
+    border: 1.5px solid var(--control-border);
+    border-radius: 0.4rem;
+    background: var(--color-card);
+    transition:
+      background-color var(--duration-base) var(--ease-out),
+      border-color var(--duration-base) var(--ease-out),
+      box-shadow var(--duration-base) var(--ease-out);
+  }
+  .check > input[type="radio"] {
+    border-radius: 50%;
+  }
+  .check > input:checked {
+    border-color: var(--color-accent);
+    background: var(--color-accent);
+  }
+  .check > input[type="checkbox"]:checked::after {
+    content: "";
+    width: 0.75rem;
+    height: 0.75rem;
+    background: #fff;
+    clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
+  }
+  .check > input[type="radio"]:checked::after {
+    content: "";
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    background: #fff;
+  }
+  .check > input:focus-visible {
+    outline: none;
+    box-shadow: var(--ring-halo);
+  }
+  .check > input:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  .check > span {
+    font-size: 0.9375rem;
+    line-height: 1.35;
+  }
+
+  .switch > input {
+    width: 2.75rem;
+    height: 1.625rem;
+    border-radius: 999px;
+    place-content: unset;
+    position: relative;
+  }
+  .switch > input::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 0.1875rem;
+    width: 1.125rem;
+    height: 1.125rem;
+    border-radius: 50%;
+    background: var(--color-line-strong);
+    transform: translateY(-50%);
+    transition:
+      transform var(--duration-base) var(--ease-out),
+      background-color var(--duration-base) var(--ease-out);
+  }
+  .switch > input:checked::before {
+    background: #fff;
+    transform: translate(1.125rem, -50%);
+  }
+  .check.switch > input[type="checkbox"]:checked::after {
+    content: none;
+  }
+
+  /* ------------------------------------------------------------- карти */
+  .card {
+    background: var(--color-card);
+    border-radius: var(--card-radius);
+    box-shadow: var(--shadow-card);
+  }
+  .card-pad {
+    padding: var(--card-pad);
+  }
+  .card-flat {
+    background: var(--color-sunken);
+    box-shadow: none;
+  }
+  .card-tinted {
+    background: var(--color-accent-soft);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-accent) 22%, transparent);
+  }
+  .card-interactive {
+    transition:
+      transform var(--duration-base) var(--ease-out),
+      box-shadow var(--duration-base) var(--ease-out);
+  }
+  .card-interactive:active {
+    transform: scale(0.995);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .card-interactive:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 0 0 1px rgb(90 55 20 / 0.07), 0 10px 24px -12px rgb(90 55 20 / 0.22);
+    }
+  }
+
+  /* ------------------------------------------------------------ значки */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    min-height: 1.5rem;
+    padding: 0 0.5rem;
+    border-radius: var(--badge-radius);
+    background: var(--color-sunken);
+    color: var(--color-ink-soft);
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1;
+    white-space: nowrap;
+  }
+  .badge-dot::before {
+    content: "";
+    width: 0.4375rem;
+    height: 0.4375rem;
+    border-radius: 50%;
+    background: currentColor;
+  }
+  .badge-accent {
+    background: var(--color-accent-soft);
+    color: var(--color-accent-ink);
+  }
+  .badge-success {
+    background: var(--color-success-soft);
+    color: var(--color-success-ink);
+  }
+  .badge-warning {
+    background: var(--color-warning-soft);
+    color: var(--color-warning-ink);
+  }
+  .badge-danger {
+    background: var(--color-danger-soft);
+    color: var(--color-danger-ink);
+  }
+  .badge-info {
+    background: var(--color-info-soft);
+    color: var(--color-info-ink);
+  }
+  .badge-count {
+    justify-content: center;
+    min-width: 1.25rem;
+    height: 1.25rem;
+    min-height: 0;
+    padding: 0 0.375rem;
+    border-radius: 999px;
+    background: var(--color-accent);
+    color: var(--color-on-accent);
+    font-size: 0.6875rem;
+  }
+
+  /* ----------------------------------------------------------- съобщения */
+  .alert {
+    --alert-bg: var(--color-sunken);
+    --alert-ink: var(--color-ink);
+    --alert-line: var(--color-line);
+    --alert-accent: var(--color-ink-soft);
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.75rem 0.875rem;
+    border: 1px solid var(--alert-line);
+    border-radius: var(--radius-xl);
+    background: var(--alert-bg);
+    color: var(--alert-ink);
+    font-size: 0.875rem;
+    line-height: 1.5;
+  }
+  .alert > svg {
+    flex: none;
+    width: 1.125rem;
+    height: 1.125rem;
+    margin-top: 0.1875rem;
+    color: var(--alert-accent);
+  }
+  .alert-title {
+    display: block;
+    font-weight: 600;
+  }
+  .alert-error {
+    --alert-bg: var(--color-danger-soft);
+    --alert-ink: var(--color-danger-ink);
+    --alert-line: var(--color-danger-line);
+    --alert-accent: var(--color-danger);
+  }
+  .alert-warning {
+    --alert-bg: var(--color-warning-soft);
+    --alert-ink: var(--color-warning-ink);
+    --alert-line: var(--color-warning-line);
+    --alert-accent: var(--color-warning);
+  }
+  .alert-success {
+    --alert-bg: var(--color-success-soft);
+    --alert-ink: var(--color-success-ink);
+    --alert-line: var(--color-success-line);
+    --alert-accent: var(--color-success);
+  }
+  .alert-info {
+    --alert-bg: var(--color-info-soft);
+    --alert-ink: var(--color-info-ink);
+    --alert-line: var(--color-info-line);
+    --alert-accent: var(--color-info);
+  }
+
+  /* ------------------------------------------------- празно състояние, зареждане */
+  .empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3.5rem 1.5rem;
+    border-radius: var(--card-radius);
+    background: var(--color-card);
+    box-shadow: var(--shadow-card);
+    text-align: center;
+  }
+  .empty-icon {
+    display: grid;
+    place-items: center;
+    width: 3.5rem;
+    height: 3.5rem;
+    border-radius: var(--radius-2xl);
+    background: var(--color-accent-soft);
+    color: var(--color-accent);
+  }
+  .skeleton {
+    border-radius: var(--radius-md);
+    background: var(--color-line);
+    animation: skeleton-pulse 2.4s ease-in-out infinite;
+  }
+  @keyframes skeleton-pulse {
+    50% {
+      opacity: 0.62;
+    }
+  }
+
+  /* ----------------------------------------------------------- таблица */
+  .table-wrap {
+    overflow-x: auto;
+    border-radius: var(--card-radius);
+    background: var(--color-card);
+    box-shadow: var(--shadow-card);
+    -webkit-overflow-scrolling: touch;
+  }
+  .table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 0.9375rem;
+  }
+  .table th {
+    position: sticky;
+    top: 0;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--color-line);
+    background: var(--color-sunken);
+    color: var(--color-ink-soft);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    text-align: left;
+    white-space: nowrap;
+  }
+  .table td {
+    padding: 0.875rem 1rem;
+    border-bottom: 1px solid var(--color-line);
+    vertical-align: middle;
+  }
+  .table tbody tr:last-child td {
+    border-bottom: 0;
+  }
+  .table .num {
+    text-align: right;
+    white-space: nowrap;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .table tbody tr:hover td {
+      background: color-mix(in srgb, var(--color-sunken) 55%, transparent);
+    }
+  }
+
+  /* ---------------------------------------------------------- прозорец */
+  .modal-root {
+    position: fixed;
+    inset: 0;
+    z-index: var(--z-modal);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+  }
+  .modal-scrim {
+    position: absolute;
+    inset: 0;
+    background: rgb(36 26 17 / 0.5);
+    animation: modal-fade var(--duration-slow) var(--ease-out) both;
+  }
+  .modal-panel {
+    position: relative;
+    width: 100%;
+    max-height: 92vh;
+    max-height: 92dvh;
+    overflow-y: auto;
+    padding: 0.5rem 1.25rem max(1.25rem, env(safe-area-inset-bottom));
+    border-radius: var(--modal-radius) var(--modal-radius) 0 0;
+    background: var(--color-card);
+    box-shadow: var(--shadow-sheet);
+    animation: sheet-in var(--duration-slow) var(--ease-out) both;
+  }
+  .modal-panel::before {
+    content: "";
+    display: block;
+    width: 2.5rem;
+    height: 0.25rem;
+    margin: 0 auto 0.5rem;
+    border-radius: 999px;
+    background: var(--color-line-strong);
+  }
+  .modal-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
+  }
+  @media (min-width: 640px) {
+    .modal-root {
+      align-items: center;
+      padding: 1.5rem;
+    }
+    .modal-panel {
+      max-width: 28rem;
+      padding: 1.5rem;
+      border-radius: var(--modal-radius);
+      box-shadow: var(--shadow-xl);
+      animation: modal-in var(--duration-base) var(--ease-out) both;
+    }
+    .modal-panel::before {
+      display: none;
+    }
+    /* Долният лист („Още“) остава долен лист и на широк екран */
+    .modal-root-sheet {
+      align-items: flex-end;
+      padding: 0;
+    }
+    .modal-root-sheet .modal-panel {
+      max-width: 30rem;
+      padding: 0.5rem 1.25rem max(1.25rem, env(safe-area-inset-bottom));
+      border-radius: var(--modal-radius) var(--modal-radius) 0 0;
+      box-shadow: var(--shadow-sheet);
+      animation: sheet-in var(--duration-slow) var(--ease-out) both;
+    }
+    .modal-root-sheet .modal-panel::before {
+      display: block;
+    }
+    .modal-lg {
+      max-width: 40rem;
+    }
+    .modal-xl {
+      max-width: 56rem;
+    }
+  }
+  /* Изход: по-кратък и ease-in — само opacity и transform */
+  .modal-root[data-state="closing"] {
+    pointer-events: none;
+  }
+  .modal-root[data-state="closing"] .modal-scrim {
+    animation: modal-fade-out var(--duration-base) var(--ease-in) both;
+  }
+  .modal-root[data-state="closing"] .modal-panel {
+    animation: sheet-out var(--duration-base) var(--ease-in) both;
+  }
+  @media (min-width: 640px) {
+    .modal-root[data-state="closing"] .modal-panel {
+      animation: modal-out var(--duration-base) var(--ease-in) both;
+    }
+    .modal-root-sheet[data-state="closing"] .modal-panel {
+      animation: sheet-out var(--duration-base) var(--ease-in) both;
+    }
+  }
+  @keyframes modal-fade {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes modal-fade-out {
+    to {
+      opacity: 0;
+    }
+  }
+  @keyframes sheet-out {
+    to {
+      transform: translateY(100%);
+    }
+  }
+  @keyframes modal-out {
+    to {
+      opacity: 0;
+      transform: scale(0.96) translateY(6px);
+    }
+  }
+  @keyframes sheet-in {
+    from {
+      transform: translateY(100%);
+    }
+  }
+  @keyframes modal-in {
+    from {
+      opacity: 0;
+      transform: scale(0.96) translateY(6px);
+    }
+  }
+
+
+  /* ------------------------------------------------------------ движение */
+  /* Само transform и opacity; времената и кривите са от tokens.css. Под
+     prefers-reduced-motion base.css скъсява всяка анимация до 0 и се вижда крайното състояние. */
+
+  /* преход между екрани ≤ 200 ms */
+  .page-in {
+    animation: page-in var(--duration-base) var(--ease-out) both;
+  }
+  @keyframes page-in {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+  }
+
+  /* първите ~8 карти/редове се появяват меко, стъпка 32 ms */
+  [data-rise] {
+    animation: rise-in var(--duration-base) var(--ease-out) both;
+  }
+  [data-rise="1"] { animation-delay: 32ms; }
+  [data-rise="2"] { animation-delay: 64ms; }
+  [data-rise="3"] { animation-delay: 96ms; }
+  [data-rise="4"] { animation-delay: 128ms; }
+  [data-rise="5"] { animation-delay: 160ms; }
+  [data-rise="6"] { animation-delay: 192ms; }
+  [data-rise="7"] { animation-delay: 224ms; }
+  @keyframes rise-in {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+  }
+
+  /* графиката расте веднъж от основата нагоре (origin се задава на елемента — линията на основата) */
+  .grow-y {
+    animation: grow-y var(--duration-slow) var(--ease-out) both;
+  }
+  @keyframes grow-y {
+    from {
+      transform: scaleY(0);
+    }
+  }
+
+
+  /* ------------------------------------------------- долна навигация (телефон) */
+  /* Плаваща светла лента: 5 места, малко над долния ръб (място за жеста). Активното
+     място е „хапче“ (accent-soft) с икона и име; останалите — само икони. */
+  .dock {
+    position: fixed;
+    left: 0.75rem;
+    right: 0.75rem;
+    bottom: calc(0.75rem + env(safe-area-inset-bottom));
+    z-index: var(--z-nav);
+    max-width: 30rem;
+    margin-inline: auto;
+    border-radius: var(--radius-3xl);
+    background: var(--color-card);
+    box-shadow: var(--shadow-bar);
+  }
+  .dock-inner {
+    position: relative;
+    display: flex;
+    gap: 0.25rem;
+    padding: 0.375rem;
+  }
+  .dock-pill {
+    position: absolute;
+    left: 0;
+    top: 0;
+    z-index: 0;
+    border-radius: var(--radius-2xl);
+    background: var(--color-accent-soft);
+    transform-origin: 0 50%;
+    pointer-events: none;
+  }
+  .dock-pill:not([data-ready]) {
+    visibility: hidden;
+  }
+  .dock-tab {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex: 1 1 0;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-width: 2.75rem;
+    height: 3.5rem;
+    padding: 0 0.25rem;
+    border: 0;
+    border-radius: var(--radius-2xl);
+    background: none;
+    color: var(--color-ink-muted);
+    font: inherit;
+    text-decoration: none;
+    transition:
+      color var(--duration-base) var(--ease-out),
+      transform var(--duration-fast) var(--ease-out);
+  }
+  .dock-tab[data-active] {
+    flex-grow: 2.9;
+    gap: 0.375rem;
+    padding: 0 0.625rem;
+    color: var(--color-accent-ink);
+  }
+  .dock-tab:active {
+    transform: scale(0.96);
+  }
+  .dock-tab:focus-visible {
+    outline-offset: -3px;
+  }
+  .dock-icon {
+    position: relative;
+    display: grid;
+    place-items: center;
+    flex: none;
+  }
+  .dock-tab[data-active] .dock-icon-badged {
+    margin-right: 0.5rem;
+  }
+  .dock-label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    line-height: 1;
+    animation: dock-label-in var(--duration-base) var(--ease-out) both;
+  }
+  .dock-badge {
+    position: absolute;
+    top: -0.5rem;
+    right: -0.625rem;
+    display: grid;
+    place-items: center;
+    min-width: 1.125rem;
+    height: 1.125rem;
+    padding: 0 0.3125rem;
+    border-radius: 999px;
+    background: var(--color-accent);
+    color: var(--color-on-accent);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    line-height: 1;
+    box-shadow: 0 0 0 2px var(--color-card);
+  }
+  .dock-badge::after {
+    content: attr(data-count);
+  }
+  .dock-tab[data-active] .dock-badge {
+    box-shadow: 0 0 0 2px var(--color-accent-soft);
+  }
+  @keyframes dock-label-in {
+    from {
+      opacity: 0;
+    }
+  }
+  /* най-тесните екрани: активното място е само икона в хапче (името остава в aria-label) */
+  @media (max-width: 359px) {
+    .dock-label {
+      display: none;
+    }
+    .dock-tab[data-active] {
+      flex-grow: 1.4;
+      padding: 0 0.25rem;
+    }
+  }
+
+  /* ---------------------------------------------------- сегментиран избор */
+  .segmented {
+    display: inline-flex;
+    gap: 0.25rem;
+    padding: 0.25rem;
+    border-radius: var(--radius-xl);
+    background: var(--color-sunken);
+    max-width: 100%;
+    overflow-x: auto;
+  }
+  .segmented button {
+    min-height: var(--control-h);
+    padding: 0 0.875rem;
+    border: 0;
+    border-radius: var(--radius-lg);
+    background: transparent;
+    color: var(--color-ink-soft);
+    font-family: var(--font-sans);
+    font-size: 0.875rem;
+    font-weight: 600;
+    white-space: nowrap;
+    transition:
+      background-color var(--duration-base) var(--ease-out),
+      color var(--duration-base) var(--ease-out),
+      box-shadow var(--duration-base) var(--ease-out);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .segmented button {
+      min-height: var(--control-h-sm);
+    }
+    .segmented button:hover:not([aria-pressed="true"]) {
+      color: var(--color-ink);
+    }
+  }
+  .segmented button[aria-pressed="true"] {
+    background: var(--color-card);
+    color: var(--color-ink);
+    box-shadow: var(--shadow-xs);
+  }
+
+  /* ----------------------------------------------------- показател (KPI) */
+  .stat-label {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    line-height: 1.3;
+    color: var(--color-ink-soft);
+  }
+  .stat-value {
+    font-family: var(--font-display);
+    margin-top: 0.375rem;
+    font-size: clamp(1.5rem, 1.2rem + 1vw, 1.875rem);
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: var(--tracking-tight);
+    font-variant-numeric: tabular-nums lining-nums;
+  }
+  .stat-hint {
+    margin-top: 0.375rem;
+    font-size: 0.8125rem;
+    line-height: 1.4;
+    color: var(--color-ink-muted);
+  }
+
+  /* -------------------------------------------------------- заглавие на страница */
+  .divider {
+    height: 1px;
+    border: 0;
+    background: var(--color-line);
+  }
+}

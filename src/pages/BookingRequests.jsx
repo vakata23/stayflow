@@ -16,10 +16,10 @@ const STATUS_TABS = [
 ]
 
 const STATUS_STYLES = {
-  pending: 'bg-amber-100 text-amber-700',
-  accepted: 'bg-emerald-100 text-emerald-700',
-  declined: 'bg-slate-100 text-slate-500',
-  expired: 'bg-slate-100 text-slate-400',
+  pending: 'bg-warning-soft text-warning-ink',
+  accepted: 'bg-success-soft text-success-ink',
+  declined: 'bg-sunken text-ink-soft',
+  expired: 'bg-sunken text-ink-muted',
 }
 const STATUS_LABELS = {
   pending: 'Чакаща',
@@ -140,7 +140,7 @@ export default function BookingRequests() {
               key={t.value}
               onClick={() => setStatus(t.value)}
               className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                status === t.value ? 'bg-brand-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                status === t.value ? 'bg-accent text-white' : 'bg-sunken text-ink-soft hover:bg-line'
               }`}
             >
               {t.label}
@@ -174,12 +174,12 @@ export default function BookingRequests() {
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <p className="font-semibold text-slate-900">{req.guest_name}</p>
+                      <p className="font-semibold text-ink">{req.guest_name}</p>
                       <span className={`rounded-md px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[req.status]}`}>
                         {STATUS_LABELS[req.status]}
                       </span>
                     </div>
-                    <p className="mt-0.5 text-sm text-slate-500">
+                    <p className="mt-0.5 text-sm text-ink-soft">
                       {properties[req.property_id] ?? '—'} · {formatDateBG(req.check_in)} – {formatDateBG(req.check_out)}
                       {' · '}
                       <span className="inline-flex items-center gap-1 align-middle">
@@ -187,23 +187,23 @@ export default function BookingRequests() {
                         {req.num_guests}
                       </span>
                     </p>
-                    <p className="mt-1 text-xs text-slate-400">
+                    <p className="mt-1 text-xs text-ink-muted">
                       {req.guest_phone && <span>{req.guest_phone} </span>}
                       {req.guest_email && <span>{req.guest_email}</span>}
                     </p>
                     {req.message && (
-                      <p className="mt-2 rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-600">{req.message}</p>
+                      <p className="mt-2 rounded-lg bg-sunken px-3 py-2 text-sm text-ink-soft">{req.message}</p>
                     )}
                   </div>
 
                   <div className="shrink-0 text-right">
-                    <p className="text-lg font-bold text-slate-900">{formatMoney(req.quoted_total ?? 0)}</p>
-                    <p className="text-xs text-slate-400">капаро {formatMoney(req.quoted_deposit ?? 0)}</p>
+                    <p className="text-lg font-bold text-ink">{formatMoney(req.quoted_total ?? 0)}</p>
+                    <p className="text-xs text-ink-muted">капаро {formatMoney(req.quoted_deposit ?? 0)}</p>
                   </div>
                 </div>
 
                 {req.status === 'pending' && (
-                  <div className="mt-4 flex gap-3 border-t border-slate-100 pt-4">
+                  <div className="mt-4 flex gap-3 border-t border-line pt-4">
                     <Button
                       variant="secondary"
                       onClick={() => handleDecline(req)}

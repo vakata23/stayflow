@@ -116,11 +116,11 @@ export default function InvoiceModal({ open, onClose, onSaved, bookings, propert
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-4 sm:p-8">
-      <div className="fixed inset-0 bg-slate-900/40" onClick={onClose} />
+      <div className="fixed inset-0 bg-ink/40" onClick={onClose} />
 
-      <div className="relative w-full max-w-lg rounded-2xl border border-slate-200 bg-white shadow-xl">
-        <header className="flex items-center gap-2 border-b border-slate-100 px-6 py-4">
-          <FileText className="h-5 w-5 text-brand-600" />
+      <div className="relative w-full max-w-lg rounded-2xl border border-line bg-card shadow-xl">
+        <header className="flex items-center gap-2 border-b border-line px-6 py-4">
+          <FileText className="h-5 w-5 text-accent" />
           <h2 className="text-lg font-bold">Издаване на фактура</h2>
         </header>
 
@@ -143,15 +143,15 @@ export default function InvoiceModal({ open, onClose, onSaved, bookings, propert
 
           <div className="grid gap-5 sm:grid-cols-2">
             <Field label="Номер на фактура">
-              <Input value={invoiceNumber} readOnly className="bg-slate-50 font-mono" />
+              <Input value={invoiceNumber} readOnly className="bg-sunken font-mono" />
             </Field>
             <Field label="Дата на издаване">
               <Input type="date" value={issueDate} onChange={(e) => setIssueDate(e.target.value)} />
             </Field>
           </div>
 
-          <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-4">
-            <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <div className="rounded-xl border border-line bg-sunken/60 p-4">
+            <p className="mb-3 text-[0.8125rem] font-semibold text-ink-soft">
               Данни на получателя
             </p>
             <div className="space-y-4">
@@ -180,7 +180,7 @@ export default function InvoiceModal({ open, onClose, onSaved, bookings, propert
             />
           </Field>
 
-          <div className="flex justify-end gap-3 border-t border-slate-100 pt-5">
+          <div className="flex justify-end gap-3 border-t border-line pt-5">
             <Button type="button" variant="secondary" onClick={onClose} disabled={saving}>
               Отказ
             </Button>

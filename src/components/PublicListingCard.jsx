@@ -79,11 +79,11 @@ export default function PublicListingCard({ property, onSaved }) {
 
   return (
     <Card className="p-6">
-      <h2 className="flex items-center gap-1.5 text-sm font-semibold uppercase tracking-wide text-slate-700">
-        <Globe className="h-4 w-4 text-slate-400" />
+      <h2 className="flex items-center gap-2 type-heading">
+        <Globe className="h-4 w-4 text-ink-muted" />
         Публичен сайт за резервации
       </h2>
-      <p className="mt-1 text-xs text-slate-400">
+      <p className="mt-1 text-xs text-ink-muted">
         Публикувайте имота на собствена страница, откъдето гостите могат да проверят цена,
         наличност и да изпратят заявка за резервация — без Airbnb/Booking.
       </p>
@@ -98,10 +98,10 @@ export default function PublicListingCard({ property, onSaved }) {
           </Alert>
         )}
 
-        <div className="flex items-center justify-between rounded-xl border border-slate-200 px-4 py-3">
+        <div className="flex items-center justify-between rounded-xl border border-line px-4 py-3">
           <div>
-            <p className="text-sm font-medium text-slate-800">Публикувай имота</p>
-            <p className="text-xs text-slate-400">Виден е само когато е включено.</p>
+            <p className="text-sm font-medium text-ink">Публикувай имота</p>
+            <p className="text-xs text-ink-muted">Виден е само когато е включено.</p>
           </div>
           <button
             type="button"
@@ -109,11 +109,11 @@ export default function PublicListingCard({ property, onSaved }) {
             aria-checked={isListed}
             onClick={() => setIsListed((v) => !v)}
             className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${
-              isListed ? 'bg-brand-600' : 'bg-slate-300'
+              isListed ? 'bg-accent' : 'bg-line-strong'
             }`}
           >
             <span
-              className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
+              className={`absolute top-0.5 h-5 w-5 rounded-full bg-card shadow transition-transform ${
                 isListed ? 'translate-x-5' : 'translate-x-0.5'
               }`}
             />
@@ -122,7 +122,7 @@ export default function PublicListingCard({ property, onSaved }) {
 
         <Field label="Публичен адрес" hint="Може и на кирилица — превръщаме го в латиница (напр. „Морски апартамент“ → morski-apartament).">
           <div className="flex items-center gap-2">
-            <span className="shrink-0 text-sm text-slate-400">/stay/</span>
+            <span className="shrink-0 text-sm text-ink-muted">/stay/</span>
             <Input
               value={slug}
               onChange={(e) => setSlug(e.target.value)}
@@ -151,16 +151,16 @@ export default function PublicListingCard({ property, onSaved }) {
         </Field>
 
         {property.is_listed && property.slug && (
-          <div className="rounded-xl bg-slate-50 px-4 py-3">
-            <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-slate-500">
+          <div className="rounded-xl bg-sunken px-4 py-3">
+            <p className="mb-1.5 text-[0.8125rem] font-semibold text-ink-soft">
               Публичен линк
             </p>
             <div className="flex items-center gap-2">
-              <code className="flex-1 truncate text-sm text-slate-700">
+              <code className="flex-1 truncate text-sm text-ink">
                 {window.location.origin}/stay/{property.slug}
               </code>
               <Button type="button" variant="secondary" onClick={copyLink} className="shrink-0 !py-2">
-                {copied ? <Check className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
+                {copied ? <Check className="h-4 w-4 text-success" /> : <Copy className="h-4 w-4" />}
               </Button>
               <a href={`/stay/${property.slug}`} target="_blank" rel="noreferrer">
                 <Button type="button" variant="secondary" className="shrink-0 !py-2">
@@ -171,7 +171,7 @@ export default function PublicListingCard({ property, onSaved }) {
           </div>
         )}
 
-        <div className="flex justify-end border-t border-slate-100 pt-5">
+        <div className="flex justify-end border-t border-line pt-5">
           <Button type="submit" loading={saving}>
             Запази
           </Button>

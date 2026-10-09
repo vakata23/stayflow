@@ -143,10 +143,10 @@ export default function Invoicing() {
           />
         ) : (
           <Card className="overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
+            <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Фактури (таблица)">
+              <table className="min-w-[36rem] w-full text-left text-sm">
                 <thead>
-                  <tr className="border-b border-slate-100 bg-slate-50/60 text-xs uppercase tracking-wide text-slate-500">
+                  <tr className="border-b border-line bg-sunken/60 text-[0.8125rem] font-semibold text-ink-soft">
                     <th className="px-5 py-3 font-semibold">Номер</th>
                     <th className="px-5 py-3 font-semibold">Гост</th>
                     <th className="px-5 py-3 font-semibold">Имот</th>
@@ -155,25 +155,25 @@ export default function Invoicing() {
                     <th className="px-5 py-3 font-semibold text-right">PDF</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-line">
                   {invoices.map((inv) => (
-                    <tr key={inv.id} className="hover:bg-slate-50/60">
-                      <td className="px-5 py-3.5 font-mono text-slate-700">{inv.invoice_number}</td>
-                      <td className="px-5 py-3.5 font-medium text-slate-900">
+                    <tr key={inv.id} className="hover:bg-sunken/60">
+                      <td className="px-5 py-3.5 font-mono text-ink">{inv.invoice_number}</td>
+                      <td className="px-5 py-3.5 font-medium text-ink">
                         {inv.guest_details?.name ?? inv.bookings?.guest_name ?? '—'}
                       </td>
-                      <td className="px-5 py-3.5 text-slate-600">
+                      <td className="px-5 py-3.5 text-ink-soft">
                         {inv.bookings ? propertyName(inv.bookings.property_id) : '—'}
                       </td>
-                      <td className="px-5 py-3.5 text-slate-600">{formatDateBG(inv.issue_date)}</td>
-                      <td className="px-5 py-3.5 font-semibold text-slate-900">
+                      <td className="px-5 py-3.5 text-ink-soft">{formatDateBG(inv.issue_date)}</td>
+                      <td className="px-5 py-3.5 font-semibold text-ink">
                         {formatMoney(inv.amount)}
                       </td>
                       <td className="px-5 py-3.5 text-right">
                         <button
                           onClick={() => redownload(inv)}
                           disabled={downloadingId === inv.id}
-                          className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-line-strong bg-card px-2.5 py-1.5 text-xs font-semibold text-ink hover:bg-sunken disabled:opacity-60"
                         >
                           {downloadingId === inv.id ? (
                             <Loader2 className="h-3.5 w-3.5 animate-spin" />

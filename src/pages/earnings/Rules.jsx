@@ -86,7 +86,7 @@ export default function Rules() {
 
   return (
     <div>
-      <Link to="/earnings" className="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-800">
+      <Link to="/earnings" className="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-ink-soft hover:text-ink">
         <ArrowLeft className="h-4 w-4" />
         Приходи
       </Link>
@@ -106,7 +106,7 @@ export default function Rules() {
       <div className="mt-6 space-y-4">
         {error && <Alert>{error}</Alert>}
 
-        <div className="flex gap-2 rounded-xl bg-amber-50 px-4 py-3 text-xs leading-relaxed text-amber-900">
+        <div className="flex gap-2 rounded-xl bg-warning-soft px-4 py-3 text-xs leading-relaxed text-warning-ink">
           <Info className="mt-0.5 h-4 w-4 shrink-0" />
           <p>{CLEANING_FEE_NOTE}</p>
         </div>
@@ -125,28 +125,28 @@ export default function Rules() {
           />
         ) : (
           <Card className="overflow-hidden">
-            <ul className="divide-y divide-slate-100">
+            <ul className="divide-y divide-line">
               {rules.map((rule) => (
-                <li key={rule.id} className={`flex flex-wrap items-center justify-between gap-3 px-5 py-4 ${rule.active ? '' : 'bg-slate-50/70'}`}>
+                <li key={rule.id} className={`flex flex-wrap items-center justify-between gap-3 px-5 py-4 ${rule.active ? '' : 'bg-sunken/70'}`}>
                   <div className="min-w-0">
-                    <p className={`text-sm font-semibold ${rule.active ? 'text-slate-900' : 'text-slate-400'}`}>
-                      <span className={rule.kind === 'income' ? 'text-emerald-600' : 'text-red-600'}>{rule.kind === 'income' ? '+' : '−'}</span>{' '}
+                    <p className={`text-sm font-semibold ${rule.active ? 'text-ink' : 'text-ink-muted'}`}>
+                      <span className={rule.kind === 'income' ? 'text-success' : 'text-danger'}>{rule.kind === 'income' ? '+' : '−'}</span>{' '}
                       {ruleShort(rule)}
                     </p>
-                    <p className="mt-0.5 text-xs text-slate-400">
+                    <p className="mt-0.5 text-xs text-ink-muted">
                       {names[rule.property_id] ?? 'Всички имоти'} · от {formatDateBG(rule.starts_on)}
                       {rule.ends_on ? ` до ${formatDateBG(rule.ends_on)}` : ''}
                       {!rule.active && ' · на пауза'}
                     </p>
                   </div>
                   <div className="flex shrink-0 items-center gap-1">
-                    <button type="button" onClick={() => togglePause(rule)} className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700" aria-label={rule.active ? 'Пауза' : 'Включи'} title={rule.active ? 'Пауза' : 'Включи'}>
+                    <button type="button" onClick={() => togglePause(rule)} className="rounded-lg p-2 text-ink-muted hover:bg-sunken hover:text-ink" aria-label={rule.active ? 'Пауза' : 'Включи'} title={rule.active ? 'Пауза' : 'Включи'}>
                       {rule.active ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                     </button>
-                    <button type="button" onClick={() => setEditing(rule)} className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700" aria-label="Редакция">
+                    <button type="button" onClick={() => setEditing(rule)} className="rounded-lg p-2 text-ink-muted hover:bg-sunken hover:text-ink" aria-label="Редакция">
                       <Pencil className="h-4 w-4" />
                     </button>
-                    <button type="button" onClick={() => askDelete(rule)} className="rounded-lg p-2 text-slate-400 hover:bg-red-50 hover:text-red-600" aria-label="Изтрий">
+                    <button type="button" onClick={() => askDelete(rule)} className="rounded-lg p-2 text-ink-muted hover:bg-danger-soft hover:text-danger" aria-label="Изтрий">
                       <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
@@ -185,10 +185,10 @@ export default function Rules() {
       <Modal open={Boolean(deleting)} onClose={() => !busy && setDeleting(null)} title="Изтриване на правило">
         {deleting && (
           <>
-            <p className="text-sm leading-relaxed text-slate-600">
+            <p className="text-sm leading-relaxed text-ink-soft">
               Правило: <strong>{ruleShort(deleting.rule)}</strong>.
             </p>
-            <p className="mt-2 text-sm leading-relaxed text-slate-600">
+            <p className="mt-2 text-sm leading-relaxed text-ink-soft">
               {deleting.entryCount > 0
                 ? `От него вече има ${deleting.entryCount} автоматични ${deleting.entryCount === 1 ? 'запис' : 'записа'} в „Приходи“. Какво да стане с тях?`
                 : 'От него няма създадени автоматични записи.'}
@@ -252,11 +252,11 @@ function RuleEditModal({ rule, properties, onClose, onSaved }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-4 sm:p-8">
-      <div className="fixed inset-0 bg-slate-900/40" onClick={onClose} />
-      <div className="relative w-full max-w-md rounded-2xl border border-slate-200 bg-white shadow-xl">
-        <header className="border-b border-slate-100 px-6 py-4">
+      <div className="fixed inset-0 bg-ink/40" onClick={onClose} />
+      <div className="relative w-full max-w-md rounded-2xl border border-line bg-card shadow-xl">
+        <header className="border-b border-line px-6 py-4">
           <h2 className="text-lg font-bold">Редакция на правило</h2>
-          <p className="text-xs text-slate-400">{rule.label}</p>
+          <p className="text-xs text-ink-muted">{rule.label}</p>
         </header>
         <form onSubmit={save} className="space-y-4 px-6 py-5">
           {error && <Alert>{error}</Alert>}
@@ -295,10 +295,10 @@ function RuleEditModal({ rule, properties, onClose, onSaved }) {
               <Input type="date" value={v.ends_on} onChange={set('ends_on')} />
             </Field>
           </div>
-          <p className="rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-500">
+          <p className="rounded-lg bg-sunken px-3 py-2 text-xs text-ink-soft">
             Промяната важи за бъдещи записи. Вече създадените остават — редактирайте ги от „Последни разходи и приходи“.
           </p>
-          <div className="flex justify-end gap-3 border-t border-slate-100 pt-4">
+          <div className="flex justify-end gap-3 border-t border-line pt-4">
             <Button type="button" variant="secondary" onClick={onClose} disabled={saving}>Отказ</Button>
             <Button type="submit" loading={saving}>Запази</Button>
           </div>

@@ -286,7 +286,7 @@ export default function ListingSetup() {
     <div className="mx-auto max-w-3xl">
       <Link
         to={`/properties/${id}`}
-        className="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-800"
+        className="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-ink-soft hover:text-ink"
       >
         <ArrowLeft className="h-4 w-4" />
         {property.name}
@@ -317,7 +317,7 @@ export default function ListingSetup() {
               onCoverChanged={(url) => setProperty((p) => ({ ...p, cover_image_url: url }))}
             />
             <Card className="space-y-3 p-5">
-              <p className="text-sm text-slate-600">
+              <p className="text-sm text-ink-soft">
                 {photos.length === 0
                   ? 'Качете снимките от телефона — до 30 наведнъж.'
                   : `Етикетирани: ${labeled} от ${photos.length}. ${
@@ -341,8 +341,8 @@ export default function ListingSetup() {
 
         {step === 'processing' && (
           <Card className="flex flex-col items-center gap-3 p-10 text-center">
-            <Loader2 className="h-8 w-8 animate-spin text-brand-600" />
-            <p className="font-semibold text-slate-800">Асистентът разглежда снимките…</p>
+            <Loader2 className="h-8 w-8 animate-spin text-accent" />
+            <p className="font-semibold text-ink">Асистентът разглежда снимките…</p>
             <Button variant="secondary" onClick={() => { clearInterval(pollRef.current); enterReview(null) }}>
               Не чакай — продължи с етикетите
             </Button>
@@ -354,37 +354,37 @@ export default function ListingSetup() {
             <Card className="p-5">
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div>
-                  <h2 className="text-sm font-semibold text-slate-700">Ред на снимките</h2>
-                  <p className="mt-1 text-xs text-slate-400">
+                  <h2 className="text-sm font-semibold text-ink">Ред на снимките</h2>
+                  <p className="mt-1 text-xs text-ink-muted">
                     Подредени по етикети: дневна → спални → кухня → баня → тераса/гледка → отвън. Стрелките местят ръчно.
                   </p>
                 </div>
-                <button type="button" onClick={resortByLabels} className="text-xs font-semibold text-brand-600">
+                <button type="button" onClick={resortByLabels} className="text-xs font-semibold text-accent">
                   Подреди пак по етикети
                 </button>
               </div>
-              {coverNote && <p className="mt-2 text-xs text-amber-700">{coverNote}</p>}
+              {coverNote && <p className="mt-2 text-xs text-warning-ink">{coverNote}</p>}
               <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
                 {ordered.map((p, i) => (
-                  <div key={p.id} className={`relative overflow-hidden rounded-xl border ${i === 0 ? 'border-brand-500 ring-2 ring-brand-200' : 'border-slate-200'}`}>
+                  <div key={p.id} className={`relative overflow-hidden rounded-xl border ${i === 0 ? 'border-accent ring-2 ring-accent-soft-hover' : 'border-line'}`}>
                     <img src={p.thumb_url || p.photo_url} alt="" className="aspect-square w-full object-cover" />
                     <div className="absolute inset-x-0 top-0 flex justify-between p-1.5">
                       <div className="flex gap-1">
-                        <button type="button" onClick={() => move(i, -1)} disabled={i === 0} className="rounded-lg bg-slate-900/60 p-1 text-white disabled:opacity-30" aria-label="По-напред">
+                        <button type="button" onClick={() => move(i, -1)} disabled={i === 0} className="rounded-lg bg-ink/60 p-1 text-white disabled:opacity-30" aria-label="По-напред">
                           <ChevronLeft className="h-3.5 w-3.5" />
                         </button>
-                        <button type="button" onClick={() => move(i, 1)} disabled={i === ordered.length - 1} className="rounded-lg bg-slate-900/60 p-1 text-white disabled:opacity-30" aria-label="По-назад">
+                        <button type="button" onClick={() => move(i, 1)} disabled={i === ordered.length - 1} className="rounded-lg bg-ink/60 p-1 text-white disabled:opacity-30" aria-label="По-назад">
                           <ChevronRight className="h-3.5 w-3.5" />
                         </button>
                       </div>
                       {p.room && (
-                        <span className="rounded-md bg-white/90 px-1.5 py-0.5 text-[11px] font-medium text-slate-700">{ROOM_LABELS[p.room]}</span>
+                        <span className="rounded-md bg-card/90 px-1.5 py-0.5 text-[11px] font-medium text-ink">{ROOM_LABELS[p.room]}</span>
                       )}
                     </div>
                     <button
                       type="button"
                       onClick={() => makeCover(i)}
-                      className={`absolute bottom-1.5 left-1.5 flex items-center gap-1 rounded-lg px-1.5 py-1 text-xs font-medium shadow ${i === 0 ? 'bg-brand-600 text-white' : 'bg-white/90 text-slate-600'}`}
+                      className={`absolute bottom-1.5 left-1.5 flex items-center gap-1 rounded-lg px-1.5 py-1 text-xs font-medium shadow ${i === 0 ? 'bg-accent text-white' : 'bg-card/90 text-ink-soft'}`}
                     >
                       <Star className={`h-3 w-3 ${i === 0 ? 'fill-white' : ''}`} />
                       Корица
@@ -392,14 +392,14 @@ export default function ListingSetup() {
                   </div>
                 ))}
               </div>
-              <button type="button" onClick={() => setStep('photos')} className="mt-3 text-xs font-semibold text-brand-600">
+              <button type="button" onClick={() => setStep('photos')} className="mt-3 text-xs font-semibold text-accent">
                 Добави, изтрий или смени етикети
               </button>
             </Card>
 
             <Card className="p-5">
-              <h2 className="text-sm font-semibold text-slate-700">Удобства</h2>
-              <p className="mt-1 text-xs text-slate-400">
+              <h2 className="text-sm font-semibold text-ink">Удобства</h2>
+              <p className="mt-1 text-xs text-ink-muted">
                 {hints.length
                   ? 'Със „подсказка“ са отбелязани неща, за които има етикет на снимка (Кухня → кухня, Тераса → балкон). Отметнете ги само ако са верни — нищо не се слага само.'
                   : 'Отметнете какво има в имота.'}
@@ -408,23 +408,23 @@ export default function ListingSetup() {
                 <button
                   type="button"
                   onClick={() => setAmenities((prev) => [...new Set([...prev, ...hints])])}
-                  className="mt-2 text-xs font-semibold text-brand-600"
+                  className="mt-2 text-xs font-semibold text-accent"
                 >
                   Отметни подсказаните ({hints.length})
                 </button>
               )}
               <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
                 {AMENITIES.map((a) => (
-                  <label key={a.key} className="flex items-center gap-2 text-sm text-slate-600">
+                  <label key={a.key} className="flex items-center gap-2 text-sm text-ink-soft">
                     <input
                       type="checkbox"
                       checked={amenities.includes(a.key)}
                       onChange={() => toggleAmenity(a.key)}
-                      className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+                      className="h-4 w-4 rounded border-line-strong text-accent focus:ring-accent"
                     />
                     {a.label}
                     {hints.includes(a.key) && (
-                      <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800">подсказка</span>
+                      <span className="rounded bg-warning-soft px-1.5 py-0.5 text-[10px] font-semibold text-warning-ink">подсказка</span>
                     )}
                   </label>
                 ))}
@@ -433,8 +433,8 @@ export default function ListingSetup() {
 
             <Card className="space-y-4 p-5">
               <div>
-                <h2 className="text-sm font-semibold text-slate-700">Описание</h2>
-                <p className="mt-1 text-xs text-slate-400">
+                <h2 className="text-sm font-semibold text-ink">Описание</h2>
+                <p className="mt-1 text-xs text-ink-muted">
                   Чернова от вашите данни по-долу — проверете числата, после редактирайте текста както искате.
                 </p>
               </div>
@@ -465,22 +465,22 @@ export default function ListingSetup() {
               <Field label="На английски (по избор)">
                 <Textarea rows={4} value={descEn} onChange={(e) => setDescEn(e.target.value)} />
               </Field>
-              <button type="button" onClick={regenerateText} className="text-xs font-semibold text-brand-600">
+              <button type="button" onClick={regenerateText} className="text-xs font-semibold text-accent">
                 Попълни наново от данните (презаписва текста)
               </button>
             </Card>
 
             <Card className="p-5">
-              <h2 className="flex items-center gap-1.5 text-sm font-semibold text-slate-700">
-                <Palette className="h-4 w-4 text-slate-400" />
+              <h2 className="flex items-center gap-1.5 text-sm font-semibold text-ink">
+                <Palette className="h-4 w-4 text-ink-muted" />
                 Цвят на страницата
               </h2>
               <div className="mt-3 flex items-center gap-3">
                 <span
-                  className="h-10 w-10 shrink-0 rounded-xl border border-slate-200"
+                  className="h-10 w-10 shrink-0 rounded-xl border border-line"
                   style={{ background: useAccent && accent ? accent : '#1b787c' }}
                 />
-                <p className="text-sm text-slate-600">
+                <p className="text-sm text-ink-soft">
                   {accent
                     ? useAccent
                       ? 'Взет от корицата и потъмнен, ако трябва, за да се чете белият текст на бутоните.'
@@ -489,8 +489,8 @@ export default function ListingSetup() {
                 </p>
               </div>
               {accent && (
-                <label className="mt-3 flex items-center gap-2 text-sm text-slate-600">
-                  <input type="checkbox" checked={useAccent} onChange={(e) => setUseAccent(e.target.checked)} className="h-4 w-4 rounded border-slate-300" />
+                <label className="mt-3 flex items-center gap-2 text-sm text-ink-soft">
+                  <input type="checkbox" checked={useAccent} onChange={(e) => setUseAccent(e.target.checked)} className="h-4 w-4 rounded border-line-strong" />
                   Използвай цвета от корицата
                 </label>
               )}
@@ -498,16 +498,16 @@ export default function ListingSetup() {
 
             {savedMsg && <Alert kind="success">{savedMsg}</Alert>}
             {published && publicUrl && (
-              <div className="flex items-center gap-2 rounded-xl bg-slate-50 px-4 py-3 text-sm">
-                <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
-                <code className="flex-1 truncate text-slate-700">{publicUrl}</code>
-                <button type="button" onClick={() => navigator.clipboard?.writeText(publicUrl)} className="text-slate-400 hover:text-slate-700" aria-label="Копирай линка">
+              <div className="flex items-center gap-2 rounded-xl bg-sunken px-4 py-3 text-sm">
+                <CheckCircle2 className="h-4 w-4 shrink-0 text-success" />
+                <code className="flex-1 truncate text-ink">{publicUrl}</code>
+                <button type="button" onClick={() => navigator.clipboard?.writeText(publicUrl)} className="text-ink-muted hover:text-ink" aria-label="Копирай линка">
                   <Copy className="h-4 w-4" />
                 </button>
               </div>
             )}
 
-            <div className="sticky bottom-0 -mx-4 flex flex-wrap gap-3 border-t border-slate-200 bg-slate-50/95 px-4 py-3 backdrop-blur sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:p-0">
+            <div className="sticky bottom-0 -mx-4 flex flex-wrap gap-3 border-t border-line bg-sunken/95 px-4 py-3 backdrop-blur sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:p-0">
               <Button variant="secondary" onClick={previewAsGuest} loading={saving}>
                 <Eye className="h-4 w-4" />
                 Преглед като гост

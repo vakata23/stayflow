@@ -1,0 +1,451 @@
+<!doctype html>
+<html lang="bg" data-dir="a" data-screen="bookings">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Златен час · Резервации</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,500;7..72,600;7..72,700&family=Onest:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>:root{--canvas:#f6efe3;--surface:#fffcf6;--sunken:#efe5d3;--line:#e6dbc8;--line-strong:#8b7d68;--ink:#241a11;--ink-soft:#4f4235;--ink-muted:#6b5c4c;--accent:#a63e1e;--accent-hover:#8c3216;--on-accent:#ffffff;--accent-soft:#f8e2d6;--accent-ink:#7a2c12;--success:#2f6a3c;--success-soft:#e2efdc;--success-ink:#1d4a28;--warning:#8a5600;--warning-soft:#fbecc7;--warning-ink:#5e3a00;--danger:#b3261e;--danger-soft:#fbe1dc;--danger-ink:#7a1a14;--chart-1:#5f7f46;--chart-2:#c4623f;--src-airbnb:#c4492f;--src-booking:#2f62a8;--src-direct:#4d7a3a;--nav:#f6efe3;--on-nav:#241a11;--on-nav-muted:#4f4235;--nav-accent:#a63e1e}
+/* Общ скелет за трите посоки: разположение и размери през променливи.
+   Цветовете идват от :root (palettes.mjs), формата и характерът — от a.css / b.css / c.css. */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--canvas);color:var(--ink);font-family:var(--font-body);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased;font-variant-numeric:lining-nums tabular-nums}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+ul{list-style:none}
+svg{flex:none}
+b{font-weight:600}
+small{display:block;font-size:.8125rem;line-height:1.35;color:var(--ink-muted);font-weight:400}
+.r{text-align:right}
+
+/* ------------------------------------------------------------------ рамка */
+.shell{display:grid;grid-template-columns:var(--side-w) minmax(0,1fr);min-height:100vh}
+.side{position:sticky;top:0;height:100vh;overflow:hidden;display:flex;flex-direction:column}
+.main{min-width:0}
+.page{width:100%;max-width:var(--page-max);margin:0 auto;padding:var(--page-pad)}
+.bar,.tabs{display:none}
+.brand{display:flex;align-items:center;gap:12px}
+.mark{display:grid;place-items:center}
+.menu{display:flex;flex-direction:column;overflow:hidden;flex:1}
+.item{display:flex;align-items:center;gap:12px;position:relative}
+.item .lbl{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.n{font-style:normal;display:grid;place-items:center}
+.me{display:flex;align-items:center;gap:12px}
+.av{display:grid;place-items:center;flex:none;font-weight:700}
+.who small{margin-top:1px}
+
+/* ------------------------------------------------------------------ глава */
+.head{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin-bottom:var(--gap-l)}
+.head-t{min-width:0}
+.eyebrow{margin-bottom:6px}
+.lede{margin-top:8px;max-width:56ch;color:var(--ink-soft)}
+.actions{display:flex;gap:10px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 20px;border-radius:var(--r-ctl);font-weight:600;font-size:15px;white-space:nowrap}
+.btn-primary{background:var(--accent);color:var(--on-accent)}
+.btn-ghost{box-shadow:inset 0 0 0 1.5px var(--line-strong);color:var(--ink)}
+
+/* ------------------------------------------------------------------ табло */
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--gap-m);margin-bottom:var(--gap-l)}
+.kpi{display:flex;flex-direction:column;min-width:0}
+.kpi-l{font-size:.875rem;color:var(--ink-soft);font-weight:500}
+.kpi-n{display:block;font-weight:700;line-height:1}
+.kpi-s{font-size:.8125rem;color:var(--ink-muted);margin-top:auto;padding-top:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.panel{margin-bottom:var(--gap-l);min-width:0}
+.panel-h{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px 12px;margin-bottom:var(--gap-m)}
+.count{display:inline-grid;place-items:center;min-width:28px;height:28px;padding:0 8px;font-size:.8125rem;font-weight:600}
+.stays{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:var(--gap-m)}
+.stay{display:grid;grid-template-columns:auto 1fr auto;grid-template-areas:"av who who" "st st tag" "pg pg pg";align-items:center;column-gap:12px;row-gap:10px}
+.stay .av{grid-area:av}.stay-w{grid-area:who;min-width:0}.stay .tag{grid-area:tag}.stay-s{grid-area:st;display:flex;align-items:center;gap:8px;font-size:.875rem}.bar-p{grid-area:pg;height:6px;overflow:hidden}.bar-p i{display:block;height:100%}
+.stay-w b,.ev-n b,.pn b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.stay-w small,.ev-n small,.pn small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.timeline{display:flex;flex-direction:column}
+.day{display:grid;grid-template-columns:var(--day-w) minmax(0,1fr);column-gap:var(--gap-m)}
+.day-h{display:flex;align-items:baseline;gap:10px;align-self:start}
+.day-h span{display:block}
+.evs{display:flex;flex-direction:column;min-width:0}
+.ev{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;align-items:center;column-gap:14px}
+.ev-i{display:grid;place-items:center}
+.ev-k{font-size:.875rem;color:var(--ink-soft);white-space:nowrap}
+.tag{display:inline-flex;align-items:center;gap:7px;font-size:.8125rem;font-weight:500;white-space:nowrap;color:var(--ink-soft)}
+.tag i{width:8px;height:8px;border-radius:50%;background:var(--ink-muted)}
+.src-airbnb i{background:var(--src-airbnb)}.src-booking i{background:var(--src-booking)}.src-direct i{background:var(--src-direct)}
+
+/* ------------------------------------------------------------------ резервации */
+.note{display:flex;align-items:center;gap:12px;margin-bottom:var(--gap-m);font-size:.9375rem}
+.note p{flex:1}.note a{font-weight:600;white-space:nowrap;text-decoration:underline;text-underline-offset:3px}
+.filters{display:flex;gap:var(--gap-m);flex-wrap:wrap;margin-bottom:var(--gap-m)}
+.f{display:flex;flex-direction:column;gap:6px;flex:1 1 180px;min-width:150px}
+.f>span:first-child{font-size:.8125rem;font-weight:600;color:var(--ink-soft)}
+.sel{display:flex;align-items:center;justify-content:space-between;min-height:44px;padding:0 14px;color:var(--ink);font-size:.9375rem}
+.sel svg{color:var(--ink-soft)}
+.blist{min-width:0}
+.bhead,.brow{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1.3fr) 104px 104px 44px 104px 96px 110px 130px;align-items:center;column-gap:var(--gap-m)}
+.c-guest{display:flex;align-items:center;gap:12px;min-width:0}
+.c-guest b,.c-prop{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.c-guest>span:last-child{min-width:0}
+.m-l{display:none}
+.s-prop{display:none}
+.c-in,.c-out,.c-n,.c-price,.c-comm{white-space:nowrap}
+.c-guest small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.st{font-style:normal;display:inline-flex;align-items:center;gap:7px;font-size:.8125rem;font-weight:600;white-space:nowrap}
+.st::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+
+/* ------------------------------------------------------------------ приходи */
+.seg{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:var(--gap-l)}
+.seg button{min-height:44px;padding:0 16px;font-weight:600;font-size:.9375rem;color:var(--ink-soft)}
+.hero{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:var(--gap-m);margin-bottom:var(--gap-l)}
+.hero-v{display:flex;align-items:baseline;white-space:nowrap}
+.hero-n{margin-top:12px;color:var(--ink-soft);display:flex;flex-wrap:wrap;gap:4px 18px}
+.hero-save{display:flex;align-items:center;gap:14px;max-width:340px}
+.hero-save small{margin-top:2px}
+.metrics{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:var(--gap-m);margin-bottom:var(--gap-l)}
+.metric{display:flex;flex-direction:column;min-width:0}
+.metric-l{display:flex;align-items:center;gap:8px;font-size:.875rem;color:var(--ink-soft);font-weight:500}
+.metric-v{display:block;margin-top:10px;line-height:1.1;white-space:nowrap}
+.metric-s{margin-top:4px;font-size:.8125rem;color:var(--ink-muted)}
+.chartp svg{display:block;width:100%;height:auto}
+.legend{display:flex;align-items:center;flex-wrap:wrap;gap:8px;font-size:.8125rem;color:var(--ink-soft)}
+.legend i{width:10px;height:10px;border-radius:3px}.legend .l2{margin-left:10px}
+.l1,.b1{fill:var(--chart-1);background:var(--chart-1)}.l2,.b2{fill:var(--chart-2);background:var(--chart-2)}
+.chartp text{fill:var(--ink-muted);font:500 11px var(--font-body)}
+.gl{stroke:var(--line);stroke-width:1}
+.prow{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(80px,1fr) repeat(3,minmax(96px,.8fr));align-items:center;column-gap:var(--gap-m)}
+.pbar{height:8px;overflow:hidden;background:var(--sunken)}.pbar i{display:block;height:100%;background:var(--accent)}
+.pv{text-align:right;font-weight:600;white-space:nowrap}.pv small{font-weight:400}
+
+/* ------------------------------------------------------------------ телефон */
+@media (max-width:959px){
+  .shell{display:block}
+  .side{display:none}
+  .bar{display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:5}
+  .bar-s{display:none}
+  .bar-t{flex:1;min-width:0}
+  .bar-r{display:flex;align-items:center;gap:6px}
+  .page{padding:var(--page-pad-m)}
+  .tabs{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:10}
+  .tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-width:0}
+  .tl{font-size:.6875rem;font-weight:600;line-height:1}
+  .head{flex-direction:column;align-items:stretch;gap:14px}
+  .head .actions .btn{flex:1}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .stays{grid-template-columns:1fr}
+  .day{grid-template-columns:1fr;row-gap:6px}
+  .ev{grid-template-columns:auto minmax(0,1fr) auto}
+  .ev-k{display:none}
+  .filters{display:grid;grid-template-columns:1fr 1fr}
+  .f{min-width:0}
+  .bhead{display:none}
+  .brow{grid-template-columns:1fr 1fr;grid-template-areas:"guest guest" "in out" "nn price" "src st"}
+  .c-prop{display:none}.s-phone{display:none}.s-prop{display:block}
+  .c-guest{grid-area:guest}.c-in{grid-area:in}.c-out{grid-area:out}.c-n{grid-area:nn}.c-price{grid-area:price}.c-comm{display:none}.c-src{grid-area:src}.c-st{grid-area:st;justify-self:end}
+  .m-l{display:block;font-size:.75rem;color:var(--ink-muted);margin-bottom:1px}
+  .r{text-align:left}.c-price{text-align:right}
+  .hero{grid-template-columns:1fr}
+  .metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .metric:last-child{grid-column:1/-1}
+  .prow{grid-template-columns:1fr 1fr 1fr;grid-template-areas:"pn pn pn" "bar bar bar" "a b c"}
+  .pn{grid-area:pn}.pbar{grid-area:bar}
+  .pv{text-align:left}
+}
+@media (min-width:960px) and (max-width:1279px){
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .metrics{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .bhead,.brow{grid-template-columns:minmax(170px,1.6fr) minmax(130px,1.1fr) 96px 96px 48px 96px 0 108px 130px}
+  .c-comm,.bhead span:nth-child(7){display:none}
+}
+
+/* ПОСОКА А — «Златен час»: топла, гостоприемна, като хотел с душа.
+   Пясък и крем, дълбок теракотен акцент, серифни заглавия и числа (Literata). Просторна, меки сенки, без рамки. */
+:root{
+  --font-head:'Literata',Georgia,'Times New Roman',serif;--font-body:'Onest',system-ui,sans-serif;--font-num:'Literata',Georgia,serif;
+  --side-w:276px;--page-pad:48px 56px 80px;--page-pad-m:20px 16px 128px;--page-max:1160px;
+  --gap-l:48px;--gap-m:20px;--pad-card:28px;--r-card:26px;--r-ctl:14px;--r-tag:8px;--day-w:150px;
+  --shadow-card:0 1px 2px rgba(90,55,20,.05),0 16px 36px -22px rgba(90,55,20,.30);
+}
+body{background:var(--canvas)}
+h1,h2,h3{font-family:var(--font-head);font-weight:600;letter-spacing:-.015em;color:var(--ink)}
+.av{border-radius:50%;background:var(--accent-soft);color:var(--accent-ink);font-size:.9375rem}
+
+/* — навигация — */
+.side{background:var(--nav);padding:36px 20px 24px;border-right:1px solid var(--line)}
+.brand{padding:0 12px 34px}
+.mark{width:40px;height:40px;border-radius:13px;background:var(--accent);color:#fff;box-shadow:0 8px 18px -8px rgba(166,62,30,.7)}
+.word{font:700 1.5rem var(--font-head);letter-spacing:-.02em;color:var(--ink)}
+.grp{font:italic 500 .9375rem var(--font-head);color:var(--ink-muted);padding:22px 14px 8px}
+.menu .grp:first-child{padding-top:0}
+.item{height:44px;padding:0 14px;border-radius:13px;font-size:.9375rem;font-weight:500;color:var(--on-nav-muted)}
+.item .ico{color:var(--ink-muted)}
+.item.is-active{background:var(--accent-soft);color:var(--accent-ink);font-weight:600}
+.item.is-active .ico{color:var(--accent)}
+.n{min-width:22px;height:22px;padding:0 6px;border-radius:99px;background:var(--accent);color:#fff;font-size:.75rem;font-weight:700}
+.me{padding:16px 12px 0;margin-top:12px;border-top:1px solid var(--line)}
+.me .av{width:40px;height:40px}
+.who b{font-size:.9375rem}
+
+/* — глава — */
+.eyebrow{font:italic 500 1.0625rem var(--font-head);color:var(--accent)}
+h1{font-size:3rem;line-height:1.04;letter-spacing:-.025em}
+.lede{font-size:1.0625rem;line-height:1.55}
+.btn-primary{box-shadow:0 10px 22px -12px rgba(166,62,30,.8)}
+
+/* — табло — */
+.kpis{background:var(--surface);border-radius:var(--r-card);box-shadow:var(--shadow-card);gap:0;padding:8px 0}
+.kpi{padding:22px 28px;border-left:1px solid var(--line)}
+.kpi:first-child{border-left:0}
+.kpi-n{font:600 3.5rem/1 var(--font-num);color:var(--ink);margin:10px 0 6px;letter-spacing:-.03em}
+.kpi:first-child .kpi-n{color:var(--accent)}
+.panel{background:transparent}
+.panel-h h2{font-size:1.625rem}
+.count{background:var(--sunken);border-radius:99px;color:var(--ink-soft)}
+.stay{background:var(--surface);border-radius:var(--r-card);box-shadow:var(--shadow-card);padding:24px}
+.stay .av{width:48px;height:48px}
+.stay-w b{font-size:1.0625rem}
+.stay-s{color:var(--ink-soft)}
+.bar-p{background:var(--sunken);border-radius:99px;height:7px}
+.bar-p i{background:var(--src-direct);border-radius:99px}
+.stay.is-today .av{background:var(--surface);color:var(--accent-ink)}
+.stay.is-today{background:var(--accent-soft);box-shadow:0 0 0 1.5px color-mix(in srgb,var(--accent) 35%,transparent)}
+.stay.is-today .stay-s{color:var(--accent-ink);font-weight:600}
+.stay.is-today .bar-p{background:color-mix(in srgb,var(--accent) 18%,transparent)}
+.stay.is-today .bar-p i{background:var(--accent)}
+.timeline{gap:30px}
+.day-h b{font:600 3rem/1 var(--font-num);letter-spacing:-.04em;color:var(--ink)}
+.day-h span{font-size:.9375rem;color:var(--ink-soft);text-transform:capitalize;line-height:1.25}
+.day-h small{text-transform:none}
+.evs{background:var(--surface);border-radius:22px;box-shadow:var(--shadow-card);padding:6px 22px}
+.ev{padding:15px 0;border-top:1px solid var(--line)}
+.ev:first-child{border-top:0}
+.ev-i{width:38px;height:38px;border-radius:50%}
+.ev-in .ev-i{background:var(--success-soft);color:var(--success)}
+.ev-out .ev-i{background:var(--warning-soft);color:var(--warning)}
+.ev-n b{font-size:1rem}
+
+/* — резервации — */
+.note{background:var(--warning-soft);color:var(--warning-ink);border-radius:20px;padding:16px 22px}
+.note svg{color:var(--warning)}
+.sel{background:var(--surface);border-radius:var(--r-ctl);box-shadow:inset 0 0 0 1.5px var(--line-strong)}
+.f>span:first-child{font-size:.875rem}
+.blist{display:flex;flex-direction:column;gap:12px}
+@media (min-width:960px){
+  .bhead,.brow{grid-template-columns:minmax(0,1.8fr) 100px 100px 48px 120px 124px 136px;column-gap:18px}
+  .c-comm,.c-prop,.bhead span:nth-child(7),.bhead span:nth-child(2){display:none}
+  .s-phone{display:none}.s-prop{display:block}
+  .hero{grid-template-columns:minmax(0,1fr) 320px}
+}
+.bhead{padding:4px 26px;font-size:.8125rem;font-weight:600;color:var(--ink-muted)}
+.brow{background:var(--surface);border-radius:20px;box-shadow:var(--shadow-card);padding:18px 26px}
+.c-guest .av{width:44px;height:44px}
+.c-guest b{font-size:1rem}
+.c-n,.c-price,.c-comm{font-family:var(--font-num);font-size:1.0625rem;font-weight:600}
+.c-price{font-size:1.1875rem}
+.tag{font-size:.875rem}
+.st{padding:5px 11px;border-radius:var(--r-tag)}
+.st-ok{background:var(--success-soft);color:var(--success-ink)}
+.st-wait{background:var(--warning-soft);color:var(--warning-ink)}
+.st-off{background:var(--sunken);color:var(--ink-soft)}
+
+/* — приходи — */
+.seg{gap:8px}
+.seg button{border-radius:99px;background:transparent;box-shadow:inset 0 0 0 1.5px var(--line)}
+.seg .is-on{background:var(--ink);color:var(--canvas);box-shadow:none}
+.hero{padding:12px 0 8px}
+.hero-l{font:italic 500 1.25rem var(--font-head);color:var(--accent)}
+.hero-v{font-family:var(--font-num);font-weight:600;letter-spacing:-.045em;color:var(--ink);line-height:.95;margin-top:6px}
+.hero-v .i{font-size:7.25rem}.hero-v .d{font-size:3.25rem;color:var(--ink-muted)}.hero-v .c{font-size:3.25rem;margin-left:10px;color:var(--ink-muted)}
+.hero-n{font-size:1.0625rem}
+.hero-n span{color:var(--ink-muted)}
+.hero-save{background:var(--accent-soft);border-radius:var(--r-card);padding:22px 24px;color:var(--accent)}
+.hero-save b{font:600 2rem/1.1 var(--font-num);color:var(--accent-ink);display:block}
+.hero-save small{color:var(--accent-ink)}
+.metrics{background:var(--surface);border-radius:var(--r-card);box-shadow:var(--shadow-card);gap:0;padding:8px 0}
+.metric{padding:22px 26px;border-left:1px solid var(--line)}
+.metric:first-child{border-left:0}
+.metric-v{font:600 1.875rem/1.1 var(--font-num);letter-spacing:-.02em}
+.chartp{background:var(--surface);border-radius:var(--r-card);box-shadow:var(--shadow-card);padding:var(--pad-card)}
+.chartp .panel-h h2,.byprop .panel-h h2{font-size:1.375rem}
+.legend .l1{background:var(--chart-1)}.legend .l2{background:var(--chart-2)}
+.bar-g.is-cur .b1,.bar-g.is-cur .b2{opacity:1}
+.bar-g:not(.is-cur) rect{opacity:.55}
+.byprop{background:var(--surface);border-radius:var(--r-card);box-shadow:var(--shadow-card);padding:var(--pad-card)}
+.prow{padding:16px 0;border-top:1px solid var(--line)}
+.prow .pv{font-family:var(--font-num);font-size:1.0625rem}
+.pbar{border-radius:99px}.pbar i{border-radius:99px;background:var(--src-direct)}
+.pp{color:var(--accent)}
+
+/* — телефон — */
+@media (max-width:959px){
+  h1{font-size:2.125rem}
+  .bar{padding:16px 18px 6px;background:var(--canvas)}
+  .bar-t{display:none}
+  .bar::before{content:"StayFlow";flex:1;font:700 1.5rem var(--font-head);letter-spacing:-.02em;color:var(--ink)}
+  .bell{display:none}
+  .bar .av{width:40px;height:40px}
+  .tabs{left:12px;right:12px;bottom:12px;padding:8px 6px;background:var(--surface);border-radius:26px;box-shadow:0 18px 40px -14px rgba(90,55,20,.45),0 0 0 1px var(--line)}
+  .tab{height:56px;border-radius:20px;color:var(--ink-muted)}
+  .tab.is-active{background:var(--accent-soft);color:var(--accent-ink)}
+  .head{margin-bottom:28px}
+  .head .actions{display:flex}
+  .kpis{padding:6px 0}
+  .kpi{padding:16px 18px;border-left:0}
+  .kpi:nth-child(even){border-left:1px solid var(--line)}
+  .kpi:nth-child(n+3){border-top:1px solid var(--line)}
+  .kpi-n{font-size:2.625rem}
+  .stay{padding:20px}
+  .day-h b{font-size:2.25rem}
+  .day-h{align-items:center}
+  .evs{padding:2px 16px}
+  .brow{padding:18px;row-gap:12px}
+  .c-prop{color:var(--ink-soft);font-size:.9375rem}
+  .hero-v .i{font-size:4.5rem}.hero-v .d,.hero-v .c{font-size:2.25rem}
+  .hero-save{padding:18px 20px}
+  .metric{padding:16px 18px;border-left:0}
+  .metric:nth-child(even){border-left:1px solid var(--line)}.metric:nth-child(n+3){border-top:1px solid var(--line)}
+  .metric:last-child{grid-column:auto}.metric:nth-child(5){grid-column:1/-1}
+  .chartp,.byprop{padding:20px}
+}
+@media (min-width:960px) and (max-width:1279px){.kpi,.metric{padding:20px}.hero-v .i{font-size:5.5rem}.bhead,.brow{grid-template-columns:minmax(0,1.6fr) 92px 92px 44px 100px 112px 124px}}
+</style></head>
+<body>
+<div class="shell">
+  <aside class="side">
+    <div class="brand"><span class="mark"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-waves" aria-hidden="true"><path d="M2 6c.6.5 1.2 1 2.5 1C7 7 7 5 9.5 5c2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"></path><path d="M2 12c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"></path><path d="M2 18c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"></path></svg></span><span class="word">StayFlow</span></div>
+    <nav class="menu" aria-label="Основно меню">
+      <p class="grp">Управление</p>
+      <a class="item" href="#"><span class="ico"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-layout-dashboard" aria-hidden="true"><rect width="7" height="9" x="3" y="3" rx="1"></rect><rect width="7" height="5" x="14" y="3" rx="1"></rect><rect width="7" height="9" x="14" y="12" rx="1"></rect><rect width="7" height="5" x="3" y="16" rx="1"></rect></svg></span><span class="lbl">Табло</span></a>
+      <a class="item" href="#"><span class="ico"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trending-up" aria-hidden="true"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline><polyline points="16 7 22 7 22 13"></polyline></svg></span><span class="lbl">Приходи</span></a>
+      <a class="item" href="#"><span class="ico"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-calendar-days" aria-hidden="true"><path d="M8 2v4"></path><path d="M16 2v4"></path><rect width="18" height="18" x="3" y="4" rx="2"></rect><path d="M3 10h18"></path><path d="M8 14h.01"></path><path d="M12 14h.01"></path><path d="M16 14h.01"></path><path d="M8 18h.01"></path><path d="M12 18h.01"></path><path d="M16 18h.01"></path></svg></span><span class="lbl">Календар</span></a>
+      <a class="item is-active" href="#"><span class="ico"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-book-marked" aria-hidden="true"><path d="M10 2v8l3-3 3 3V2"></path><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20"></path></svg></span><span class="lbl">Резервации</span></a>
+      <a class="item" href="#"><span class="ico"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-inbox" aria-hidden="true"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"></polyline><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"></path></svg></span><span class="lbl">Заявки</span><em class="n">2</em></a>
+      <a class="item" href="#"><span class="ico"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-clipboard-check" aria-hidden="true"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"></rect><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><path d="m9 14 2 2 4-4"></path></svg></span><span class="lbl">Почистване</span></a>
+      <a class="item" href="#"><span class="ico"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-badge-percent" aria-hidden="true"><path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"></path><path d="m15 9-6 6"></path><path d="M9 9h.01"></path><path d="M15 15h.01"></path></svg></span><span class="lbl">Цени</span></a>
+      <a class="item" href="#"><span class="ico"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-map-pin" aria-hidden="true"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"></path><circle cx="12" cy="10" r="3"></circle></svg></span><span class="lbl">Адресни карти</span></a>
+      <a class="item" href="#"><span class="ico"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-key-round" aria-hidden="true"><path d="M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z"></path><circle cx="16.5" cy="7.5" r=".5" fill="currentColor"></circle></svg></span><span class="lbl">Кодове за достъп</span></a>
+      <a class="item" href="#"><span class="ico"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-file-text" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"></path><path d="M14 2v4a2 2 0 0 0 2 2h4"></path><path d="M10 9H8"></path><path d="M16 13H8"></path><path d="M16 17H8"></path></svg></span><span class="lbl">Фактури</span></a>
+      <p class="grp">Настройки</p>
+      <a class="item" href="#"><span class="ico"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-building2" aria-hidden="true"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"></path><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"></path><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"></path><path d="M10 6h4"></path><path d="M10 10h4"></path><path d="M10 14h4"></path><path d="M10 18h4"></path></svg></span><span class="lbl">Имоти</span></a>
+      <a class="item" href="#"><span class="ico"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-bell" aria-hidden="true"><path d="M10.268 21a2 2 0 0 0 3.464 0"></path><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"></path></svg></span><span class="lbl">Известия</span></a>
+    </nav>
+    <div class="me"><span class="av">ИП</span><span class="who"><b>Иван Петров</b><small>Морски имоти ЕООД</small></span></div>
+  </aside>
+  <div class="main">
+    <header class="bar">
+      <span class="bar-t">Резервации</span>
+      <span class="bar-s"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg><span class="hint">Търси резервация, гост, имот…</span><kbd>⌘K</kbd></span>
+      <span class="bar-r"><span class="bell"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-bell" aria-hidden="true"><path d="M10.268 21a2 2 0 0 0 3.464 0"></path><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"></path></svg></span><span class="av">ИП</span></span>
+    </header>
+    <main class="page">
+<header class="head"><div class="head-t"><p class="eyebrow">Всички резервации</p><h1>Резервации</h1><p class="lede">Филтри, сортиране и бързо редактиране.</p></div><div class="actions"><a class="btn btn-primary" href="#"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-plus" aria-hidden="true"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg><span>Нова резервация</span></a></div></header><div class="note"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-triangle-alert" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg><p><b>8 резервации</b> от платформи чакат цена и комисиона — иначе приходите ще се смятат грешно.</p><a href="#">Покажи само тях</a></div>
+    <div class="filters"><label class="f"><span>Имот</span><span class="sel">Всички имоти<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-down" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></span></label><label class="f"><span>Статус</span><span class="sel">Всички<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-down" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></span></label><label class="f"><span>От</span><span class="sel">дд.мм.гггг<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-calendar-days" aria-hidden="true"><path d="M8 2v4"></path><path d="M16 2v4"></path><rect width="18" height="18" x="3" y="4" rx="2"></rect><path d="M3 10h18"></path><path d="M8 14h.01"></path><path d="M12 14h.01"></path><path d="M16 14h.01"></path><path d="M8 18h.01"></path><path d="M12 18h.01"></path><path d="M16 18h.01"></path></svg></span></label><label class="f"><span>До</span><span class="sel">дд.мм.гггг<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-calendar-days" aria-hidden="true"><path d="M8 2v4"></path><path d="M16 2v4"></path><rect width="18" height="18" x="3" y="4" rx="2"></rect><path d="M3 10h18"></path><path d="M8 14h.01"></path><path d="M12 14h.01"></path><path d="M16 14h.01"></path><path d="M8 18h.01"></path><path d="M12 18h.01"></path><path d="M16 18h.01"></path></svg></span></label></div>
+    <div class="blist" role="table">
+      <div class="bhead" role="row"><span>Гост</span><span>Имот</span><span>Настаняване</span><span>Напускане</span><span class="r">Нощ.</span><span class="r">Цена</span><span class="r">Комисиона</span><span>Източник</span><span>Статус</span></div>
+      <div class="brow" role="row">
+        <span class="c-guest"><span class="av av-g">DR</span><span><b>Daniel Rossi</b><small class="s-phone">+359 88 107 1370</small><small class="s-prop">Апартамент „Витоша Вю“</small></span></span>
+        <span class="c-prop">Апартамент „Витоша Вю“</span>
+        <span class="c-in"><small class="m-l">Настаняване</small>28.10.2026</span>
+        <span class="c-out"><small class="m-l">Напускане</small>02.11.2026</span>
+        <span class="c-n r"><small class="m-l">Нощувки</small>5</span>
+        <span class="c-price r"><small class="m-l">Цена</small>500,00 €</span>
+        <span class="c-comm r"><small class="m-l">Комисиона</small>75,00 €</span>
+        <span class="c-src"><span class="tag src-airbnb"><i></i>Airbnb</span></span>
+        <span class="c-st"><em class="st st-ok">Потвърдена</em></span>
+      </div>
+      <div class="brow" role="row">
+        <span class="c-guest"><span class="av av-g">РТ</span><span><b>Ралица Тодорова</b><small class="s-phone">+359 88 107 1333</small><small class="s-prop">Вила „Тихи бряг“</small></span></span>
+        <span class="c-prop">Вила „Тихи бряг“</span>
+        <span class="c-in"><small class="m-l">Настаняване</small>22.10.2026</span>
+        <span class="c-out"><small class="m-l">Напускане</small>26.10.2026</span>
+        <span class="c-n r"><small class="m-l">Нощувки</small>4</span>
+        <span class="c-price r"><small class="m-l">Цена</small>480,00 €</span>
+        <span class="c-comm r"><small class="m-l">Комисиона</small>—</span>
+        <span class="c-src"><span class="tag src-direct"><i></i>Директна</span></span>
+        <span class="c-st"><em class="st st-ok">Потвърдена</em></span>
+      </div>
+      <div class="brow" role="row">
+        <span class="c-guest"><span class="av av-g">СМ</span><span><b>Стефан Маринов</b><small class="s-phone">+359 88 106 1296</small><small class="s-prop">Студио „Морски бриз“</small></span></span>
+        <span class="c-prop">Студио „Морски бриз“</span>
+        <span class="c-in"><small class="m-l">Настаняване</small>18.10.2026</span>
+        <span class="c-out"><small class="m-l">Напускане</small>21.10.2026</span>
+        <span class="c-n r"><small class="m-l">Нощувки</small>3</span>
+        <span class="c-price r"><small class="m-l">Цена</small>255,00 €</span>
+        <span class="c-comm r"><small class="m-l">Комисиона</small>38,25 €</span>
+        <span class="c-src"><span class="tag src-booking"><i></i>Booking.com</span></span>
+        <span class="c-st"><em class="st st-ok">Потвърдена</em></span>
+      </div>
+      <div class="brow" role="row">
+        <span class="c-guest"><span class="av av-g">ВК</span><span><b>Виктория Колева</b><small class="s-phone">+359 88 105 1259</small><small class="s-prop">Апартамент „Витоша Вю“</small></span></span>
+        <span class="c-prop">Апартамент „Витоша Вю“</span>
+        <span class="c-in"><small class="m-l">Настаняване</small>15.10.2026</span>
+        <span class="c-out"><small class="m-l">Напускане</small>17.10.2026</span>
+        <span class="c-n r"><small class="m-l">Нощувки</small>2</span>
+        <span class="c-price r"><small class="m-l">Цена</small>190,00 €</span>
+        <span class="c-comm r"><small class="m-l">Комисиона</small>28,50 €</span>
+        <span class="c-src"><span class="tag src-airbnb"><i></i>Airbnb</span></span>
+        <span class="c-st"><em class="st st-wait">Чакаща</em></span>
+      </div>
+      <div class="brow" role="row">
+        <span class="c-guest"><span class="av av-g">PV</span><span><b>Peter van Dijk</b><small class="s-phone">+359 88 104 1222</small><small class="s-prop">Вила „Тихи бряг“</small></span></span>
+        <span class="c-prop">Вила „Тихи бряг“</span>
+        <span class="c-in"><small class="m-l">Настаняване</small>13.10.2026</span>
+        <span class="c-out"><small class="m-l">Напускане</small>18.10.2026</span>
+        <span class="c-n r"><small class="m-l">Нощувки</small>5</span>
+        <span class="c-price r"><small class="m-l">Цена</small>650,00 €</span>
+        <span class="c-comm r"><small class="m-l">Комисиона</small>97,50 €</span>
+        <span class="c-src"><span class="tag src-booking"><i></i>Booking.com</span></span>
+        <span class="c-st"><em class="st st-ok">Потвърдена</em></span>
+      </div>
+      <div class="brow" role="row">
+        <span class="c-guest"><span class="av av-g">ЕС</span><span><b>Елена Стоянова</b><small class="s-phone">+359 88 103 1185</small><small class="s-prop">Студио „Морски бриз“</small></span></span>
+        <span class="c-prop">Студио „Морски бриз“</span>
+        <span class="c-in"><small class="m-l">Настаняване</small>11.10.2026</span>
+        <span class="c-out"><small class="m-l">Напускане</small>13.10.2026</span>
+        <span class="c-n r"><small class="m-l">Нощувки</small>2</span>
+        <span class="c-price r"><small class="m-l">Цена</small>170,00 €</span>
+        <span class="c-comm r"><small class="m-l">Комисиона</small>—</span>
+        <span class="c-src"><span class="tag src-direct"><i></i>Директна</span></span>
+        <span class="c-st"><em class="st st-ok">Потвърдена</em></span>
+      </div>
+      <div class="brow" role="row">
+        <span class="c-guest"><span class="av av-g">НИ</span><span><b>Николай Иванов</b><small class="s-phone">+359 88 103 1148</small><small class="s-prop">Апартамент „Витоша Вю“</small></span></span>
+        <span class="c-prop">Апартамент „Витоша Вю“</span>
+        <span class="c-in"><small class="m-l">Настаняване</small>10.10.2026</span>
+        <span class="c-out"><small class="m-l">Напускане</small>14.10.2026</span>
+        <span class="c-n r"><small class="m-l">Нощувки</small>4</span>
+        <span class="c-price r"><small class="m-l">Цена</small>360,00 €</span>
+        <span class="c-comm r"><small class="m-l">Комисиона</small>—</span>
+        <span class="c-src"><span class="tag src-manual"><i></i>Ръчно</span></span>
+        <span class="c-st"><em class="st st-ok">Потвърдена</em></span>
+      </div>
+      <div class="brow" role="row">
+        <span class="c-guest"><span class="av av-g">AS</span><span><b>Anna Schmidt</b><small class="s-phone">+359 88 102 1111</small><small class="s-prop">Вила „Тихи бряг“</small></span></span>
+        <span class="c-prop">Вила „Тихи бряг“</span>
+        <span class="c-in"><small class="m-l">Настаняване</small>09.10.2026</span>
+        <span class="c-out"><small class="m-l">Напускане</small>12.10.2026</span>
+        <span class="c-n r"><small class="m-l">Нощувки</small>3</span>
+        <span class="c-price r"><small class="m-l">Цена</small>390,00 €</span>
+        <span class="c-comm r"><small class="m-l">Комисиона</small>58,50 €</span>
+        <span class="c-src"><span class="tag src-airbnb"><i></i>Airbnb</span></span>
+        <span class="c-st"><em class="st st-ok">Потвърдена</em></span>
+      </div>
+      <div class="brow" role="row">
+        <span class="c-guest"><span class="av av-g">ГД</span><span><b>Георги Димитров</b><small class="s-phone">+359 88 101 1074</small><small class="s-prop">Студио „Морски бриз“</small></span></span>
+        <span class="c-prop">Студио „Морски бриз“</span>
+        <span class="c-in"><small class="m-l">Настаняване</small>08.10.2026</span>
+        <span class="c-out"><small class="m-l">Напускане</small>10.10.2026</span>
+        <span class="c-n r"><small class="m-l">Нощувки</small>2</span>
+        <span class="c-price r"><small class="m-l">Цена</small>180,00 €</span>
+        <span class="c-comm r"><small class="m-l">Комисиона</small>27,00 €</span>
+        <span class="c-src"><span class="tag src-booking"><i></i>Booking.com</span></span>
+        <span class="c-st"><em class="st st-ok">Потвърдена</em></span>
+      </div>
+    </div>
+    </main>
+  </div>
+  <nav class="tabs" aria-label="Долна навигация">
+    <a class="tab" href="#"><span class="ti"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-layout-dashboard" aria-hidden="true"><rect width="7" height="9" x="3" y="3" rx="1"></rect><rect width="7" height="5" x="14" y="3" rx="1"></rect><rect width="7" height="9" x="14" y="12" rx="1"></rect><rect width="7" height="5" x="3" y="16" rx="1"></rect></svg></span><span class="tl">Табло</span></a>
+    <a class="tab" href="#"><span class="ti"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-calendar-days" aria-hidden="true"><path d="M8 2v4"></path><path d="M16 2v4"></path><rect width="18" height="18" x="3" y="4" rx="2"></rect><path d="M3 10h18"></path><path d="M8 14h.01"></path><path d="M12 14h.01"></path><path d="M16 14h.01"></path><path d="M8 18h.01"></path><path d="M12 18h.01"></path><path d="M16 18h.01"></path></svg></span><span class="tl">Календар</span></a>
+    <a class="tab is-active" href="#"><span class="ti"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-book-marked" aria-hidden="true"><path d="M10 2v8l3-3 3 3V2"></path><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20"></path></svg></span><span class="tl">Резервации</span></a>
+    <a class="tab" href="#"><span class="ti"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trending-up" aria-hidden="true"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline><polyline points="16 7 22 7 22 13"></polyline></svg></span><span class="tl">Приходи</span></a>
+    <a class="tab" href="#"><span class="ti"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-ellipsis" aria-hidden="true"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg></span><span class="tl">Още</span></a>
+  </nav>
+</div>
+</body></html>

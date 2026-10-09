@@ -13,11 +13,11 @@ export default function LocationMap({ lat, lng, showMarker = false, showCircle =
   const src = `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik${marker}`
 
   return (
-    <div className="relative overflow-hidden rounded-xl border border-slate-200 bg-slate-100" style={{ height }}>
+    <div className="relative overflow-hidden rounded-xl border border-line bg-sunken" style={{ height }}>
       <iframe title="Местоположение" src={src} className="h-full w-full" loading="lazy" style={{ border: 0 }} />
       {showCircle && (
         <div
-          className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-brand-600 bg-brand-500/20"
+          className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-accent bg-accent/20"
           style={{ width: 160, height: 160 }}
         />
       )}

@@ -16,3 +16,6 @@ ios/App/Pods/
 ios/App/App/public/
 ios/App/Podfile.lock
 ios/DerivedData/
+
+# визуални проверки (снимки и отчети)
+scripts/visual/out/

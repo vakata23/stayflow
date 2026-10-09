@@ -116,26 +116,26 @@ export default function SetupWizard({ open, onClose, onSaved, properties, profil
   const progress = Math.round(((step + 1) / screens.length) * 100)
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-white" role="dialog" aria-modal="true" aria-label="Настройка на разходите и приходите">
-      <header className="flex items-center gap-3 border-b border-slate-100 px-4 py-3">
+    <div className="fixed inset-0 z-50 flex flex-col bg-card" role="dialog" aria-modal="true" aria-label="Настройка на разходите и приходите">
+      <header className="flex items-center gap-3 border-b border-line px-4 py-3">
         <button
           type="button"
           onClick={() => (step === 0 ? onClose() : setStep((s) => s - 1))}
-          className="rounded-lg p-2 text-slate-500 hover:bg-slate-100"
+          className="rounded-lg p-2 text-ink-soft hover:bg-sunken"
           aria-label={step === 0 ? 'Затвори' : 'Назад'}
         >
           {step === 0 ? <X className="h-5 w-5" /> : <ArrowLeft className="h-5 w-5" />}
         </button>
         <div className="flex-1">
-          <div className="h-1.5 overflow-hidden rounded-full bg-slate-100">
-            <div className="h-full rounded-full bg-brand-600 transition-all" style={{ width: `${progress}%` }} />
+          <div className="h-1.5 overflow-hidden rounded-full bg-sunken">
+            <div className="h-full rounded-full bg-accent transition-all" style={{ width: `${progress}%` }} />
           </div>
-          <p className="mt-1 text-[11px] text-slate-400">
+          <p className="mt-1 text-[11px] text-ink-muted">
             Въпрос {step + 1} от {screens.length}
           </p>
         </div>
         {step > 0 && (
-          <button type="button" onClick={onClose} className="rounded-lg p-2 text-slate-400 hover:bg-slate-100" aria-label="Затвори">
+          <button type="button" onClick={onClose} className="rounded-lg p-2 text-ink-muted hover:bg-sunken" aria-label="Затвори">
             <X className="h-5 w-5" />
           </button>
         )}
@@ -165,28 +165,28 @@ export default function SetupWizard({ open, onClose, onSaved, properties, profil
 
           {screen.type === 'review' && (
             <div className="space-y-4">
-              <h2 className="text-xl font-bold text-slate-900">Преглед</h2>
+              <h2 className="text-xl font-bold text-ink">Преглед</h2>
               {built.rules.length === 0 ? (
-                <p className="text-sm text-slate-600">
+                <p className="text-sm text-ink-soft">
                   Не сте въвели нито една сума — няма да се създаде правило. Нищо не се измисля.
                 </p>
               ) : (
                 <>
-                  <p className="text-sm text-slate-600">
+                  <p className="text-sm text-ink-soft">
                     Ще се създадат {built.rules.length} {built.rules.length === 1 ? 'правило' : 'правила'}. Записите,
                     които се генерират от тях, са <strong>оценка по вашите правила</strong> — можете да ги редактирате
                     или изтриете по всяко време.
                   </p>
-                  <ul className="divide-y divide-slate-100 rounded-xl border border-slate-200">
+                  <ul className="divide-y divide-line rounded-xl border border-line">
                     {built.rules.map((r, i) => (
                       <li key={i} className="px-4 py-3 text-sm">
-                        <p className="font-medium text-slate-900">
-                          <span className={r.kind === 'income' ? 'text-emerald-600' : 'text-red-600'}>
+                        <p className="font-medium text-ink">
+                          <span className={r.kind === 'income' ? 'text-success' : 'text-danger'}>
                             {r.kind === 'income' ? '+' : '−'}
                           </span>{' '}
                           {ruleShort(r)}
                         </p>
-                        <p className="text-xs text-slate-400">
+                        <p className="text-xs text-ink-muted">
                           {propertyName(r.property_id)} · от {r.starts_on}
                         </p>
                       </li>
@@ -204,7 +204,7 @@ export default function SetupWizard({ open, onClose, onSaved, properties, profil
                 </Alert>
               )}
               {built.skipped.some((s) => s.reason === 'empty') && (
-                <p className="text-xs text-slate-400">
+                <p className="text-xs text-ink-muted">
                   Без сума, затова без правило:{' '}
                   {built.skipped.filter((s) => s.reason === 'empty').map((s) => s.label).join(', ')}.
                 </p>
@@ -214,7 +214,7 @@ export default function SetupWizard({ open, onClose, onSaved, properties, profil
         </div>
       </main>
 
-      <footer className="border-t border-slate-100 bg-white px-5 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+      <footer className="border-t border-line bg-card px-5 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
         <div className="mx-auto flex max-w-md gap-3">
           {isLast ? (
             built.rules.length === 0 ? (
@@ -243,10 +243,10 @@ function PickScreen({ kind, picked, onToggle }) {
   const options = kind === 'expense' ? EXPENSE_OPTIONS : INCOME_OPTIONS
   return (
     <div className="space-y-4">
-      <h2 className="text-xl font-bold text-slate-900">
+      <h2 className="text-xl font-bold text-ink">
         {kind === 'expense' ? 'Какви разходи плащаш?' : 'За какво получаваш допълнително?'}
       </h2>
-      <p className="text-sm text-slate-500">
+      <p className="text-sm text-ink-soft">
         {kind === 'expense'
           ? 'Отметнете всичко, което плащате редовно. За всяко ще попитаме колко и колко често.'
           : 'Само допълнителни услуги. Таксата за почистване, която плаща гостът, вече е в цената на резервацията — не я добавяйте тук.'}
@@ -256,17 +256,17 @@ function PickScreen({ kind, picked, onToggle }) {
           <label
             key={o.key}
             className={`flex cursor-pointer items-center gap-3 rounded-xl border px-4 py-3.5 text-sm transition-colors ${
-              picked.includes(o.key) ? 'border-brand-500 bg-brand-50' : 'border-slate-200 bg-white'
+              picked.includes(o.key) ? 'border-accent bg-accent-soft' : 'border-line bg-card'
             }`}
           >
             <input
               type="checkbox"
               checked={picked.includes(o.key)}
               onChange={() => onToggle(o.key)}
-              className="h-5 w-5 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+              className="h-5 w-5 rounded border-line-strong text-accent focus:ring-accent"
             />
-            <span className="font-medium text-slate-800">{o.label}</span>
-            {o.hint && <span className="text-xs text-slate-400">({o.hint})</span>}
+            <span className="font-medium text-ink">{o.label}</span>
+            {o.hint && <span className="text-xs text-ink-muted">({o.hint})</span>}
           </label>
         ))}
       </div>
@@ -278,12 +278,12 @@ function ItemScreen({ kind, option, answer, onChange, properties }) {
   const frequencies = kind === 'income' ? INCOME_FREQUENCIES : EXPENSE_FREQUENCIES
   return (
     <div className="space-y-5">
-      <h2 className="text-xl font-bold text-slate-900">
+      <h2 className="text-xl font-bold text-ink">
         {kind === 'income' ? `Колко взимаш за „${option.label}“?` : `Колко плащаш за „${option.label}“?`}
       </h2>
 
       {option.key === 'cleaning' && kind === 'expense' && (
-        <div className="flex gap-2 rounded-xl bg-amber-50 px-3.5 py-3 text-xs leading-relaxed text-amber-900">
+        <div className="flex gap-2 rounded-xl bg-warning-soft px-3.5 py-3 text-xs leading-relaxed text-warning-ink">
           <Info className="mt-0.5 h-4 w-4 shrink-0" />
           <p>{CLEANING_FEE_NOTE}</p>
         </div>
@@ -307,13 +307,13 @@ function ItemScreen({ kind, option, answer, onChange, properties }) {
       </Field>
 
       <fieldset>
-        <legend className="mb-2 text-sm font-medium text-slate-700">Колко често?</legend>
+        <legend className="mb-2 text-sm font-medium text-ink">Колко често?</legend>
         <div className="space-y-2">
           {frequencies.map((f) => (
             <label
               key={f}
               className={`flex cursor-pointer items-start gap-3 rounded-xl border px-4 py-3 ${
-                answer.frequency === f ? 'border-brand-500 bg-brand-50' : 'border-slate-200'
+                answer.frequency === f ? 'border-accent bg-accent-soft' : 'border-line'
               }`}
             >
               <input
@@ -321,11 +321,11 @@ function ItemScreen({ kind, option, answer, onChange, properties }) {
                 name={`freq-${kind}-${option.key}`}
                 checked={answer.frequency === f}
                 onChange={() => onChange({ frequency: f })}
-                className="mt-0.5 h-5 w-5 border-slate-300 text-brand-600 focus:ring-brand-500"
+                className="mt-0.5 h-5 w-5 border-line-strong text-accent focus:ring-accent"
               />
               <span>
-                <span className="block text-sm font-medium text-slate-800">{FREQUENCIES[f]}</span>
-                <span className="block text-xs text-slate-400">{FREQ_HELP[f]}</span>
+                <span className="block text-sm font-medium text-ink">{FREQUENCIES[f]}</span>
+                <span className="block text-xs text-ink-muted">{FREQ_HELP[f]}</span>
               </span>
             </label>
           ))}
@@ -360,7 +360,7 @@ function ItemScreen({ kind, option, answer, onChange, properties }) {
       </Field>
 
       {answer.amount !== '' && Number(String(answer.amount).replace(',', '.')) > 0 && (
-        <p className="rounded-xl bg-slate-50 px-3.5 py-2.5 text-xs text-slate-500">
+        <p className="rounded-xl bg-sunken px-3.5 py-2.5 text-xs text-ink-soft">
           {kind === 'income' ? '+' : '−'}
           {formatMoney(Number(String(answer.amount).replace(',', '.')))} {FREQUENCIES[answer.frequency]}
           {answer.frequency === 'monthly' ? `, ${answer.day_of_month}-о число` : ''}

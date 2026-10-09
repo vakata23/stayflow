@@ -137,12 +137,13 @@ iCal линка и го поставете в Airbnb/Booking („Импорт н
 
 ```
 stayflow/
-├── public/fonts/          # Roboto TTF за кирилица в PDF фактурите
+├── public/fonts/          # Onest (интерфейс, кирилица) + Roboto TTF за PDF фактурите
 ├── netlify/functions/     # iCal serverless функция (production)
 ├── supabase/
 │   ├── schema.sql         # основна схема
 │   └── migrations/        # 002 (iCal), 003 (гост карта)
 ├── src/
+│   ├── styles/            # tokens.css (дизайн токени), fonts.css, base.css, components.css
 │   ├── components/        # Layout, ui примитиви, IcalSync…
 │   ├── context/           # AuthContext
 │   ├── lib/               # supabase, dates, ical, bookings, pricing, PDF…
@@ -150,6 +151,27 @@ stayflow/
 ├── netlify.toml
 └── vite.config.js         # + dev middleware за /api/ical
 ```
+
+---
+
+## 5.1 Дизайн система
+
+Посока **«Златен час»**: топъл крем, мек теракот, големи карти (24 px), по-малко линии. Всички цветове, шрифтове, радиуси, сенки и
+времена на движение са на едно място — `src/styles/tokens.css` (три слоя: примитиви → семантични роли → компонентни размери).
+Екраните ползват само ролите (`bg-surface` — фон, `bg-card` — карти, `text-ink` / `text-ink-soft` / `text-ink-muted` — текст,
+`border-line`, `bg-accent` / `bg-accent-soft`, `success` / `warning` / `danger` / `info`), никога суров цвят и никакви стари скали
+(`slate`, `brand`). Шрифтове: **Onest** за интерфейса, **Literata** само за заглавия и големите числа; цифрите в таблици са равноширочни.
+Тъмна тема (посока «Графит», макетите са в `design/directions/`) ще се добави като втори набор стойности за същите роли.
+Общите компоненти са в `src/components/ui.jsx`; живата витрина е на **`/design`**.
+
+**Движение** (само `transform` и `opacity`, без библиотеки; `src/lib/motion.js`): кратко 120 ms, обичайно 180 ms, плавно 280 ms, една крива за вход
+и една за изход. Числата се броят нагоре веднъж, първите ~8 карти се появяват меко, графиката расте веднъж, листове и прозорци се плъзгат,
+бутоните се натискат (`scale(0.98)`). При `prefers-reduced-motion` всичко това се изключва и се вижда крайното състояние.
+
+Проверки:
+
+- `node scripts/test-design.mjs` — контраст на всички двойки текст/фон (≥ 4.5:1, граници ≥ 3:1), токени = одобрената посока, няма стари класове, шрифтове, движение 120/180/280 ms;
+- `scripts/visual/` — снимки на 375/1440 px, достъпност (axe-core), поведение на компонентите, **движение** (`motion.mjs`, с кадри) и **хоризонтално препълване** (`overflow.mjs`) — виж README там.
 
 ---
 
@@ -172,3 +194,5 @@ stayflow/
 | `npm run dev` | Локален dev сървър |
 | `npm run build` | Production build в `dist/` |
 | `npm run preview` | Преглед на production build локално |
+| `node scripts/test-design.mjs` | Проверка на дизайн токените и контраста |
+| `node scripts/test-stage1.mjs` | SQL тестове (PGlite) |

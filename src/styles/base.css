@@ -1,0 +1,89 @@
+/* Базови стилове на приложението. Четат само токени (виж tokens.css). */
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  body {
+    background: var(--color-surface);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Литерата — само за заглавия и големите числа; интерфейсът е Onest */
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    letter-spacing: var(--tracking-snug);
+    text-wrap: balance;
+  }
+  p {
+    text-wrap: pretty;
+  }
+
+  /* Tailwind v4 не връща курсора „ръка“ на бутоните */
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  summary,
+  label[for] {
+    cursor: pointer;
+  }
+
+  /* Без 300 ms забавяне на докосването и без двойно-тап увеличение върху контролите */
+  a,
+  button,
+  input,
+  select,
+  textarea,
+  summary,
+  [role="button"] {
+    touch-action: manipulation;
+  }
+
+  /* Видим фокус за клавиатура (контурът не се маха никога; полетата го
+     заместват с по-мек ореол в components.css) */
+  :focus-visible {
+    outline: var(--ring-width) solid var(--color-focus);
+    outline-offset: var(--ring-offset);
+  }
+
+  ::selection {
+    background: color-mix(in srgb, var(--color-accent-soft-hover) 80%, transparent);
+  }
+
+  /* Сумите и датите се подреждат една под друга */
+  table,
+  .num {
+    font-variant-numeric: tabular-nums lining-nums;
+  }
+
+  [hidden] {
+    display: none !important;
+  }
+
+  /* Намалено движение: без анимации и преходи — веднага се вижда крайното състояние
+     (броячите и лентата го правят и в JS, виж src/lib/motion.js). Само въртящият се
+     индикатор за прогрес остава, по-бавен. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation: none !important;
+      transition: none !important;
+      scroll-behavior: auto !important;
+    }
+    .animate-spin {
+      animation: spin 1.6s linear infinite !important;
+    }
+  }
+}

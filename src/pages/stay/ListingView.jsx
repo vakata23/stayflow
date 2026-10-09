@@ -1,8 +1,5 @@
 import { useMemo, useState } from 'react'
 import {
-  Waves,
-  MapPin,
-  ScrollText,
   Eye,
   CheckCircle2,
   Phone,
@@ -12,7 +9,6 @@ import {
   Send,
   Instagram,
   Mail,
-  Languages,
   Star,
   Wifi,
   ParkingCircle,
@@ -26,8 +22,7 @@ import {
   PawPrint,
   Baby,
   Accessibility,
-  Clock,
-  ShieldCheck,
+  Loader2,
 } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { todayISO } from '../../lib/dates'
@@ -35,11 +30,14 @@ import { formatMoney } from '../../lib/money'
 import { channelLabel, channelHref } from '../../lib/propertySettings'
 import { isValidPhone, isValidEmail } from '../../lib/bookingRequestServer'
 import { AMENITIES, cancellationLabel } from '../../lib/amenities'
-import { accentCssVars } from '../../lib/accentColor'
-import { Field, Input, Textarea, Button, Alert } from '../../components/ui'
+import { stayThemeVars } from '../../lib/accentColor'
+import StayHero from './StayHero'
 import Gallery from './Gallery'
+import Lightbox from './Lightbox'
 import AvailabilityCalendar from './AvailabilityCalendar'
 import LocationMap from '../../components/LocationMap'
+import { Reveal, prefersReducedMotion, shortPrice, useInView, useStayFonts } from './useStayEffects'
+import './stay.css'
 
 const CHANNEL_ICONS = {
   phone: Phone,
@@ -67,7 +65,40 @@ const AMENITY_ICONS = {
   step_free: Accessibility,
 }
 
-const DESCRIPTION_PREVIEW_LEN = 240
+const DESCRIPTION_PREVIEW_LEN = 380
+
+const scrollToQuote = () =>
+  document.getElementById('quote-section')?.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth', block: 'start' })
+
+function Note({ kind = 'info', children }) {
+  return (
+    <div className={`stay-note ${kind === 'error' ? 'stay-note--error' : kind === 'success' ? 'stay-note--ok' : ''}`} role={kind === 'error' ? 'alert' : undefined}>
+      {children}
+    </div>
+  )
+}
+
+function Field({ label, required, children }) {
+  return (
+    <label className="stay-field">
+      <span>
+        {label}
+        {required && ' *'}
+      </span>
+      {children}
+    </label>
+  )
+}
+
+/** Картата се зарежда чак когато секцията наближи екрана — без външен iframe при първо зареждане. */
+function LazyMap(props) {
+  const [ref, near] = useInView({ rootMargin: '400px', once: true })
+  return (
+    <div ref={ref} className="stay-mapbox" style={{ minHeight: props.height }}>
+      {near && <LocationMap {...props} />}
+    </div>
+  )
+}
 
 /**
  * Изгледът на обявата — общ за публичната страница (PublicStay, данни от
@@ -76,9 +107,12 @@ const DESCRIPTION_PREVIEW_LEN = 240
  * проверка на цена и заявка — те минават само през публикуван slug.
  */
 export default function ListingView({ property, reviews, slug, loadBusy, preview = false }) {
+  useStayFonts()
+
   const [lang, setLang] = useState('bg')
   const [descExpanded, setDescExpanded] = useState(false)
   const [amenitiesExpanded, setAmenitiesExpanded] = useState(false)
+  const [lightbox, setLightbox] = useState(null)
 
   const [checkIn, setCheckIn] = useState('')
   const [checkOut, setCheckOut] = useState('')
@@ -96,6 +130,9 @@ export default function ListingView({ property, reviews, slug, loadBusy, preview
   const [sending, setSending] = useState(false)
   const [sendError, setSendError] = useState(null)
   const [sent, setSent] = useState(false)
+
+  const [heroWatch, heroVisible] = useInView({ threshold: 0.15 })
+  const [quoteWatch, quoteVisible] = useInView({ threshold: 0.1 })
 
   const handleQuote = async (e) => {
     e.preventDefault()
@@ -179,17 +216,26 @@ export default function ListingView({ property, reviews, slug, loadBusy, preview
   }, [property, lang])
 
   // Корицата (звездата в галерията на собственика) винаги е първа, после
-  // останалите в реда, който собственикът е задал.
-  const galleryPhotos = useMemo(() => {
+  // останалите в реда, който собственикът е задал. Всяка снимка е с миниатюра
+  // (photo_thumbs, ако са налични; иначе — самата снимка).
+  const items = useMemo(() => {
     const photos = property?.photos ?? []
+    const thumbs = property?.photo_thumbs ?? []
+    const list = photos.map((url, i) => ({ url, thumb: thumbs[i] || url }))
     const cover = property?.cover_image_url
-    if (!cover || !photos.includes(cover)) return photos
-    return [cover, ...photos.filter((p) => p !== cover)]
+    const at = cover ? list.findIndex((p) => p.url === cover) : -1
+    if (at <= 0) return list
+    return [list[at], ...list.filter((_, i) => i !== at)]
   }, [property])
 
   const selectedAmenities = useMemo(
     () => AMENITIES.filter((a) => property?.amenities?.includes(a.key)),
     [property]
+  )
+
+  const themeVars = useMemo(
+    () => stayThemeVars(property.accent_color),
+    [property.accent_color]
   )
 
   const channels = Array.isArray(property.channels) ? property.channels : []
@@ -208,342 +254,391 @@ export default function ListingView({ property, reviews, slug, loadBusy, preview
     property.area_m2 ? `${property.area_m2} м²` : null,
   ].filter(Boolean)
 
+  // Номерата на секциите следват реда, в който наистина се показват.
+  let n = 0
+  const num = () => String(++n).padStart(2, '0')
+  const numDesc = description ? num() : null
+  const numAmenities = selectedAmenities.length > 0 ? num() : null
+  const numAvail = num()
+  const numRules = num()
+  const numMap = hasLocation ? num() : null
+  const numReviews = reviews.length > 0 ? num() : null
+
+  // Лентата се показва само когато е сигурно, че hero-то и формата са извън екрана (без мигване при зареждане).
+  const showBar = basePrice > 0 && heroVisible === false && quoteVisible === false
+
   return (
-    <div className="min-h-screen bg-slate-100 pb-24 sm:pb-16" style={accentCssVars(property.accent_color)}>
+    <div className="stay" style={themeVars}>
+      <a href="#stay-main" className="stay-skip">
+        Към съдържанието
+      </a>
+
       {preview && (
-        <div className="sticky top-0 z-50 flex items-center justify-center gap-2 bg-amber-400 px-4 py-2 text-center text-xs font-semibold text-amber-950">
+        <div className="stay-preview-bar">
           <Eye className="h-4 w-4 shrink-0" />
           Преглед като гост — {property.is_listed ? 'страницата е публикувана' : 'още НЕ е публикувана, никой друг не я вижда'}
         </div>
       )}
-      <Gallery photos={galleryPhotos} alt={property.name} />
 
-      <div className="mx-auto max-w-3xl space-y-7 px-5 pt-6">
-        {/* Заглавие + основни факти */}
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">{property.name}</h1>
-          {property.city && (
-            <p className="mt-1.5 flex items-center gap-1.5 text-sm text-slate-500">
-              <MapPin className="h-4 w-4" />
-              {property.city}
-            </p>
-          )}
-          <p className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-slate-600">
-            {factsLine.map((f, i) => (
-              <span key={i} className="flex items-center gap-1">
-                {i > 0 && <span className="text-slate-300">·</span>}
-                {f}
-              </span>
-            ))}
-          </p>
-          {basePrice > 0 && (
-            <p className="mt-3 text-lg font-semibold text-slate-900">
-              от {formatMoney(basePrice)} <span className="text-sm font-normal text-slate-500">/ нощувка</span>
-            </p>
-          )}
-        </div>
+      <div ref={heroWatch}>
+        <StayHero
+          property={property}
+          hero={items[0] ?? null}
+          photoCount={items.length}
+          facts={factsLine}
+          basePrice={basePrice}
+          lang={lang}
+          canToggleLang={Boolean(property.public_description_en && property.public_description)}
+          onToggleLang={() => setLang((l) => (l === 'bg' ? 'en' : 'bg'))}
+          onOpenGallery={() => setLightbox(0)}
+          onCheckDates={scrollToQuote}
+        />
+      </div>
 
-        {channels.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {channels.map((ch, i) => {
-              const Icon = CHANNEL_ICONS[ch.type] ?? MessageCircle
-              const href = channelHref(ch.type, ch.value)
-              return (
-                <a
-                  key={i}
-                  href={href ?? undefined}
-                  target={href?.startsWith('http') ? '_blank' : undefined}
-                  rel="noreferrer"
-                  className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 active:bg-slate-50"
-                >
-                  <Icon className="h-3.5 w-3.5 text-brand-600" />
-                  {channelLabel(ch.type)}
-                </a>
-              )
-            })}
-          </div>
-        )}
+      <Gallery items={items} alt={property.name} onOpen={setLightbox} />
 
+      <main id="stay-main" className="stay-shell">
         {/* Описание */}
         {description && (
-          <div>
-            <div className="flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-slate-700">Описание</h2>
-              {property.public_description_en && (
-                <button
-                  type="button"
-                  onClick={() => setLang((l) => (l === 'bg' ? 'en' : 'bg'))}
-                  className="flex items-center gap-1 text-xs font-medium text-brand-600 hover:text-brand-700"
-                >
-                  <Languages className="h-3.5 w-3.5" />
-                  {lang === 'bg' ? 'English' : 'Български'}
-                </button>
-              )}
-            </div>
-            <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-slate-600">{visibleDescription}</p>
+          <Reveal as="section" className="stay-block">
+            <h2 className="stay-h2">
+              <span className="stay-kicker">{numDesc}</span>
+              За имота
+            </h2>
+            <p className="stay-prose">{visibleDescription}</p>
             {showDescToggle && (
-              <button
-                type="button"
-                onClick={() => setDescExpanded((v) => !v)}
-                className="mt-1.5 text-xs font-semibold text-brand-600 hover:text-brand-700"
-              >
-                {descExpanded ? 'Покажи по-малко' : 'Покажи още'}
-              </button>
+              <p style={{ margin: '14px 0 0' }}>
+                <button type="button" onClick={() => setDescExpanded((v) => !v)} className="stay-link">
+                  {descExpanded ? 'Покажи по-малко' : 'Прочети повече'}
+                </button>
+              </p>
             )}
-          </div>
+          </Reveal>
         )}
 
         {/* Удобства */}
         {selectedAmenities.length > 0 && (
-          <div>
-            <h2 className="mb-3 text-sm font-semibold text-slate-700">Удобства</h2>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3">
+          <Reveal as="section" className="stay-block">
+            <h2 className="stay-h2">
+              <span className="stay-kicker">{numAmenities}</span>
+              Удобства
+            </h2>
+            <ul className="stay-list">
               {visibleAmenities.map((a) => {
                 const Icon = AMENITY_ICONS[a.key] ?? CheckCircle2
                 return (
-                  <div key={a.key} className="flex items-center gap-2.5 text-sm text-slate-600">
-                    <Icon className="h-4 w-4 shrink-0 text-slate-400" />
+                  <li key={a.key}>
+                    <Icon className="h-[18px] w-[18px]" strokeWidth={1.5} />
                     {a.label}
-                  </div>
+                  </li>
                 )
               })}
-            </div>
+            </ul>
             {selectedAmenities.length > 8 && (
-              <button
-                type="button"
-                onClick={() => setAmenitiesExpanded((v) => !v)}
-                className="mt-3 text-xs font-semibold text-brand-600 hover:text-brand-700"
-              >
-                {amenitiesExpanded ? 'Скрий' : `Виж всички (${selectedAmenities.length})`}
-              </button>
+              <p style={{ margin: '16px 0 0' }}>
+                <button type="button" onClick={() => setAmenitiesExpanded((v) => !v)} className="stay-link">
+                  {amenitiesExpanded ? 'Скрий' : `Виж всички (${selectedAmenities.length})`}
+                </button>
+              </p>
             )}
-          </div>
+          </Reveal>
         )}
 
         {/* Наличност */}
-        <AvailabilityCalendar loadBusy={loadBusy} />
+        <Reveal as="section" className="stay-block">
+          <h2 className="stay-h2">
+            <span className="stay-kicker">{numAvail}</span>
+            Наличност
+          </h2>
+          <AvailabilityCalendar loadBusy={loadBusy} />
+        </Reveal>
 
-        {/* Проверка на цена */}
-        {preview ? (
-          <div id="quote-section" className="rounded-2xl border border-dashed border-slate-300 bg-white p-5 text-sm text-slate-500">
-            Тук гостите проверяват цена за дати и изпращат заявка. В прегледа е изключено —
-            работи, след като публикувате страницата.
-          </div>
-        ) : (
-        <div id="quote-section" className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100">
-          <h2 className="mb-3 text-sm font-semibold text-slate-700">Проверка на цена и наличност</h2>
-          <form onSubmit={handleQuote} className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
-              <Field label="Настаняване">
-                <Input type="date" min={todayISO()} value={checkIn} onChange={(e) => setCheckIn(e.target.value)} />
-              </Field>
-              <Field label="Напускане">
-                <Input
-                  type="date"
-                  min={checkIn || todayISO()}
-                  value={checkOut}
-                  onChange={(e) => setCheckOut(e.target.value)}
-                />
-              </Field>
+        {/* Проверка на цена, заявка, връзка — на голям екран е залепена отстрани */}
+        <aside id="quote-section" ref={quoteWatch} className="stay-booking">
+          {preview ? (
+            <div className="stay-card">
+              <h2>Цена и заявка</h2>
+              <p className="stay-muted" style={{ margin: 0, fontSize: 15 }}>
+                Тук гостите проверяват цена за дати и изпращат заявка. В прегледа е изключено — работи, след като публикувате
+                страницата.
+              </p>
             </div>
-            <Field label="Брой гости">
-              <Input
-                type="number"
-                min={1}
-                max={property.max_guests}
-                value={guests}
-                onChange={(e) => setGuests(e.target.value)}
-              />
-            </Field>
-            {quoteError && <Alert>{quoteError}</Alert>}
-            <Button type="submit" loading={quoting} className="w-full">
-              Провери цена
-            </Button>
-          </form>
+          ) : (
+            <>
+              <div className="stay-card">
+                <h2>Провери цена и наличност</h2>
+                <form onSubmit={handleQuote} className="stay-stack" noValidate>
+                  <div className="stay-grid2">
+                    <Field label="Настаняване">
+                      <input
+                        className="stay-input"
+                        type="date"
+                        min={todayISO()}
+                        value={checkIn}
+                        onChange={(e) => setCheckIn(e.target.value)}
+                      />
+                    </Field>
+                    <Field label="Напускане">
+                      <input
+                        className="stay-input"
+                        type="date"
+                        min={checkIn || todayISO()}
+                        value={checkOut}
+                        onChange={(e) => setCheckOut(e.target.value)}
+                      />
+                    </Field>
+                  </div>
+                  <Field label="Брой гости">
+                    <input
+                      className="stay-input"
+                      type="number"
+                      min={1}
+                      max={property.max_guests}
+                      value={guests}
+                      onChange={(e) => setGuests(e.target.value)}
+                    />
+                  </Field>
+                  {quoteError && <Note kind="error">{quoteError}</Note>}
+                  <button type="submit" disabled={quoting} className="stay-btn stay-btn--block">
+                    {quoting && <Loader2 className="h-4 w-4 animate-spin" />}
+                    Провери цена
+                  </button>
+                </form>
 
-          {quote && (
-            <div className="mt-4 space-y-3 border-t border-slate-100 pt-4">
-              {!quote.is_available ? (
-                <Alert>Тези дати вече са заети. Опитайте с друг период.</Alert>
-              ) : !quote.fits_guests ? (
-                <Alert>Имотът побира максимум {property.max_guests} гости.</Alert>
-              ) : quote.nights < quote.min_nights ? (
-                <Alert>Минималният престой за тези дати е {quote.min_nights} нощувки.</Alert>
-              ) : Number(quote.total) <= 0 ? (
-                <Alert>Цената за тези дати не е зададена — свържете се със собственика.</Alert>
-              ) : (
-                <Alert kind="success">Свободно е за избрания период.</Alert>
-              )}
+                {quote && (
+                  <div className="stay-quote">
+                    {!quote.is_available ? (
+                      <Note kind="error">Тези дати вече са заети. Опитайте с друг период.</Note>
+                    ) : !quote.fits_guests ? (
+                      <Note kind="error">Имотът побира максимум {property.max_guests} гости.</Note>
+                    ) : quote.nights < quote.min_nights ? (
+                      <Note kind="error">Минималният престой за тези дати е {quote.min_nights} нощувки.</Note>
+                    ) : Number(quote.total) <= 0 ? (
+                      <Note kind="error">Цената за тези дати не е зададена — свържете се със собственика.</Note>
+                    ) : (
+                      <Note kind="success">Свободно е за избрания период.</Note>
+                    )}
 
-              <div className="space-y-1.5 text-sm">
-                <div className="flex justify-between text-slate-500">
-                  <span>Настаняване ({quote.nights} {quote.nights === 1 ? 'нощувка' : 'нощувки'})</span>
-                  <span>{formatMoney(quote.accommodation_total)}</span>
-                </div>
-                {Number(quote.cleaning_fee) > 0 && (
-                  <div className="flex justify-between text-slate-500">
-                    <span>Такса почистване</span>
-                    <span>{formatMoney(quote.cleaning_fee)}</span>
+                    <div className="stay-line">
+                      <span>
+                        Настаняване ({quote.nights} {quote.nights === 1 ? 'нощувка' : 'нощувки'})
+                      </span>
+                      <span>{formatMoney(quote.accommodation_total)}</span>
+                    </div>
+                    {Number(quote.cleaning_fee) > 0 && (
+                      <div className="stay-line">
+                        <span>Такса почистване</span>
+                        <span>{formatMoney(quote.cleaning_fee)}</span>
+                      </div>
+                    )}
+                    <div className="stay-total">
+                      <span>Общо</span>
+                      <span>{formatMoney(quote.total)}</span>
+                    </div>
+                    {Number(quote.tourist_tax) > 0 && (
+                      <p className="stay-muted" style={{ margin: 0, fontSize: 13 }}>
+                        + туристически данък {formatMoney(quote.tourist_tax)} (плаща се на място)
+                      </p>
+                    )}
+                    <p className="stay-muted" style={{ margin: 0, fontSize: 13 }}>
+                      Капаро при потвърждение: {formatMoney(quote.deposit)}
+                    </p>
                   </div>
                 )}
-                <div className="flex justify-between border-t border-slate-100 pt-1.5 text-base font-semibold text-slate-900">
-                  <span>Общо</span>
-                  <span>{formatMoney(quote.total)}</span>
-                </div>
-                {Number(quote.tourist_tax) > 0 && (
-                  <p className="text-xs text-slate-400">
-                    + туристически данък {formatMoney(quote.tourist_tax)} (плаща се на място)
-                  </p>
-                )}
-                <p className="text-xs text-slate-400">
-                  Капаро при потвърждение: {formatMoney(quote.deposit)}
-                </p>
               </div>
+
+              {/* Заявка за резервация */}
+              {canRequest && !sent && (
+                <div className="stay-card">
+                  <h2>Изпрати заявка</h2>
+                  <p className="stay-muted" style={{ margin: '-6px 0 16px', fontSize: 14 }}>
+                    Това е заявка, не плащане. Собственикът ще се свърже с вас за потвърждение.
+                  </p>
+                  <form onSubmit={handleSubmitRequest} className="stay-stack" noValidate>
+                    {sendError && <Note kind="error">{sendError}</Note>}
+                    <Field label="Име" required>
+                      <input
+                        className="stay-input"
+                        value={guestName}
+                        onChange={(e) => setGuestName(e.target.value)}
+                        placeholder="Иван Иванов"
+                        autoComplete="name"
+                      />
+                    </Field>
+                    <div className="stay-grid2">
+                      <Field label="Телефон">
+                        <input
+                          className="stay-input"
+                          type="tel"
+                          inputMode="tel"
+                          value={guestPhone}
+                          onChange={(e) => setGuestPhone(e.target.value)}
+                          placeholder="+359 88…"
+                          autoComplete="tel"
+                        />
+                      </Field>
+                      <Field label="Имейл">
+                        <input
+                          className="stay-input"
+                          type="email"
+                          value={guestEmail}
+                          onChange={(e) => setGuestEmail(e.target.value)}
+                          placeholder="вие@примерен.бг"
+                          autoComplete="email"
+                        />
+                      </Field>
+                    </div>
+                    <Field label="Съобщение (по избор)">
+                      <textarea
+                        className="stay-input"
+                        rows={3}
+                        value={message}
+                        onChange={(e) => setMessage(e.target.value)}
+                        style={{ resize: 'vertical' }}
+                      />
+                    </Field>
+                    {/* Honeypot — скрито поле, невидимо за хора, но ботовете го попълват. */}
+                    <input
+                      type="text"
+                      value={company}
+                      onChange={(e) => setCompany(e.target.value)}
+                      tabIndex={-1}
+                      autoComplete="off"
+                      aria-hidden="true"
+                      style={{ position: 'absolute', left: '-9999px', width: '1px', height: '1px', opacity: 0 }}
+                    />
+                    <button type="submit" disabled={sending} className="stay-btn stay-btn--block">
+                      {sending && <Loader2 className="h-4 w-4 animate-spin" />}
+                      Изпрати заявка
+                    </button>
+                  </form>
+                </div>
+              )}
+
+              {sent && (
+                <div className="stay-card" style={{ textAlign: 'center' }} role="status">
+                  <CheckCircle2 className="mx-auto h-8 w-8" style={{ color: 'var(--stay-accent-text)' }} strokeWidth={1.5} />
+                  <h2 style={{ margin: '10px 0 4px' }}>Заявката е изпратена</h2>
+                  <p className="stay-muted" style={{ margin: 0, fontSize: 15 }}>
+                    Собственикът ще се свърже с вас за потвърждение.
+                  </p>
+                </div>
+              )}
+            </>
+          )}
+
+          {channels.length > 0 && (
+            <div className="stay-contact">
+              {channels.map((ch, i) => {
+                const Icon = CHANNEL_ICONS[ch.type] ?? MessageCircle
+                const href = channelHref(ch.type, ch.value)
+                return (
+                  <a
+                    key={i}
+                    href={href ?? undefined}
+                    target={href?.startsWith('http') ? '_blank' : undefined}
+                    rel="noreferrer"
+                  >
+                    <Icon className="h-4 w-4" strokeWidth={1.6} />
+                    {channelLabel(ch.type)}
+                  </a>
+                )
+              })}
             </div>
           )}
-        </div>
-        )}
-
-        {/* Заявка за резервация */}
-        {!preview && canRequest && !sent && (
-          <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100">
-            <h2 className="mb-3 text-sm font-semibold text-slate-700">Изпрати заявка за резервация</h2>
-            <p className="mb-4 text-xs text-slate-400">
-              Това е заявка, не плащане. Собственикът ще се свърже с вас за потвърждение.
-            </p>
-            <form onSubmit={handleSubmitRequest} className="space-y-4">
-              {sendError && <Alert>{sendError}</Alert>}
-              <Field label="Име" required>
-                <Input value={guestName} onChange={(e) => setGuestName(e.target.value)} placeholder="Иван Иванов" />
-              </Field>
-              <div className="grid grid-cols-2 gap-3">
-                <Field label="Телефон">
-                  <Input
-                    type="tel"
-                    inputMode="tel"
-                    value={guestPhone}
-                    onChange={(e) => setGuestPhone(e.target.value)}
-                    placeholder="+359 88…"
-                  />
-                </Field>
-                <Field label="Имейл">
-                  <Input type="email" value={guestEmail} onChange={(e) => setGuestEmail(e.target.value)} placeholder="вие@примерен.бг" />
-                </Field>
-              </div>
-              <Field label="Съобщение (по избор)">
-                <Textarea rows={3} value={message} onChange={(e) => setMessage(e.target.value)} />
-              </Field>
-              {/* Honeypot — скрито поле, невидимо за хора, но ботовете го попълват. */}
-              <input
-                type="text"
-                value={company}
-                onChange={(e) => setCompany(e.target.value)}
-                tabIndex={-1}
-                autoComplete="off"
-                aria-hidden="true"
-                style={{ position: 'absolute', left: '-9999px', width: '1px', height: '1px', opacity: 0 }}
-              />
-              <Button type="submit" loading={sending} className="w-full">
-                Изпрати заявка
-              </Button>
-            </form>
-          </div>
-        )}
-
-        {sent && (
-          <div className="flex flex-col items-center gap-2 rounded-2xl bg-white p-6 text-center shadow-sm ring-1 ring-slate-100">
-            <CheckCircle2 className="h-8 w-8 text-emerald-500" />
-            <p className="font-semibold text-slate-900">Заявката е изпратена!</p>
-            <p className="text-sm text-slate-500">Собственикът ще се свърже с вас за потвърждение.</p>
-          </div>
-        )}
+        </aside>
 
         {/* Правила */}
-        <div>
-          <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700">
-            <ScrollText className="h-4 w-4 text-slate-400" />
+        <Reveal as="section" className="stay-block">
+          <h2 className="stay-h2">
+            <span className="stay-kicker">{numRules}</span>
             Правила
           </h2>
-          <div className="space-y-3 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-100">
-            <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-slate-600">
-              <span className="flex items-center gap-1.5">
-                <Clock className="h-4 w-4 text-slate-400" />
-                Настаняване след {property.checkin_time}
-              </span>
-              <span className="flex items-center gap-1.5">
-                <Clock className="h-4 w-4 text-slate-400" />
-                Напускане до {property.checkout_time}
-              </span>
-              <span>{property.smoking_allowed ? 'Пушенето е разрешено' : 'Непушачи'}</span>
-              <span>{property.parties_allowed ? 'Партита са разрешени' : 'Без партита'}</span>
+          <dl className="stay-rules">
+            <div>
+              <dt>Настаняване</dt>
+              <dd>след {property.checkin_time}</dd>
             </div>
-            <p className="flex items-center gap-1.5 text-sm text-slate-600">
-              <ShieldCheck className="h-4 w-4 text-slate-400" />
-              Анулиране: {cancellationLabel(property.cancellation_policy)} политика
-            </p>
+            <div>
+              <dt>Напускане</dt>
+              <dd>до {property.checkout_time}</dd>
+            </div>
+            <div>
+              <dt>Пушене</dt>
+              <dd>{property.smoking_allowed ? 'Разрешено' : 'Не се пуши'}</dd>
+            </div>
+            <div>
+              <dt>Партита</dt>
+              <dd>{property.parties_allowed ? 'Разрешени' : 'Без партита'}</dd>
+            </div>
+            <div className="wide">
+              <dt>Анулиране</dt>
+              <dd>{cancellationLabel(property.cancellation_policy)} политика</dd>
+            </div>
             {property.house_rules && (
-              <p className="whitespace-pre-line border-t border-slate-100 pt-3 text-sm leading-relaxed text-slate-600">
-                {property.house_rules}
-              </p>
+              <div className="wide">
+                <dt>Домашни правила</dt>
+                <dd style={{ font: '500 16px/1.6 var(--stay-body)', whiteSpace: 'pre-line' }}>{property.house_rules}</dd>
+              </div>
             )}
-          </div>
-        </div>
+          </dl>
+        </Reveal>
 
         {/* Местоположение */}
         {hasLocation && (
-          <div>
-            <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700">
-              <MapPin className="h-4 w-4 text-slate-400" />
+          <Reveal as="section" className="stay-block">
+            <h2 className="stay-h2">
+              <span className="stay-kicker">{numMap}</span>
               Местоположение
             </h2>
-            <LocationMap lat={property.public_lat} lng={property.public_lng} showCircle height={240} />
-            <p className="mt-2 text-xs text-slate-400">
+            <LazyMap lat={property.public_lat} lng={property.public_lng} showCircle height={280} />
+            <p className="stay-muted" style={{ margin: '12px 0 0', fontSize: 13 }}>
               Показаната зона е приблизителна. Точният адрес се предоставя след потвърждение на резервацията.
             </p>
-          </div>
+          </Reveal>
         )}
 
         {/* Отзиви — само ако има реални */}
         {reviews.length > 0 && (
-          <div>
-            <h2 className="mb-3 text-sm font-semibold text-slate-700">Отзиви от гости</h2>
-            <div className="space-y-3">
-              {reviews.map((r) => (
-                <div key={r.id} className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-100">
-                  <div className="flex items-center gap-1.5">
-                    <span className="font-medium text-slate-900">{r.guest_name}</span>
-                    <span className="flex items-center text-amber-500">
-                      {Array.from({ length: r.rating }).map((_, i) => (
-                        <Star key={i} className="h-3.5 w-3.5 fill-amber-500" />
-                      ))}
-                    </span>
-                  </div>
-                  <p className="mt-1.5 text-sm text-slate-600">{r.comment}</p>
-                </div>
-              ))}
-            </div>
-          </div>
+          <Reveal as="section" className="stay-block">
+            <h2 className="stay-h2">
+              <span className="stay-kicker">{numReviews}</span>
+              Какво казват гостите
+            </h2>
+            {reviews.map((r) => (
+              <figure key={r.id} className="stay-review">
+                <blockquote>{r.comment}</blockquote>
+                <figcaption>
+                  {r.guest_name}
+                  <span className="stay-stars" role="img" aria-label={`${r.rating} от 5 звезди`}>
+                    {Array.from({ length: r.rating }).map((_, i) => (
+                      <Star key={i} className="h-3.5 w-3.5 fill-current" strokeWidth={1.5} />
+                    ))}
+                  </span>
+                </figcaption>
+              </figure>
+            ))}
+          </Reveal>
         )}
+      </main>
 
-        <div className="flex items-center justify-center gap-1.5 pt-2 text-xs text-slate-400">
-          <Waves className="h-3.5 w-3.5" />
-          Изготвено със StayFlow
-        </div>
-      </div>
+      <footer className="stay-foot">Изготвено със StayFlow</footer>
 
-      {/* Залепнала лента на телефона */}
+      {/* Залепена лента на телефона — показва се, когато hero-то и формата са извън екрана */}
       {basePrice > 0 && (
-        <div className="fixed inset-x-0 bottom-0 z-40 flex items-center justify-between border-t border-slate-200 bg-white px-5 py-3 shadow-[0_-4px_12px_rgba(0,0,0,0.06)] sm:hidden">
+        <div className={`stay-bar ${showBar ? 'is-on' : ''}`} aria-hidden={!showBar}>
           <div>
-            <p className="text-base font-bold text-slate-900">{formatMoney(basePrice)}</p>
-            <p className="text-xs text-slate-400">на нощувка</p>
+            <b>{shortPrice(basePrice)}</b>
+            <small>на нощувка</small>
           </div>
-          <Button
-            onClick={() => document.getElementById('quote-section')?.scrollIntoView({ behavior: 'smooth' })}
-          >
+          <button type="button" className="stay-btn" onClick={scrollToQuote} tabIndex={showBar ? 0 : -1}>
             Провери дати
-          </Button>
+          </button>
         </div>
+      )}
+
+      {lightbox !== null && items.length > 0 && (
+        <Lightbox photos={items} index={lightbox} alt={property.name} onClose={() => setLightbox(null)} onChange={setLightbox} />
       )}
     </div>
   )

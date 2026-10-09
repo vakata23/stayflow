@@ -1,9 +1,31 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { Loader2, AlertCircle } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import ListingView from './ListingView'
 import useListingSeo from './useListingSeo'
+
+/** Скелет с формата на страницата: докато идват данните, не се показва завъртащ се кръг. */
+function StayLoading() {
+  const bar = (w, h) => (
+    <div className="stay-skel" style={{ width: w, height: h, background: 'rgba(255,255,255,0.14)', borderRadius: 12 }} />
+  )
+  return (
+    <div className="stay" aria-busy="true" aria-label="Зареждане">
+      <div className="stay-hero">
+        <div className="stay-hero__fallback" aria-hidden="true" />
+        <div className="stay-hero__shade" aria-hidden="true" />
+        <span />
+        <div className="stay-hero__content">
+          <div style={{ display: 'grid', gap: 16 }}>
+            {bar(120, 22)}
+            {bar('72%', 84)}
+            {bar('48%', 18)}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 export default function PublicStay() {
   const { slug } = useParams()
@@ -39,24 +61,22 @@ export default function PublicStay() {
     [slug]
   )
 
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-100">
-        <Loader2 className="h-7 w-7 animate-spin text-brand-600" />
-      </div>
-    )
-  }
+  if (loading) return <StayLoading />
 
   if (notFound) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-100 p-6">
-        <div className="max-w-sm rounded-2xl bg-white p-8 text-center shadow-sm">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100">
-            <AlertCircle className="h-6 w-6 text-slate-400" />
-          </div>
-          <h1 className="mt-4 text-lg font-bold">Страницата не е намерена</h1>
-          <p className="mt-1 text-sm text-slate-500">Този имот не е публикуван или адресът е грешен.</p>
-        </div>
+      <div className="stay" style={{ display: 'grid', placeItems: 'center', padding: 24 }}>
+        <main style={{ maxWidth: 440 }}>
+          <p className="stay-kicker" style={{ margin: 0 }}>
+            404
+          </p>
+          <h1 className="stay-h2" style={{ marginTop: 8 }}>
+            Страницата не е намерена
+          </h1>
+          <p className="stay-prose" style={{ fontSize: 16 }}>
+            Този имот не е публикуван или адресът е грешен. Проверете линка, който сте получили от собственика.
+          </p>
+        </main>
       </div>
     )
   }

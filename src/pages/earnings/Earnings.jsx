@@ -35,9 +35,11 @@ import {
 import { fetchMoneyEntries, deleteMoneyEntry, signedReceiptUrl, removeReceiptImage } from '../../lib/moneyEntries'
 import { fetchRules, generateMyAutoEntries, countAutoEntriesInRange, ruleTooltip } from '../../lib/recurringRules'
 import SetupWizard from './SetupWizard'
-import { PageHeader, Card, Select, Input, Button, Alert, Spinner, EmptyState, Modal } from '../../components/ui'
+import { PageHeader, Card, Select, Input, Button, Alert, Spinner, EmptyState, Modal, Segmented } from '../../components/ui'
 import InfoTooltip from '../../components/InfoTooltip'
 import MoneyEntryModal from '../../components/MoneyEntryModal'
+import CountUp from '../../components/CountUp'
+import { rise, useIntro } from '../../lib/motion'
 import EarningsChart from './EarningsChart'
 
 const METRIC_INFO = {
@@ -61,23 +63,44 @@ function monthRange(ym) {
   return { from: toISODate(start), to: toISODate(endOfMonth(start)) }
 }
 
-function MetricCard({ icon: Icon, label, value, sub, info, accent }) {
+const capitalize = (s) => s.charAt(0).toUpperCase() + s.slice(1)
+const monthName = (iso, withYear) =>
+  new Intl.DateTimeFormat('bg-BG', withYear ? { month: 'long', year: 'numeric' } : { month: 'long' }).format(new Date(`${iso}T12:00:00`))
+
+const fmtInt = (n) => String(Math.round(n))
+
+/** Показател без собствена карта: етикет, число с таблични цифри (Literata), подсказка. */
+function Metric({ icon: Icon, label, info, sub, children }) {
   return (
-    <Card className="p-5">
-      <div className="flex items-start justify-between gap-2">
-        <span className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-slate-500">
-          {label}
-          <InfoTooltip text={info} />
-        </span>
-        {Icon && (
-          <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${accent ? 'bg-brand-50' : 'bg-slate-100'}`}>
-            <Icon className={`h-4 w-4 ${accent ? 'text-brand-600' : 'text-slate-400'}`} />
-          </span>
-        )}
-      </div>
-      <p className={`mt-2 text-2xl font-bold tracking-tight ${accent ? 'text-brand-700' : 'text-slate-900'}`}>{value}</p>
-      {sub && <p className="mt-1 text-xs text-slate-400">{sub}</p>}
-    </Card>
+    <div className="min-w-0">
+      <p className="flex items-center gap-1.5 text-sm font-medium text-ink-soft">
+        {Icon && <Icon className="h-4 w-4 shrink-0 text-ink-muted" aria-hidden="true" />}
+        <span className="min-w-0">{label}</span>
+        <InfoTooltip text={info} />
+      </p>
+      <p className="num mt-2 font-display text-[1.75rem] font-semibold leading-none tracking-tight sm:text-[2rem]">{children}</p>
+      {sub && <p className="mt-1.5 text-[0.8125rem] text-ink-muted">{sub}</p>}
+    </div>
+  )
+}
+
+/** Печалбата е героят на екрана: цялата част е огромна, стотинките и валутата — по-малки. */
+function HeroProfit({ value }) {
+  const v = Number(value) || 0
+  const abs = Math.abs(v)
+  const dec = abs.toFixed(2).split('.')[1]
+  return (
+    <p
+      role="img"
+      aria-label={`Печалба ${formatMoney(v)}`}
+      className="num flex items-baseline font-display text-[3.5rem] font-semibold leading-none tracking-tighter text-ink sm:text-[5.5rem]"
+    >
+      {v < 0 && <span aria-hidden="true">−</span>}
+      <CountUp value={Math.trunc(abs)} id="earnings-profit" format={fmtInt} />
+      <span aria-hidden="true" className="ml-1 text-[0.4em] font-medium text-ink-soft">
+        .{dec} €
+      </span>
+    </p>
   )
 }
 
@@ -115,6 +138,8 @@ export default function Earnings() {
   const [entryModal, setEntryModal] = useState(null) // { kind, entry? }
   const [confirmDelete, setConfirmDelete] = useState(null)
   const [deleting, setDeleting] = useState(false)
+
+  const animate = useIntro('screen-earnings', !loading)
 
   const { from, to } = getPeriodRange(periodKind, { from: customFrom, to: customTo })
 
@@ -251,10 +276,13 @@ export default function Earnings() {
     )
   }
 
+  const eyebrow = periodKind === 'month' ? capitalize(monthName(from, true)) : `${formatDateBG(from)} – ${formatDateBG(to)}`
+  const heroLabel = periodKind === 'month' ? `Печалба за ${monthName(from, false)}` : 'Печалба за периода'
+
   return (
     <div>
       <PageHeader
-        icon={TrendingUp}
+        eyebrow={eyebrow}
         title="Приходи"
         description="Колко печелите — и колко спестявате, като резервирате директно."
         action={
@@ -263,38 +291,24 @@ export default function Earnings() {
               <Minus className="h-4 w-4" />
               Разход
             </Button>
-            <Button variant="secondary" onClick={() => setEntryModal({ kind: 'income' })}>
+            <Button onClick={() => setEntryModal({ kind: 'income' })}>
               <Plus className="h-4 w-4" />
               Приход
             </Button>
-            <Button variant="secondary" onClick={exportCsv} disabled={propertyRows.length === 0}>
-              <Download className="h-4 w-4" />
-              Експорт CSV
-            </Button>
-            <Button variant="secondary" onClick={() => setWizardOpen(true)}>
-              <Wand2 className="h-4 w-4" />
-              Настройка
-            </Button>
-            <Link to="/earnings/rules">
-              <Button variant="secondary">
-                <Repeat className="h-4 w-4" />
-                Правила{rules.length > 0 ? ` (${rules.length})` : ''}
-              </Button>
-            </Link>
           </div>
         }
       />
 
-      <div className="mt-8 space-y-6">
+      <div className="mt-8 space-y-6 sm:mt-10">
         {error && <Alert>{error}</Alert>}
 
         {incompleteCount > 0 && (
           <Link
             to="/bookings?incomplete=1"
-            className="flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 hover:bg-amber-100"
+            className="flex min-h-11 flex-wrap items-center gap-x-3 gap-y-2 rounded-2xl bg-warning-soft px-5 py-3.5 text-sm text-warning-ink shadow-card"
           >
-            <AlertTriangle className="h-4 w-4 shrink-0" />
-            <span className="flex-1">
+            <AlertTriangle className="h-[1.125rem] w-[1.125rem] shrink-0" aria-hidden="true" />
+            <span className="min-w-0 flex-1 basis-[12rem]">
               Числата по-долу не са пълни — <strong>{incompleteCount}</strong>{' '}
               {incompleteCount === 1 ? 'резервация от платформа чака' : 'резервации от платформи чакат'} цена/комисиона.
             </span>
@@ -303,44 +317,26 @@ export default function Earnings() {
         )}
 
         {/* Избор на период — един ред, скопва всичко под него. */}
-        <Card className="p-4">
-          <div className="flex flex-wrap items-end gap-3">
-            {PERIODS.map((p) => (
-              <button
-                key={p.value}
-                onClick={() => setPeriodKind(p.value)}
-                className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                  periodKind === p.value
-                    ? 'bg-brand-600 text-white'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                }`}
-              >
-                {p.label}
-              </button>
-            ))}
+        <div>
+          <div className="flex flex-wrap items-end gap-x-4 gap-y-3">
+            <Segmented label="Период" options={PERIODS} value={periodKind} onChange={setPeriodKind} className="!grid w-full grid-cols-2 sm:!inline-flex sm:w-auto" />
             {periodKind === 'custom' && (
               <>
                 <label className="block">
-                  <span className="mb-1 block text-xs font-medium text-slate-500">От</span>
+                  <span className="mb-1 block text-xs font-semibold text-ink-soft">От</span>
                   <Input type="date" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)} className="w-auto" />
                 </label>
                 <label className="block">
-                  <span className="mb-1 block text-xs font-medium text-slate-500">До</span>
-                  <Input
-                    type="date"
-                    value={customTo}
-                    onChange={(e) => setCustomTo(e.target.value)}
-                    min={customFrom}
-                    className="w-auto"
-                  />
+                  <span className="mb-1 block text-xs font-semibold text-ink-soft">До</span>
+                  <Input type="date" value={customTo} onChange={(e) => setCustomTo(e.target.value)} min={customFrom} className="w-auto" />
                 </label>
               </>
             )}
           </div>
-          <p className="mt-2 text-xs text-slate-400">
+          <p className="mt-2 text-xs text-ink-muted">
             {formatDateBG(from)} – {formatDateBG(to)}
           </p>
-        </Card>
+        </div>
 
         {hasProperties === false ? (
           <EmptyState
@@ -359,164 +355,191 @@ export default function Earnings() {
           </Card>
         ) : (
           <>
-            {/* Спестена комисиона — най-видимата метрика, нарочно отделена. */}
-            <Card className="border-brand-200 bg-gradient-to-br from-brand-50 to-white p-6">
-              <div className="flex flex-wrap items-center justify-between gap-4">
-                <div>
-                  <span className="flex items-center gap-1.5 text-sm font-semibold text-brand-700">
-                    <Sparkles className="h-4 w-4" />
-                    Спестена комисиона
-                    <InfoTooltip text={METRIC_INFO.saved} />
+            {/* Героят на екрана: печалбата. До нея — спестената комисиона (най-видимата поука за директните резервации). */}
+            <section aria-label="Печалба" className="card grid gap-6 p-6 sm:p-8 lg:grid-cols-[1fr_auto] lg:items-end" {...rise(0, animate)}>
+              <div className="min-w-0">
+                <p className="flex items-center gap-1.5 text-[0.9375rem] font-medium text-ink-soft">
+                  <Wallet className="h-4 w-4 text-accent" aria-hidden="true" />
+                  {heroLabel}
+                  <InfoTooltip text={METRIC_INFO.profit} />
+                </p>
+                <div className="mt-3">
+                  <HeroProfit value={summary?.profit ?? 0} />
+                </div>
+                <p className="mt-4 flex flex-wrap gap-x-5 gap-y-1 text-[0.9375rem] text-ink-soft">
+                  <span>
+                    <span className="num font-semibold text-ink">{formatMoney(summary?.net ?? 0)}</span> нетно
                   </span>
-                  <p className="mt-1 text-4xl font-bold tracking-tight text-brand-700">
-                    {formatMoney(summary?.commission_saved ?? 0)}
-                  </p>
-                  <p className="mt-1 text-sm text-slate-500">
-                    Толкова не платихте на Airbnb/Booking, защото гостите резервираха директно.
+                  <span className="num">+ {formatMoney(summary?.other_income ?? 0)} други приходи</span>
+                  <span className="num">− {formatMoney(summary?.expenses ?? 0)} разходи</span>
+                </p>
+              </div>
+              <div className="flex max-w-sm items-start gap-3.5 rounded-2xl bg-accent-soft p-4 text-accent-ink">
+                <Sparkles className="mt-0.5 h-5 w-5 shrink-0 text-accent" aria-hidden="true" />
+                <div>
+                  <p className="num font-display text-2xl font-semibold leading-tight">{formatMoney(summary?.commission_saved ?? 0)}</p>
+                  <p className="mt-0.5 flex items-start gap-1 text-[0.8125rem] leading-snug">
+                    <span>Спестена комисиона — толкова не платихте на Airbnb/Booking, защото гостите резервираха директно.</span>
+                    <InfoTooltip text={METRIC_INFO.saved} />
                   </p>
                 </div>
               </div>
-            </Card>
+            </section>
 
             {autoCount > 0 && (
               <Link
                 to="/earnings/rules"
-                className="flex items-start gap-2 rounded-xl bg-slate-100 px-4 py-2.5 text-xs leading-relaxed text-slate-600 hover:bg-slate-200/70"
+                className="flex items-start gap-2.5 rounded-2xl bg-sunken px-4 py-3 text-[0.8125rem] leading-relaxed text-ink-soft"
               >
-                <Repeat className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-400" />
+                <Repeat className="mt-0.5 h-3.5 w-3.5 shrink-0 text-ink-muted" aria-hidden="true" />
                 <span>
-                  Печалбата включва <strong>{autoCount}</strong>{' '}
-                  {autoCount === 1 ? 'автоматичен запис' : 'автоматични записа'} — оценка по вашите правила, не
-                  реални плащания. Резервациите и ръчно въведените записи са реални.
+                  Печалбата включва <strong>{autoCount}</strong> {autoCount === 1 ? 'автоматичен запис' : 'автоматични записа'} — оценка по вашите
+                  правила, не реални плащания. Резервациите и ръчно въведените записи са реални.
                 </span>
               </Link>
             )}
 
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              <MetricCard
-                icon={TrendingUp}
-                label="Приходи"
-                value={formatMoney(summary?.revenue ?? 0)}
-                info={METRIC_INFO.revenue}
-              />
-              <MetricCard
-                icon={PiggyBank}
-                label="Нетно след комисиони"
-                value={formatMoney(summary?.net ?? 0)}
-                info={METRIC_INFO.net}
-              />
-              <MetricCard
-                icon={Wallet}
-                label="Печалба"
-                value={formatMoney(summary?.profit ?? 0)}
-                sub={`+${formatMoney(summary?.other_income ?? 0)} приход − ${formatMoney(summary?.expenses ?? 0)} разходи`}
-                info={METRIC_INFO.profit}
-                accent
-              />
-              <MetricCard
+            <section aria-label="Показатели" className="card grid grid-cols-2 gap-x-6 gap-y-8 p-6 sm:p-8 lg:grid-cols-3" {...rise(1, animate)}>
+              <Metric icon={TrendingUp} label="Приходи" info={METRIC_INFO.revenue} sub="преди комисиони">
+                <CountUp value={Number(summary?.revenue ?? 0)} id="earnings-revenue" format={formatMoney} />
+              </Metric>
+              <Metric icon={PiggyBank} label="Нетно след комисиони" info={METRIC_INFO.net} sub="след комисиони">
+                <CountUp value={Number(summary?.net ?? 0)} id="earnings-net" format={formatMoney} />
+              </Metric>
+              <Metric
                 icon={ClipboardList}
                 label="Продадено"
-                value={formatMoney(sold?.revenue ?? 0)}
-                sub={`${sold?.bookings_count ?? 0} ${sold?.bookings_count === 1 ? 'резервация' : 'резервации'} · нето ${formatMoney(sold?.net ?? 0)}`}
                 info={METRIC_INFO.sold}
-              />
-              <MetricCard
+                sub={`${sold?.bookings_count ?? 0} ${sold?.bookings_count === 1 ? 'резервация' : 'резервации'} · нето ${formatMoney(sold?.net ?? 0)}`}
+              >
+                <CountUp value={Number(sold?.revenue ?? 0)} id="earnings-sold" format={formatMoney} />
+              </Metric>
+              <Metric
                 icon={BedDouble}
                 label="Заетост"
-                value={`${summary?.occupancy_pct ?? 0}%`}
-                sub={`${summary?.nights_sold ?? 0} от ${summary?.available_nights ?? 0} нощувки`}
                 info={METRIC_INFO.occupancy}
-              />
-              <MetricCard
-                icon={Receipt}
-                label="Средна цена на нощувка"
-                value={summary?.adr != null ? formatMoney(summary.adr) : '—'}
-                info={METRIC_INFO.adr}
-              />
-              <MetricCard
-                icon={Building2}
-                label="Директни vs платформи"
-                value={summary?.direct_share_pct != null ? `${summary.direct_share_pct}% / ${round1(100 - summary.direct_share_pct)}%` : '—'}
-                info={METRIC_INFO.direct_share}
-              />
-            </div>
+                sub={`${summary?.nights_sold ?? 0} от ${summary?.available_nights ?? 0} нощувки`}
+              >
+                <CountUp
+                  value={Number(summary?.occupancy_pct ?? 0)}
+                  id="earnings-occupancy"
+                  format={(v) => `${v === Number(summary?.occupancy_pct ?? 0) ? v : round1(v)}%`}
+                />
+              </Metric>
+              <Metric icon={Receipt} label="Средна цена на нощувка" info={METRIC_INFO.adr} sub="на нощувка">
+                {summary?.adr != null ? <CountUp value={Number(summary.adr)} id="earnings-adr" format={formatMoney} /> : '—'}
+              </Metric>
+              <Metric icon={Building2} label="Директни vs платформи" info={METRIC_INFO.direct_share} sub="дял от приходите">
+                {summary?.direct_share_pct != null ? `${summary.direct_share_pct}% / ${round1(100 - summary.direct_share_pct)}%` : '—'}
+              </Metric>
+            </section>
 
-            <Card className="p-5">
+            <Card className="p-5 sm:p-8" {...rise(2, animate)}>
               <EarningsChart rows={chartRows} />
             </Card>
 
-            <Card className="overflow-hidden">
-              <header className="border-b border-slate-100 px-6 py-4">
-                <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-700">Приходи по имот</h2>
-              </header>
-              {propertyRows.length === 0 ? (
-                <p className="px-6 py-10 text-center text-sm text-slate-500">Няма данни за избрания период.</p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-sm">
-                    <thead>
-                      <tr className="border-b border-slate-100 bg-slate-50/60 text-xs uppercase tracking-wide text-slate-500">
-                        <th className="px-5 py-3 font-semibold">Имот</th>
-                        <th className="px-5 py-3 font-semibold">Нощувки</th>
-                        <th className="px-5 py-3 font-semibold">Заетост</th>
-                        <th className="px-5 py-3 font-semibold">Приход</th>
-                        <th className="px-5 py-3 font-semibold">Нето</th>
-                        <th className="px-5 py-3 font-semibold">Ср. цена</th>
-                        <th className="px-5 py-3 font-semibold">% директни</th>
-                        <th className="px-5 py-3 font-semibold">Доп. приход</th>
-                        <th className="px-5 py-3 font-semibold">Разходи</th>
-                        <th className="px-5 py-3 font-semibold">Печалба</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 tabular-nums">
-                      {propertyRows.map((r) => (
-                        <tr key={r.property_id ?? 'general'}>
-                          <td className="px-5 py-3.5 font-medium text-slate-900">{r.property_name}</td>
-                          <td className="px-5 py-3.5 text-slate-600">{r.nights_sold}</td>
-                          <td className="px-5 py-3.5 text-slate-600">{r.occupancy_pct != null ? `${r.occupancy_pct}%` : '—'}</td>
-                          <td className="px-5 py-3.5 text-slate-600">{formatMoney(r.revenue)}</td>
-                          <td className="px-5 py-3.5 text-slate-600">{formatMoney(r.net)}</td>
-                          <td className="px-5 py-3.5 text-slate-600">{r.adr != null ? formatMoney(r.adr) : '—'}</td>
-                          <td className="px-5 py-3.5 text-slate-600">{r.direct_share_pct != null ? `${r.direct_share_pct}%` : '—'}</td>
-                          <td className="px-5 py-3.5 text-slate-600">{formatMoney(r.other_income ?? 0)}</td>
-                          <td className="px-5 py-3.5 text-slate-600">{formatMoney(r.expenses ?? 0)}</td>
-                          <td className="px-5 py-3.5 font-medium text-slate-900">{formatMoney(r.profit ?? 0)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </Card>
-
-            <Card className="overflow-hidden">
-              <header className="border-b border-slate-100 px-6 py-4">
-                <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-700">
-                  Неплатени остатъци
+            <section aria-labelledby="by-property" {...rise(3, animate)}>
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                <h2 id="by-property" className="text-[1.375rem] sm:text-[1.625rem]">
+                  По имоти
                 </h2>
-                <p className="mt-0.5 text-xs text-slate-400">
-                  Всички резервации с неплатен остатък, независимо от избрания период.
-                </p>
+                <Button variant="ghost" size="sm" onClick={exportCsv} disabled={propertyRows.length === 0}>
+                  <Download className="h-4 w-4" />
+                  Експорт CSV
+                </Button>
+              </div>
+              {propertyRows.length === 0 ? (
+                <p className="card px-6 py-10 text-center text-sm text-ink-soft">Няма данни за избрания период.</p>
+              ) : (
+                <>
+                  {/* Телефон: ред на имот с лента на заетостта и трите главни числа */}
+                  <ul className="space-y-3 md:hidden">
+                    {propertyRows.map((r) => (
+                      <li key={r.property_id ?? 'general'} className="card p-4">
+                        <p className="font-semibold leading-tight">{r.property_name}</p>
+                        <p className="text-sm text-ink-soft">
+                          {r.nights_sold} нощувки{r.occupancy_pct != null ? ` · ${r.occupancy_pct}% заетост` : ''}
+                        </p>
+                        <div className="mt-3 h-2 overflow-hidden rounded-full bg-sunken" aria-hidden="true">
+                          <div className="h-full rounded-full bg-accent" style={{ width: `${Math.min(100, Math.max(0, Number(r.occupancy_pct) || 0))}%` }} />
+                        </div>
+                        <dl className="mt-3 grid grid-cols-3 gap-2 text-sm">
+                          <div>
+                            <dt className="text-xs text-ink-muted">Приход</dt>
+                            <dd className="num font-semibold">{formatMoney(r.revenue)}</dd>
+                          </div>
+                          <div>
+                            <dt className="text-xs text-ink-muted">Нето</dt>
+                            <dd className="num font-semibold">{formatMoney(r.net)}</dd>
+                          </div>
+                          <div>
+                            <dt className="text-xs text-ink-muted">Печалба</dt>
+                            <dd className="num font-semibold text-accent-ink">{formatMoney(r.profit ?? 0)}</dd>
+                          </div>
+                        </dl>
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="table-wrap hidden md:block" tabIndex={0} role="region" aria-label="Приходи по имот (таблица)">
+                    <table className="table">
+                      <thead>
+                        <tr>
+                          <th scope="col">Имот</th>
+                          <th scope="col" className="num">Нощувки</th>
+                          <th scope="col" className="num">Заетост</th>
+                          <th scope="col" className="num">Приход</th>
+                          <th scope="col" className="num">Нето</th>
+                          <th scope="col" className="num">Ср. цена</th>
+                          <th scope="col" className="num">% директни</th>
+                          <th scope="col" className="num">Доп. приход</th>
+                          <th scope="col" className="num">Разходи</th>
+                          <th scope="col" className="num">Печалба</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {propertyRows.map((r) => (
+                          <tr key={r.property_id ?? 'general'}>
+                            <td className="font-semibold text-ink">{r.property_name}</td>
+                            <td className="num text-ink-soft">{r.nights_sold}</td>
+                            <td className="num text-ink-soft">{r.occupancy_pct != null ? `${r.occupancy_pct}%` : '—'}</td>
+                            <td className="num text-ink-soft">{formatMoney(r.revenue)}</td>
+                            <td className="num text-ink-soft">{formatMoney(r.net)}</td>
+                            <td className="num text-ink-soft">{r.adr != null ? formatMoney(r.adr) : '—'}</td>
+                            <td className="num text-ink-soft">{r.direct_share_pct != null ? `${r.direct_share_pct}%` : '—'}</td>
+                            <td className="num text-ink-soft">{formatMoney(r.other_income ?? 0)}</td>
+                            <td className="num text-ink-soft">{formatMoney(r.expenses ?? 0)}</td>
+                            <td className="num font-semibold text-ink">{formatMoney(r.profit ?? 0)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              )}
+            </section>
+
+            <Card className="overflow-hidden" {...rise(4, animate)}>
+              <header className="px-6 pb-3 pt-6">
+                <h2 className="text-[1.375rem]">Неплатени остатъци</h2>
+                <p className="mt-1 text-[0.8125rem] text-ink-muted">Всички резервации с неплатен остатък, независимо от избрания период.</p>
               </header>
               {unpaid.length === 0 ? (
-                <p className="px-6 py-10 text-center text-sm text-slate-500">
-                  Няма неплатени остатъци — всичко е уредено.
-                </p>
+                <p className="px-6 pb-8 pt-4 text-center text-sm text-ink-soft">Няма неплатени остатъци — всичко е уредено.</p>
               ) : (
-                <ul className="divide-y divide-slate-100">
+                <ul className="divide-y divide-line border-t border-line">
                   {unpaid.map((b) => (
                     <li key={b.booking_id}>
                       <Link
                         to={`/bookings?focus=${b.booking_id}`}
-                        className="flex flex-wrap items-center justify-between gap-2 px-6 py-3.5 text-sm hover:bg-slate-50/60"
+                        className="flex min-h-14 flex-wrap items-center justify-between gap-2 px-6 py-3.5 text-sm transition-colors hover:bg-sunken/60"
                       >
                         <div>
-                          <p className="font-medium text-slate-900">{b.guest_name}</p>
-                          <p className="text-xs text-slate-400">
+                          <p className="font-semibold text-ink">{b.guest_name}</p>
+                          <p className="text-xs text-ink-muted">
                             {propertyNames[b.property_id] ?? '—'} · {formatDateBG(b.check_in)} – {formatDateBG(b.check_out)}
                           </p>
                         </div>
-                        <span className="font-semibold text-amber-700">{formatMoney(b.outstanding)}</span>
+                        <span className="num font-semibold text-warning-ink">{formatMoney(b.outstanding)}</span>
                       </Link>
                     </li>
                   ))}
@@ -527,20 +550,13 @@ export default function Earnings() {
         )}
 
         <Card className="overflow-hidden">
-          <header className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-6 py-4">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-700">
-              Последни разходи и приходи
-            </h2>
-            <Input
-              type="month"
-              value={ledgerMonth}
-              onChange={(e) => setLedgerMonth(e.target.value)}
-              className="w-auto"
-            />
+          <header className="flex flex-wrap items-center justify-between gap-3 px-6 pb-3 pt-6">
+            <h2 className="text-[1.375rem]">Последни разходи и приходи</h2>
+            <Input type="month" value={ledgerMonth} onChange={(e) => setLedgerMonth(e.target.value)} className="w-auto" aria-label="Месец" />
           </header>
 
           {ledgerError && (
-            <div className="px-6 pt-4">
+            <div className="px-6 pt-2">
               <Alert>{ledgerError}</Alert>
             </div>
           )}
@@ -548,21 +564,16 @@ export default function Earnings() {
           {ledgerLoading ? (
             <Spinner />
           ) : ledgerEntries.length === 0 ? (
-            <p className="px-6 py-10 text-center text-sm text-slate-500">
-              Няма разходи или приходи за избрания месец.
-            </p>
+            <p className="px-6 pb-8 pt-4 text-center text-sm text-ink-soft">Няма разходи или приходи за избрания месец.</p>
           ) : (
-            <ul className="divide-y divide-slate-100">
+            <ul className="divide-y divide-line border-t border-line">
               {ledgerEntries.map((entry) => (
-                <li
-                  key={entry.id}
-                  className="flex flex-wrap items-center justify-between gap-3 px-6 py-3.5 text-sm"
-                >
+                <li key={entry.id} className="flex flex-wrap items-center justify-between gap-3 px-6 py-3.5 text-sm">
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-medium text-slate-900">{entry.category}</span>
+                      <span className="font-semibold text-ink">{entry.category}</span>
                       {entry.is_auto && (
-                        <span className="inline-flex items-center gap-0.5 rounded-md bg-slate-100 px-1.5 py-0.5 text-[11px] font-medium text-slate-500">
+                        <span className="inline-flex items-center gap-0.5 rounded-md bg-sunken px-1.5 py-0.5 text-[11px] font-semibold text-ink-soft">
                           авто
                           <InfoTooltip
                             text={
@@ -573,37 +584,33 @@ export default function Earnings() {
                           />
                         </span>
                       )}
-                      <span className="text-xs text-slate-400">
-                        {propertyNames[entry.property_id] ?? 'Всички имоти'}
-                      </span>
+                      <span className="text-xs text-ink-muted">{propertyNames[entry.property_id] ?? 'Всички имоти'}</span>
                     </div>
-                    <p className="mt-0.5 text-xs text-slate-400">
+                    <p className="mt-0.5 text-xs text-ink-muted">
                       {formatDateBG(entry.entry_date)}
                       {entry.note && ` · ${entry.note}`}
                     </p>
                   </div>
-                  <div className="flex shrink-0 items-center gap-3">
+                  <div className="flex shrink-0 items-center gap-1">
                     {entry.receipt_path && receiptUrls[entry.id] && (
                       <a
                         href={receiptUrls[entry.id]}
                         target="_blank"
                         rel="noreferrer"
-                        className="text-slate-400 hover:text-brand-600"
+                        className="icon-btn text-ink-muted hover:text-accent"
                         aria-label="Преглед на бележката"
                       >
                         <Paperclip className="h-4 w-4" />
                       </a>
                     )}
-                    <span
-                      className={`font-semibold ${entry.kind === 'income' ? 'text-emerald-600' : 'text-red-600'}`}
-                    >
+                    <span className={`num mr-2 font-semibold ${entry.kind === 'income' ? 'text-success' : 'text-danger'}`}>
                       {entry.kind === 'income' ? '+' : '−'}
                       {formatMoney(entry.amount)}
                     </span>
                     <button
                       type="button"
                       onClick={() => setEntryModal({ kind: entry.kind, entry })}
-                      className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                      className="icon-btn text-ink-muted hover:text-ink"
                       aria-label="Редакция"
                     >
                       <Pencil className="h-4 w-4" />
@@ -611,7 +618,7 @@ export default function Earnings() {
                     <button
                       type="button"
                       onClick={() => setConfirmDelete(entry)}
-                      className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                      className="icon-btn text-ink-muted hover:text-danger"
                       aria-label="Изтрий"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -622,6 +629,20 @@ export default function Earnings() {
             </ul>
           )}
         </Card>
+
+        {/* По-рядко ползваните действия — извън основния поглед */}
+        <div className="flex flex-wrap items-center gap-2 pb-2">
+          <Button variant="ghost" size="sm" onClick={() => setWizardOpen(true)}>
+            <Wand2 className="h-4 w-4" />
+            Настройка на автоматичните записи
+          </Button>
+          <Link to="/earnings/rules">
+            <Button variant="ghost" size="sm">
+              <Repeat className="h-4 w-4" />
+              Правила{rules.length > 0 ? ` (${rules.length})` : ''}
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {entryModal && (
@@ -651,12 +672,12 @@ export default function Earnings() {
       />
 
       <Modal open={Boolean(confirmDelete)} onClose={() => setConfirmDelete(null)} title="Изтриване на запис">
-        <p className="text-sm leading-relaxed text-slate-600">
+        <p className="text-sm leading-relaxed text-ink-soft">
           Сигурни ли сте, че искате да изтриете този {confirmDelete?.kind === 'income' ? 'приход' : 'разход'} (
           {confirmDelete && formatMoney(confirmDelete.amount)})? Действието е необратимо.
         </p>
         {confirmDelete?.is_auto && (
-          <p className="mt-2 text-xs leading-relaxed text-slate-500">
+          <p className="mt-2 text-xs leading-relaxed text-ink-soft">
             Това е автоматичен запис. Ако го изтриете, правилото няма да го създаде наново за същия месец/резервация.
           </p>
         )}

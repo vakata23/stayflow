@@ -9,9 +9,9 @@ function PropertyCard({ property, activeBookings }) {
   return (
     <Link
       to={`/properties/${property.id}`}
-      className="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all hover:border-brand-300 hover:shadow-md"
+      className="group overflow-hidden rounded-2xl border border-line bg-card shadow-sm transition-all hover:border-accent hover:shadow-md"
     >
-      <div className="h-40 overflow-hidden bg-slate-100">
+      <div className="h-40 overflow-hidden bg-sunken">
         {property.cover_image_url ? (
           <img
             src={property.cover_image_url}
@@ -20,22 +20,22 @@ function PropertyCard({ property, activeBookings }) {
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center">
-            <Building2 className="h-9 w-9 text-slate-300" />
+            <Building2 className="h-9 w-9 text-ink-muted" />
           </div>
         )}
       </div>
       <div className="p-5">
         <div className="flex items-start justify-between gap-2">
-          <h3 className="font-semibold leading-tight text-slate-900 group-hover:text-brand-700">
+          <h2 className="font-semibold leading-tight text-ink group-hover:text-accent-ink">
             {property.name}
-          </h3>
-          <span className="shrink-0 rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-500">
+          </h2>
+          <span className="shrink-0 rounded-md bg-sunken px-2 py-0.5 text-[11px] font-medium text-ink-soft">
             {propertyTypeLabel(property.property_type)}
           </span>
         </div>
 
         {(property.address || property.city) && (
-          <p className="mt-1.5 flex items-start gap-1.5 text-sm text-slate-500">
+          <p className="mt-1.5 flex items-start gap-1.5 text-sm text-ink-soft">
             <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0" />
             <span className="line-clamp-2">
               {[property.address, property.city].filter(Boolean).join(', ')}
@@ -43,7 +43,7 @@ function PropertyCard({ property, activeBookings }) {
           </p>
         )}
 
-        <div className="mt-4 flex items-center gap-4 border-t border-slate-100 pt-3 text-xs text-slate-500">
+        <div className="mt-4 flex items-center gap-4 border-t border-line pt-3 text-xs text-ink-soft">
           <span className="flex items-center gap-1.5">
             <Users className="h-3.5 w-3.5" />
             до {property.max_guests} гости

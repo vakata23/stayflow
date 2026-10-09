@@ -76,7 +76,7 @@ export default function PropertyNew() {
     <div className="mx-auto max-w-lg">
       <Link
         to="/properties"
-        className="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-800"
+        className="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-ink-soft hover:text-ink"
       >
         <ArrowLeft className="h-4 w-4" />
         Всички имоти

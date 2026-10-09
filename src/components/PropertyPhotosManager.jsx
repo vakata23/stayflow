@@ -118,11 +118,11 @@ export default function PropertyPhotosManager({ property, userId, onCoverChanged
 
   return (
     <Card className="p-6">
-      <h2 className="flex items-center gap-1.5 text-sm font-semibold uppercase tracking-wide text-slate-700">
-        <ImagePlus className="h-4 w-4 text-slate-400" />
+      <h2 className="flex items-center gap-2 type-heading">
+        <ImagePlus className="h-4 w-4 text-ink-muted" />
         Галерия
       </h2>
-      <p className="mt-1 text-xs text-slate-400">
+      <p className="mt-1 text-xs text-ink-muted">
         Отбележете какво е на всяка снимка — по етикетите страницата се подрежда сама. Стрелките
         местят ръчно (влачене — на компютър), звездата избира корицата. При качване снимките се
         смаляват и GPS данните от телефона се премахват.
@@ -135,7 +135,7 @@ export default function PropertyPhotosManager({ property, userId, onCoverChanged
       )}
 
       {loading ? (
-        <p className="mt-4 text-sm text-slate-500">Зареждане…</p>
+        <p className="mt-4 text-sm text-ink-soft">Зареждане…</p>
       ) : (
         <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
           {photos.map((photo, i) => {
@@ -148,8 +148,8 @@ export default function PropertyPhotosManager({ property, userId, onCoverChanged
                 onDragOver={handleDragOver(i)}
                 onDrop={handleDrop}
                 onDragEnd={() => setDragIndex(null)}
-                className={`group relative aspect-square cursor-move overflow-hidden rounded-xl border bg-slate-50 ${
-                  isCover ? 'border-brand-500 ring-2 ring-brand-200' : 'border-slate-200'
+                className={`group relative aspect-square cursor-move overflow-hidden rounded-xl border bg-sunken ${
+                  isCover ? 'border-accent ring-2 ring-accent-soft-hover' : 'border-line'
                 }`}
               >
                 <img src={photo.photo_url} alt="" className="h-full w-full object-cover" draggable={false} />
@@ -160,7 +160,7 @@ export default function PropertyPhotosManager({ property, userId, onCoverChanged
                       type="button"
                       onClick={() => move(i, -1)}
                       disabled={i === 0}
-                      className="rounded-lg bg-slate-900/60 p-1 text-white hover:bg-slate-900/80 disabled:opacity-30"
+                      className="rounded-lg bg-ink/60 p-1 text-white hover:bg-ink/80 disabled:opacity-30"
                       aria-label="Премести наляво"
                     >
                       <ChevronLeft className="h-3.5 w-3.5" />
@@ -169,7 +169,7 @@ export default function PropertyPhotosManager({ property, userId, onCoverChanged
                       type="button"
                       onClick={() => move(i, 1)}
                       disabled={i === photos.length - 1}
-                      className="rounded-lg bg-slate-900/60 p-1 text-white hover:bg-slate-900/80 disabled:opacity-30"
+                      className="rounded-lg bg-ink/60 p-1 text-white hover:bg-ink/80 disabled:opacity-30"
                       aria-label="Премести надясно"
                     >
                       <ChevronRight className="h-3.5 w-3.5" />
@@ -178,7 +178,7 @@ export default function PropertyPhotosManager({ property, userId, onCoverChanged
                   <button
                     type="button"
                     onClick={() => handleDelete(photo)}
-                    className="rounded-lg bg-slate-900/60 p-1 text-white hover:bg-red-600"
+                    className="rounded-lg bg-ink/60 p-1 text-white hover:bg-danger"
                     aria-label="Изтрий снимката"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
@@ -188,7 +188,7 @@ export default function PropertyPhotosManager({ property, userId, onCoverChanged
                   type="button"
                   onClick={() => handleSetCover(photo)}
                   className={`absolute bottom-1.5 left-1.5 flex items-center gap-1 rounded-lg px-1.5 py-1 text-xs font-medium shadow ${
-                    isCover ? 'bg-brand-600 text-white' : 'bg-white/90 text-slate-600 sm:opacity-0 sm:group-hover:opacity-100'
+                    isCover ? 'bg-accent text-white' : 'bg-card/90 text-ink-soft sm:opacity-0 sm:group-hover:opacity-100'
                   }`}
                 >
                   <Star className={`h-3 w-3 ${isCover ? 'fill-white' : ''}`} />
@@ -204,8 +204,8 @@ export default function PropertyPhotosManager({ property, userId, onCoverChanged
                     aria-pressed={photo.room === chip.key}
                     className={`rounded-full border px-2 py-1 text-[11px] font-medium leading-none transition-colors ${
                       photo.room === chip.key
-                        ? 'border-brand-600 bg-brand-600 text-white'
-                        : 'border-slate-200 bg-white text-slate-500 hover:border-brand-300 hover:text-brand-700'
+                        ? 'border-accent bg-accent text-white'
+                        : 'border-line bg-card text-ink-soft hover:border-accent hover:text-accent-ink'
                     }`}
                   >
                     {chip.label}
@@ -216,7 +216,7 @@ export default function PropertyPhotosManager({ property, userId, onCoverChanged
             )
           })}
 
-          <label className="flex aspect-square cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-300 text-slate-400 hover:border-brand-400 hover:text-brand-600">
+          <label className="flex aspect-square cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-line-strong text-ink-muted hover:border-accent hover:text-accent">
             <ImagePlus className="h-6 w-6" />
             <span className="px-2 text-center text-xs font-medium">
               {uploading ? `Качване ${progress.done}/${progress.total}…` : `Добави снимки (${photos.length}/${MAX_PHOTOS_PER_PROPERTY})`}
