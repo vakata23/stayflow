@@ -63,10 +63,10 @@ export default function AvailabilityCalendar({ loadBusy }) {
     }
   }, [loadBusy])
 
-  if (loading) return <div className="stay-skel" style={{ height: 420 }} aria-hidden="true" />
+  if (loading) return <div className="stay-skel" style={{ height: 340 }} aria-hidden="true" />
 
   return (
-    <div className="stay-card">
+    <div>
       <div className="stay-months">
         <MonthCard year={today.getFullYear()} month={today.getMonth()} busySet={busySet} today={todayISO()} />
         <MonthCard
@@ -76,9 +76,7 @@ export default function AvailabilityCalendar({ loadBusy }) {
           today={todayISO()}
         />
       </div>
-      <p className="stay-muted" style={{ margin: '18px 0 0', fontSize: 13 }}>
-        Зачертаните дни вече са заети.
-      </p>
+      <p className="stay-cal-note">Зачертаните дни вече са заети.</p>
     </div>
   )
 }

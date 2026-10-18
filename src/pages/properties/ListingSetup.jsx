@@ -478,7 +478,7 @@ export default function ListingSetup() {
               <div className="mt-3 flex items-center gap-3">
                 <span
                   className="h-10 w-10 shrink-0 rounded-xl border border-line"
-                  style={{ background: useAccent && accent ? accent : '#1b787c' }}
+                  style={{ background: useAccent && accent ? accent : '#a63e1e' }}
                 />
                 <p className="text-sm text-ink-soft">
                   {accent

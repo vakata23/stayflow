@@ -6,21 +6,14 @@ import useListingSeo from './useListingSeo'
 
 /** Скелет с формата на страницата: докато идват данните, не се показва завъртащ се кръг. */
 function StayLoading() {
-  const bar = (w, h) => (
-    <div className="stay-skel" style={{ width: w, height: h, background: 'rgba(255,255,255,0.14)', borderRadius: 12 }} />
-  )
   return (
     <div className="stay" aria-busy="true" aria-label="Зареждане">
-      <div className="stay-hero">
-        <div className="stay-hero__fallback" aria-hidden="true" />
-        <div className="stay-hero__shade" aria-hidden="true" />
-        <span />
-        <div className="stay-hero__content">
-          <div style={{ display: 'grid', gap: 16 }}>
-            {bar(120, 22)}
-            {bar('72%', 84)}
-            {bar('48%', 18)}
-          </div>
+      <div className="stay-wrap stay-head">
+        <div className="stay-titlebar">
+          <div className="stay-skel" style={{ width: 'min(420px, 70%)', height: 40 }} />
+        </div>
+        <div className="stay-gallery-wrap">
+          <div className="stay-skel stay-gallery--skel" />
         </div>
       </div>
     </div>
@@ -67,13 +60,11 @@ export default function PublicStay() {
     return (
       <div className="stay" style={{ display: 'grid', placeItems: 'center', padding: 24 }}>
         <main style={{ maxWidth: 440 }}>
-          <p className="stay-kicker" style={{ margin: 0 }}>
-            404
-          </p>
-          <h1 className="stay-h2" style={{ marginTop: 8 }}>
+          <p style={{ margin: 0, color: 'var(--stay-accent-text)', fontWeight: 700 }}>404</p>
+          <h1 className="stay-title" style={{ marginTop: 8 }}>
             Страницата не е намерена
           </h1>
-          <p className="stay-prose" style={{ fontSize: 16 }}>
+          <p className="stay-prose" style={{ marginTop: 12 }}>
             Този имот не е публикуван или адресът е грешен. Проверете линка, който сте получили от собственика.
           </p>
         </main>
