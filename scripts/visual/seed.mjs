@@ -259,6 +259,42 @@ export const RPC = {
     const commission = rows.reduce((s, x) => s + x.commission, 0)
     return [{ bookings_count: rows.length, revenue: r2(revenue), commission: r2(commission), net: r2(revenue - commission) }]
   },
+  // Публичната страница /stay/<slug> (само за тест на оформлението; снимките са градиенти от сървъра)
+  public_property: (a) => {
+    // „bez-snimki“ — публикуван имот без нищо попълнено освен основното (празни секции не се показват)
+    const p = a.p_slug === 'bez-snimki' ? { ...properties[1], is_listed: true, slug: 'bez-snimki', public_description: null, amenities: [], channels: [], lat: null, lng: null, house_rules: null, bedrooms: null, beds: null, bathrooms: null, area_m2: null } : properties.find((x) => x.slug === a.p_slug && x.is_listed)
+    if (!p) return []
+    const names = [116, 42, 10, 37, 1018, 1043, 164, 1015]
+    const count = a.p_slug === 'tihi-bryag' ? names.length : 0
+    const photos = names.slice(0, count).map((n) => PHOTO(n))
+    return [{
+      ...p, id: undefined, owner_id: undefined,
+      photos, photo_thumbs: names.slice(0, count).map((n) => PHOTO(n, 'thumb')),
+      cover_image_url: photos[0] ?? null,
+      base_price: 87, public_lat: p.lat, public_lng: p.lng, max_guests: 6,
+      house_rules: 'Тишина след 22:00. Моля, оставяйте чисто.',
+    }]
+  },
+  public_reviews: (a) => (a.p_slug === 'tihi-bryag'
+    ? [
+        { id: 'r1', guest_name: 'Анна', rating: 5, comment: 'Чудесна къща, на две крачки от плажа. Всичко беше чисто и стопанинът отговаряше бързо.', created_at: '2026-08-01T10:00:00Z' },
+        { id: 'r2', guest_name: 'Peter', rating: 5, comment: 'Great place, quiet street, lovely terrace in the morning.', created_at: '2026-07-14T10:00:00Z' },
+        { id: 'r3', guest_name: 'Мартин', rating: 4, comment: 'Много добра локация. Климатикът в долната спалня е шумен, иначе всичко е отлично.', created_at: '2026-06-20T10:00:00Z' },
+      ]
+    : []),
+  busy_nights: (a) => {
+    const nights = []
+    for (const x of bookings.filter((q) => q.property_id === P1 && q.status !== 'cancelled')) {
+      for (let d = new Date(x.check_in + 'T00:00:00Z'); d.toISOString().slice(0, 10) < x.check_out; d.setUTCDate(d.getUTCDate() + 1)) nights.push({ night: d.toISOString().slice(0, 10) })
+    }
+    return nights
+  },
+  quote_stay: (a) => {
+    const nights = Math.round((new Date(a.p_check_out) - new Date(a.p_check_in)) / 86400000)
+    const acc = 87 * nights
+    const busy = RPC.busy_nights({}).some((r) => r.night >= a.p_check_in && r.night < a.p_check_out)
+    return [{ nights, accommodation_total: acc, cleaning_fee: 25, tourist_tax: 2 * a.p_guests * nights, total: acc + 25, deposit: Math.round((acc + 25) * 0.3), min_nights: 2, fits_guests: a.p_guests <= 6, is_available: !busy }]
+  },
   generate_my_auto_entries: () => 0,
   send_test_notification: () => null,
   start_ai_run: () => null,

@@ -99,10 +99,10 @@ export function ensureContrastOn(hex, bgHex, min = MIN_CONTRAST) {
  *   • accent — бял текст върху акцента (бутони);
  *   • accentText — акцентът като текст върху хартията и върху картите;
  *   • ink, muted — основен и второстепенен текст върху хартията и картите.
- * Без акцент се ползва основният тюркоаз на StayFlow.
+ * Без акцент се ползва марковият теракот на StayFlow.
  */
 export function stayThemeVars(hex) {
-  const base = hex || '#1b787c'
+  const base = hex || '#a63e1e'
   const [h, s] = rgbToHsl(hexToRgb(base))
   const paper = hslHex(h, clamp(s * 0.45, 0.06, 0.26), 0.955)
   const paperDeep = hslHex(h, clamp(s * 0.5, 0.08, 0.3), 0.915)

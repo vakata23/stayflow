@@ -36,38 +36,6 @@ export function useInView({ rootMargin = '0px', once = false, threshold = 0 } = 
   return [ref, inView]
 }
 
-/** Плавно появяване при скрол — само opacity + transform (стилът е в stay.css). */
-export function Reveal({ as: Tag = 'div', delay = 0, className = '', children, ...rest }) {
-  const [ref, inView] = useInView({ rootMargin: '0px 0px -8% 0px', once: true })
-  return (
-    <Tag
-      ref={ref}
-      data-reveal
-      className={`stay-reveal ${inView ? 'is-in' : ''} ${className}`}
-      style={{ '--d': `${delay}ms` }}
-      {...rest}
-    >
-      {children}
-    </Tag>
-  )
-}
-
-/** Зарежда шрифтовете на страницата (само тук, не за останалото приложение). */
-const FONTS_HREF =
-  'https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Manrope:wght@400;500;600;700&display=swap'
-
-export function useStayFonts() {
-  useEffect(() => {
-    if (document.querySelector('link[data-stay-fonts]')) return undefined
-    const link = document.createElement('link')
-    link.rel = 'stylesheet'
-    link.href = FONTS_HREF
-    link.setAttribute('data-stay-fonts', '')
-    document.head.appendChild(link)
-    return undefined // остава за целия сеанс — повторно зареждане не е нужно
-  }, [])
-}
-
 /** Евро без излишни „.00“ за заглавната цена: 87 € или 87.50 €. */
 export function shortPrice(value) {
   const n = Number(value) || 0
