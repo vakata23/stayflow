@@ -28,10 +28,11 @@ node scripts/visual/server.mjs /tmp/stayflow-dist 4174
 | Достъпност (axe-core, WCAG 2.x A/AA) | `node scripts/visual/axe.mjs http://localhost:4174 after /login,/,/calendar,/design` |
 | Поведение на компонентите (прозорец, фокус, Esc, размери, намалено движение) | `node scripts/visual/ui-behavior.mjs http://localhost:4174` |
 | Публична страница /stay/<slug>: мозайка, залепена карта, лента на телефон, лайтбокс, цена и заявка, празни секции, axe | `node scripts/visual/stay.mjs http://localhost:4174` (тестови имоти: `tihi-bryag`, `bez-snimki`) |
+| Видове паркинг в редакторите (карта на имота и помощник за обявата): групата, отмятане, какво се записва, препълване, axe | `node scripts/visual/parking.mjs http://localhost:4174` |
 | Движение: броене, каскада, график, лист „Още“, хапче в лентата, намалено движение (+ кадри в `out/motion/`) | `node scripts/visual/motion.mjs http://localhost:4174 --frames` |
 | Хоризонтално препълване на всички екрани (360 / 375 / 768 / 1440 px) | `node scripts/visual/overflow.mjs http://localhost:4174` |
 
 Резултатите (снимки, JSON) са в `scripts/visual/out/` (в `.gitignore`). На Windows с Git Bash добавете
 `MSYS_NO_PATHCONV=1` пред командата, ако подавате пътища като `/design`.
 
-Токените и контрастът се проверяват отделно, без браузър: `node scripts/test-design.mjs`.
+Токените и контрастът се проверяват отделно, без браузър: `node scripts/test-design.mjs`; логиката на удобствата (видове паркинг, описание от шаблон): `node scripts/test-amenities.mjs`.

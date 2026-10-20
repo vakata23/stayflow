@@ -11,9 +11,10 @@ export { ROOM_TYPES, ROOM_LABELS }
 // Ред като в Airbnb: дневна → спални → кухня → баня → тераса/гледка → отвън.
 const ROOM_RANK = { living: 0, bedroom: 1, kitchen: 2, bathroom: 3, terrace: 4, view: 4, exterior: 5, other: 6 }
 
-// Само удобства, които реално се виждат на снимка. WiFi, домашни любимци и
-// достъп без стъпала не могат да се потвърдят от снимка — AI-ът не ги предлага.
-export const VISIBLE_AMENITY_KEYS = ['ac', 'heating', 'kitchen', 'fridge', 'washer', 'balcony', 'tv', 'crib', 'parking']
+// Само удобства, които реално се виждат на снимка. WiFi, домашни любимци, достъп без стъпала
+// и паркинг (видът му — безплатен/платен/улица — не личи от снимка) не могат да се потвърдят
+// от снимка — AI-ът не ги предлага.
+export const VISIBLE_AMENITY_KEYS = ['ac', 'heating', 'kitchen', 'fridge', 'washer', 'balcony', 'tv', 'crib']
 
 /**
  * photos: [{ id, url }] в текущия ред; analysis.photos: [{ index, room, quality }]

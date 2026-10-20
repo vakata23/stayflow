@@ -17,7 +17,7 @@ import {
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
 import { fetchPhotos, reorderPhotos } from '../../lib/propertyPhotos'
-import { AMENITIES } from '../../lib/amenities'
+import { GENERAL_AMENITIES, parkingOptions } from '../../lib/amenities'
 import { PROPERTY_TYPES } from '../../lib/constants'
 import { ROOM_LABELS, orderByRooms, amenityHintsFromRooms, suggestCoverId, brightnessFromImage, roomCounts } from '../../lib/photoRooms'
 import { buildDescription } from '../../lib/descriptionTemplate'
@@ -414,7 +414,7 @@ export default function ListingSetup() {
                 </button>
               )}
               <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
-                {AMENITIES.map((a) => (
+                {GENERAL_AMENITIES.map((a) => (
                   <label key={a.key} className="flex items-center gap-2 text-sm text-ink-soft">
                     <input
                       type="checkbox"
@@ -429,6 +429,24 @@ export default function ListingSetup() {
                   </label>
                 ))}
               </div>
+              <fieldset className="mt-4">
+                <legend className="text-sm font-medium text-ink">Паркинг</legend>
+                <p className="mt-0.5 text-xs text-ink-muted">Отбележете всичко, което важи — гостите го виждат на страницата на имота.</p>
+                <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  {parkingOptions(amenities).map((a) => (
+                    <label key={a.key} className="flex items-center gap-2 text-sm text-ink-soft">
+                      <input
+                        type="checkbox"
+                        checked={amenities.includes(a.key)}
+                        onChange={() => toggleAmenity(a.key)}
+                        className="h-4 w-4 rounded border-line-strong text-accent focus:ring-accent"
+                      />
+                      {a.label}
+                      {a.legacy && <span className="rounded bg-warning-soft px-1.5 py-0.5 text-[10px] font-semibold text-warning-ink">уточнете вида</span>}
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
             </Card>
 
             <Card className="space-y-4 p-5">

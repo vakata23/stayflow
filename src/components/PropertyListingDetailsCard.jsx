@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Home, MapPin, LocateFixed } from 'lucide-react'
 import { supabase } from '../lib/supabase'
-import { AMENITIES, CANCELLATION_POLICIES } from '../lib/amenities'
+import { GENERAL_AMENITIES, parkingOptions, CANCELLATION_POLICIES } from '../lib/amenities'
 import { Card, Field, Input, Select, Button, Alert } from './ui'
 import LocationMap from './LocationMap'
 
@@ -106,7 +106,7 @@ export default function PropertyListingDetailsCard({ property, onSaved }) {
         <div>
           <p className="mb-2.5 text-sm font-medium text-ink">Удобства</p>
           <div className="grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-3">
-            {AMENITIES.map((a) => (
+            {GENERAL_AMENITIES.map((a) => (
               <label key={a.key} className="flex items-center gap-2 text-sm text-ink-soft">
                 <input
                   type="checkbox"
@@ -119,6 +119,25 @@ export default function PropertyListingDetailsCard({ property, onSaved }) {
             ))}
           </div>
         </div>
+
+        <fieldset>
+          <legend className="mb-1 text-sm font-medium text-ink">Паркинг</legend>
+          <p className="mb-2.5 text-xs text-ink-muted">Отбележете всичко, което важи — гостите го виждат на страницата на имота.</p>
+          <div className="grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-2">
+            {parkingOptions(amenities).map((a) => (
+              <label key={a.key} className="flex items-center gap-2 text-sm text-ink-soft">
+                <input
+                  type="checkbox"
+                  checked={amenities.includes(a.key)}
+                  onChange={() => toggleAmenity(a.key)}
+                  className="h-4 w-4 rounded border-line-strong text-accent focus:ring-accent"
+                />
+                {a.label}
+                {a.legacy && <span className="rounded bg-warning-soft px-1.5 py-0.5 text-[10px] font-semibold text-warning-ink">уточнете вида</span>}
+              </label>
+            ))}
+          </div>
+        </fieldset>
 
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Час на настаняване">
@@ -164,7 +183,7 @@ export default function PropertyListingDetailsCard({ property, onSaved }) {
         </Field>
 
         <div>
-          <div className="mb-2.5 flex items-center justify-between">
+          <div className="mb-2.5 flex flex-wrap items-center justify-between gap-2">
             <p className="flex items-center gap-1.5 text-sm font-medium text-ink">
               <MapPin className="h-4 w-4 text-ink-muted" />
               Приблизително местоположение
