@@ -12,6 +12,10 @@ import {
   Star,
   Wifi,
   ParkingCircle,
+  ParkingMeter,
+  Car,
+  Warehouse,
+  PlugZap,
   Snowflake,
   Flame,
   CookingPot,
@@ -33,7 +37,7 @@ import { todayISO } from '../../lib/dates'
 import { formatMoney } from '../../lib/money'
 import { channelLabel, channelHref } from '../../lib/propertySettings'
 import { isValidPhone, isValidEmail } from '../../lib/bookingRequestServer'
-import { AMENITIES, CANCELLATION_POLICIES, cancellationLabel } from '../../lib/amenities'
+import { listedAmenities, CANCELLATION_POLICIES, cancellationLabel } from '../../lib/amenities'
 import { stayThemeVars } from '../../lib/accentColor'
 import PhotoMosaic from './PhotoMosaic'
 import Lightbox from './Lightbox'
@@ -56,6 +60,11 @@ const CHANNEL_ICONS = {
 const AMENITY_ICONS = {
   wifi: Wifi,
   parking: ParkingCircle,
+  parking_free: ParkingCircle,
+  parking_paid: ParkingMeter,
+  parking_street: Car,
+  garage: Warehouse,
+  ev_charger: PlugZap,
   ac: Snowflake,
   heating: Flame,
   kitchen: CookingPot,
@@ -257,10 +266,7 @@ export default function ListingView({ property, reviews, slug, loadBusy, preview
     return [list[at], ...list.filter((_, i) => i !== at)]
   }, [property])
 
-  const selectedAmenities = useMemo(
-    () => AMENITIES.filter((a) => property?.amenities?.includes(a.key)),
-    [property]
-  )
+  const selectedAmenities = useMemo(() => listedAmenities(property?.amenities), [property])
 
   // От темата на имота ползваме само акцента (бутони и връзки); всичко останало е неутрално.
   const themeVars = useMemo(() => {

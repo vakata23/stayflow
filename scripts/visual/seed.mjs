@@ -34,7 +34,7 @@ const properties = [
     created_at: '2026-02-01T08:00:00Z', ical_token: 'c1111111-0000-4000-8000-000000000001', ical_url: null,
     channels: [{ type: 'viber', value: '+359 88 712 4093' }, { type: 'phone', value: '+359 88 712 4093' }],
     slug: 'tihi-bryag', is_listed: true, public_description: 'Двуетажна къща на 200 метра от плажа.', bedrooms: 3, beds: 5, bathrooms: 2, area_m2: 94,
-    amenities: ['wifi', 'parking', 'ac', 'kitchen', 'balcony'], checkin_time: '14:00', checkout_time: '11:00', smoking_allowed: false, parties_allowed: false,
+    amenities: ['wifi', 'parking', 'parking_free', 'ev_charger', 'ac', 'kitchen', 'balcony'], checkin_time: '14:00', checkout_time: '11:00', smoking_allowed: false, parties_allowed: false,
     cancellation_policy: 'moderate', lat: 42.1667, lng: 27.8667, public_description_en: null, accent_color: '#a8652a', ai_assistant: false,
   },
   {

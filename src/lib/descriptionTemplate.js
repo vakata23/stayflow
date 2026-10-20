@@ -3,7 +3,7 @@
  * е попълнил (тип, град, гости, стаи, удобства): без превъзходни степени, без
  * разстояния, без „близо до плажа“. Собственикът я редактира.
  */
-import { AMENITIES } from './amenities.js'
+import { AMENITIES, listedAmenities } from './amenities.js'
 import { transliterate } from './slug.js'
 
 const TYPE_BG = { apartment: 'Апартамент', house: 'Къща', studio: 'Студио', villa: 'Вила', room: 'Стая', other: 'Имот' }
@@ -12,6 +12,11 @@ const TYPE_EN = { apartment: 'Apartment', house: 'House', studio: 'Studio', vill
 const AMENITY_EN = {
   wifi: 'Wi-Fi',
   parking: 'parking',
+  parking_free: 'free on-site parking',
+  parking_paid: 'paid parking',
+  parking_street: 'street parking',
+  garage: 'garage',
+  ev_charger: 'EV charging station',
   ac: 'air conditioning',
   heating: 'heating',
   kitchen: 'kitchen',
@@ -46,7 +51,7 @@ export function buildDescription(property, lang = 'bg') {
   const beds = num(property.beds)
   const bathrooms = num(property.bathrooms)
   const area = num(property.area_m2)
-  const amenities = (property.amenities ?? []).filter((k) => AMENITIES.some((a) => a.key === k))
+  const amenities = listedAmenities(property.amenities).map((a) => a.key)
 
   if (lang === 'en') {
     const type = TYPE_EN[property.property_type] ?? TYPE_EN.other

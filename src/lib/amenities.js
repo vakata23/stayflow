@@ -5,7 +5,15 @@
  */
 export const AMENITIES = [
   { key: 'wifi', label: 'WiFi' },
-  { key: 'parking', label: 'Паркинг' },
+  // Паркингът е с видове (group: 'parking'). Старият общ ключ „parking“ остава, за да не се
+  // загубят вече записани имоти — в редакторите се вижда само ако е отметнат, а на публичната
+  // страница се скрива, щом има поне един точен вид.
+  { key: 'parking', label: 'Паркинг', legacy: true, group: 'parking' },
+  { key: 'parking_free', label: 'Безплатен паркинг на място', group: 'parking' },
+  { key: 'parking_paid', label: 'Платен паркинг', group: 'parking' },
+  { key: 'parking_street', label: 'Паркинг на улицата', group: 'parking' },
+  { key: 'garage', label: 'Гараж', group: 'parking' },
+  { key: 'ev_charger', label: 'Зарядна станция за електромобили', group: 'parking' },
   { key: 'ac', label: 'Климатик' },
   { key: 'heating', label: 'Отопление' },
   { key: 'kitchen', label: 'Кухня' },
@@ -20,6 +28,27 @@ export const AMENITIES = [
 
 export function amenityLabel(key) {
   return AMENITIES.find((a) => a.key === key)?.label ?? key
+}
+
+/** Ключовете на видовете паркинг (без стария общ „parking“). */
+export const PARKING_KEYS = AMENITIES.filter((a) => a.group === 'parking' && !a.legacy).map((a) => a.key)
+
+/** Общите удобства за редактора — всичко освен групата „Паркинг“. */
+export const GENERAL_AMENITIES = AMENITIES.filter((a) => a.group !== 'parking')
+
+/** Видовете паркинг за редактора; старият общ запис се показва само ако вече е отметнат. */
+export function parkingOptions(selected = []) {
+  return AMENITIES.filter((a) => a.group === 'parking' && (!a.legacy || selected.includes(a.key)))
+}
+
+/**
+ * Удобствата за показване на гост: в реда на AMENITIES, само познати ключове, без
+ * дубликати; общият „Паркинг“ се скрива, когато е избран поне един точен вид.
+ */
+export function listedAmenities(keys) {
+  const set = new Set(Array.isArray(keys) ? keys : [])
+  const specific = PARKING_KEYS.some((k) => set.has(k))
+  return AMENITIES.filter((a) => set.has(a.key) && !(a.legacy && specific))
 }
 
 export const CANCELLATION_POLICIES = [
