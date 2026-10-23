@@ -16,7 +16,6 @@ import {
   Building2,
   ScrollText,
   LogOut,
-  Waves,
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
@@ -98,13 +97,11 @@ function NavGroup({ title, items, onNavigate, badges }) {
   )
 }
 
+/** Логото: къщичка с вълна + надпис (public/brand, от design/brand/logo-source.jpg през scripts/make-logo-assets.py). */
 function Brand({ className = '' }) {
   return (
-    <Link to="/" className={`flex items-center gap-3 ${className}`} aria-label="StayFlow — към таблото">
-      <span className="grid h-10 w-10 place-items-center rounded-[0.8125rem] bg-accent text-on-accent shadow-accent">
-        <Waves className="h-5 w-5" aria-hidden="true" />
-      </span>
-      <span className="font-display text-2xl font-bold tracking-tight text-ink">StayFlow</span>
+    <Link to="/" className={`flex items-center ${className}`} aria-label="StayFlow — към таблото">
+      <img src="/brand/logo-horizontal.png" alt="" width="1100" height="241" className="h-9 w-auto lg:h-11" />
     </Link>
   )
 }
