@@ -165,10 +165,16 @@ const booking_balances = bookings.map((x) => {
   return { booking_id: x.id, property_id: x.property_id, guest_name: x.guest_name, check_in: x.check_in, check_out: x.check_out, status: x.status, source: x.source, due, paid, outstanding: due - paid }
 })
 
+// Сезонни цени (миграция 014) на „Тихи бряг“: зима през Нова година и лято
+const price_seasons = [
+  { id: 'e1111111-0000-4000-8000-000000000001', property_id: P1, name: 'Зима', start_month: 11, start_day: 1, end_month: 3, end_day: 31, price_per_night: 60, min_nights: 3, created_at: '2026-02-01T08:00:00Z' },
+  { id: 'e1111111-0000-4000-8000-000000000002', property_id: P1, name: 'Лято', start_month: 6, start_day: 1, end_month: 9, end_day: 30, price_per_night: 120, min_nights: 2, created_at: '2026-02-01T08:01:00Z' },
+]
+
 export const TABLES = {
   profiles: [{ id: PROFILE, user_id: U, full_name: 'Иван Петров', company_name: 'Морски имоти ЕООД', phone: '+359 88 712 4093', created_at: '2026-01-10T08:00:00Z' }],
   properties, bookings, payments, property_photos: photos, booking_requests: requests, cleaning_tasks, cleaning_notes, pricing_rules,
-  money_entries, recurring_rules, invoices, notification_targets, outbox, reviews, property_settings, booking_balances, ai_runs: [],
+  money_entries, recurring_rules, invoices, notification_targets, outbox, reviews, property_settings, booking_balances, ai_runs: [], price_seasons,
 }
 
 // ---------------------------------------------------------------- RPC
@@ -275,6 +281,7 @@ export const RPC = {
       house_rules: 'Тишина след 22:00. Моля, оставяйте чисто.',
     }]
   },
+  public_seasons: (a) => (a.p_slug === 'tihi-bryag' ? price_seasons.map(({ id, property_id, created_at, ...rest }) => rest) : []),
   public_reviews: (a) => (a.p_slug === 'tihi-bryag'
     ? [
         { id: 'r1', guest_name: 'Анна', rating: 5, comment: 'Чудесна къща, на две крачки от плажа. Всичко беше чисто и стопанинът отговаряше бързо.', created_at: '2026-08-01T10:00:00Z' },

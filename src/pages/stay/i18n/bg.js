@@ -60,6 +60,11 @@ export default {
   'amenity.crib': 'Детско креватче',
   'amenity.step_free': 'Достъп без стъпала',
 
+  seasonsTitle: 'Цени по сезон',
+  seasonOtherDates: 'Останалите дати',
+  seasonMinStay: 'мин. {nights}',
+  seasonsNote: 'Цени на нощувка. Точната сума за вашите дати виждате, когато проверите цена.',
+
   availability: 'Наличност',
   availabilityNote: 'Зачертаните дни вече са заети.',
 

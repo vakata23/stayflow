@@ -7,6 +7,7 @@ import { uploadPropertyImage } from '../../lib/storage'
 import { PageHeader, Card, Spinner, Button, Alert, Modal, EmptyState } from '../../components/ui'
 import IcalSync from '../../components/IcalSync'
 import PropertySettingsCard from '../../components/PropertySettingsCard'
+import SeasonPrices from '../../components/SeasonPrices'
 import PublicListingCard from '../../components/PublicListingCard'
 import PropertyListingDetailsCard from '../../components/PropertyListingDetailsCard'
 import PropertyPhotosManager from '../../components/PropertyPhotosManager'
@@ -199,6 +200,8 @@ export default function PropertyDetail() {
           property={property}
           onSaved={(channels) => setProperty((p) => ({ ...p, channels }))}
         />
+
+        <SeasonPrices propertyId={property.id} />
 
         <PublicListingCard
           property={property}

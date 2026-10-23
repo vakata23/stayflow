@@ -1103,3 +1103,46 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* Цени по сезон */
+.stay-seasons {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--s-line);
+  border-radius: var(--s-r-md, 14px);
+}
+.stay-seasons li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 18px;
+}
+.stay-seasons li + li {
+  border-top: 1px solid var(--s-line);
+}
+.stay-seasons li > div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.stay-seasons b {
+  font-weight: 600;
+}
+.stay-seasons li > div span {
+  color: var(--s-muted);
+  font-size: 14px;
+}
+.stay-seasons li > p {
+  margin: 0;
+  flex: none;
+  color: var(--s-muted);
+  font-size: 14px;
+  text-align: right;
+}
+.stay-seasons li > p b {
+  color: var(--s-ink);
+  font-size: 16px;
+}

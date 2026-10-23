@@ -1,9 +1,12 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { ArrowLeft, Building2 } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
 import { savePropertySettings } from '../../lib/propertySettings'
+import { seasonsAvailable, insertSeasons } from '../../lib/seasons'
+import { validateSeason } from '../../lib/seasonLogic'
+import SeasonEditor from '../../components/SeasonEditor'
 import { slugify } from '../../lib/slug'
 import { PROPERTY_TYPES } from '../../lib/constants'
 import { PageHeader, Spinner, Alert, Card, Field, Input, Select, Button } from '../../components/ui'
@@ -19,6 +22,18 @@ export default function PropertyNew() {
   const [values, setValues] = useState({ name: '', city: '', property_type: 'apartment', max_guests: 2, base_price: '' })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
+  // Сезонни цени (миграция 014): редакторът се показва само когато базата вече има таблицата.
+  const [seasonsOn, setSeasonsOn] = useState(false)
+  const [seasons, setSeasons] = useState([])
+  const [showSeasonErrors, setShowSeasonErrors] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    seasonsAvailable().then((ok) => !cancelled && setSeasonsOn(ok))
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const set = (key) => (e) => setValues((v) => ({ ...v, [key]: e.target.value }))
 
@@ -40,6 +55,10 @@ export default function PropertyNew() {
     if (!values.name.trim()) return setError('Името на имота е задължително.')
     if (Number(values.max_guests) < 1) return setError('Поне 1 гост.')
     if (values.base_price !== '' && !(Number(values.base_price) > 0)) return setError('Цената трябва да е положително число.')
+    if (seasonsOn && seasons.some((s) => validateSeason(s))) {
+      setShowSeasonErrors(true)
+      return setError('Поправете отбелязаните сезонни цени или ги премахнете.')
+    }
 
     setSaving(true)
     try {
@@ -53,6 +72,14 @@ export default function PropertyNew() {
       })
       if (values.base_price !== '') {
         await savePropertySettings(created.id, { base_price: Number(values.base_price) })
+      }
+      if (seasonsOn && seasons.length) {
+        try {
+          await insertSeasons(created.id, seasons)
+        } catch {
+          // Имотът вече е създаден — водим към него, където сезонните цени се добавят отново (не губим нищо друго).
+          return navigate(`/properties/${created.id}`)
+        }
       }
       navigate(`/properties/${created.id}/setup`)
     } catch (err) {
@@ -108,10 +135,19 @@ export default function PropertyNew() {
             <Field label="До колко гости" required>
               <Input type="number" inputMode="numeric" min={1} max={50} value={values.max_guests} onChange={set('max_guests')} />
             </Field>
-            <Field label="Цена от (€/нощ)">
+            <Field label={seasonsOn ? 'Основна цена (€/нощ)' : 'Цена от (€/нощ)'} hint={seasonsOn ? 'За дните извън сезоните' : undefined}>
               <Input type="number" inputMode="decimal" min={1} step="1" value={values.base_price} onChange={set('base_price')} placeholder="70" />
             </Field>
           </div>
+          {seasonsOn && (
+            <section className="border-t border-line pt-5" aria-labelledby="new-seasons-title">
+              <h2 id="new-seasons-title" className="text-sm font-semibold text-ink">
+                Сезонни цени <span className="font-normal text-ink-muted">(по избор)</span>
+              </h2>
+              <p className="mb-4 mt-1 text-xs text-ink-muted">Цената може да е различна през годината — например зима и лято. Задава се веднъж и важи всяка година.</p>
+              <SeasonEditor seasons={seasons} onChange={setSeasons} basePrice={values.base_price} showErrors={showSeasonErrors} disabled={saving} />
+            </section>
+          )}
           <Button type="submit" loading={saving} className="w-full">
             Напред — снимки
           </Button>

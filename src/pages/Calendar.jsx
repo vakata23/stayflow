@@ -12,6 +12,8 @@ import {
 } from '../lib/dates'
 import { SOURCE_STYLES, BOOKING_SOURCES } from '../lib/bookings'
 import { priceForDay } from '../lib/pricing'
+import { loadSeasonRows } from '../lib/seasons'
+import { seasonForDay } from '../lib/seasonLogic'
 import { PageHeader, Card, Select, Button, Alert, Spinner, EmptyState } from '../components/ui'
 import BookingFormModal from './bookings/BookingFormModal'
 
@@ -24,6 +26,7 @@ export default function Calendar() {
   const [properties, setProperties] = useState([])
   const [bookings, setBookings] = useState([])
   const [pricingRules, setPricingRules] = useState([])
+  const [seasons, setSeasons] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
@@ -70,8 +73,10 @@ export default function Calendar() {
         .lte('start_date', rangeEnd)
         .gte('end_date', rangeStart)
       setPricingRules(rules ?? [])
+      setSeasons(await loadSeasonRows([propertyId]))
     } else {
       setPricingRules([])
+      setSeasons([])
     }
 
     setLoading(false)
@@ -213,7 +218,8 @@ export default function Calendar() {
                   {days.map(({ iso, date, inMonth }) => {
                     const dayBookings = bookings.filter((b) => bookingCoversDay(b, iso))
                     const isToday = iso === today
-                    const rule = pricingRules.length ? priceForDay(pricingRules, iso) : null
+                    // правило за конкретни дати бие сезона (както при цената за госта)
+                    const rule = (pricingRules.length ? priceForDay(pricingRules, iso) : null) ?? (seasons.length ? seasonForDay(seasons, iso) : null)
 
                     return (
                       <div

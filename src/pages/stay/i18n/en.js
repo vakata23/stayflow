@@ -65,6 +65,11 @@ export default {
   'amenity.crib': 'Baby cot',
   'amenity.step_free': 'Step-free access',
 
+  seasonsTitle: 'Prices by season',
+  seasonOtherDates: 'Other dates',
+  seasonMinStay: 'min. {nights}',
+  seasonsNote: 'Rates per night. The exact total for your dates appears when you check the price.',
+
   availability: 'Availability',
   availabilityNote: 'Crossed-out days are already taken.',
 

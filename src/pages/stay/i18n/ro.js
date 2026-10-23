@@ -60,6 +60,11 @@ export default {
   'amenity.crib': 'Pătuț pentru copii',
   'amenity.step_free': 'Acces fără trepte',
 
+  seasonsTitle: 'Prețuri pe sezon',
+  seasonOtherDates: 'Restul datelor',
+  seasonMinStay: 'min. {nights}',
+  seasonsNote: 'Prețuri pe noapte. Totalul exact pentru datele dvs. apare când verificați prețul.',
+
   availability: 'Disponibilitate',
   availabilityNote: 'Zilele tăiate sunt deja ocupate.',
 

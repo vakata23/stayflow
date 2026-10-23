@@ -40,6 +40,7 @@ import { isValidPhone, isValidEmail } from '../../lib/bookingRequestServer'
 import { listedAmenities } from '../../lib/amenities'
 import { stayThemeVars } from '../../lib/accentColor'
 import { useStayLang, serverErrorKey } from './i18n'
+import { lowestPrice, uncoveredDays, seasonRangeLabel } from '../../lib/seasonLogic'
 import LangSwitch from './LangSwitch'
 import PhotoMosaic from './PhotoMosaic'
 import Lightbox from './Lightbox'
@@ -147,8 +148,8 @@ function ShareButton({ title }) {
  * проверка на цена и заявка — те минават само през публикуван slug.
  * Показва се само онова, което собственикът е попълнил: празна секция няма.
  */
-export default function ListingView({ property, reviews, slug, loadBusy, preview = false }) {
-  const { t, lang } = useStayLang()
+export default function ListingView({ property, reviews, seasons = [], slug, loadBusy, preview = false }) {
+  const { t, lang, locale } = useStayLang()
   const [descExpanded, setDescExpanded] = useState(false)
   const [amenitiesExpanded, setAmenitiesExpanded] = useState(false)
   const [lightbox, setLightbox] = useState(null)
@@ -283,6 +284,13 @@ export default function ListingView({ property, reviews, slug, loadBusy, preview
 
   const channels = Array.isArray(property.channels) ? property.channels : []
   const basePrice = Number(property.base_price) || 0
+  // Заглавната цена е най-ниската, която гостът може да види — основната или на някой сезон.
+  const fromPrice = lowestPrice(basePrice, seasons)
+  const sortedSeasons = useMemo(
+    () => [...seasons].sort((a, b) => a.start_month - b.start_month || a.start_day - b.start_day),
+    [seasons]
+  )
+  const otherDaysLeft = basePrice > 0 && uncoveredDays(seasons) > 0
   const showDescToggle = description.length > DESCRIPTION_PREVIEW_LEN
   const visibleDescription =
     !descExpanded && showDescToggle ? description.slice(0, DESCRIPTION_PREVIEW_LEN).trimEnd() + '…' : description
@@ -312,7 +320,7 @@ export default function ListingView({ property, reviews, slug, loadBusy, preview
   const avg = reviewCount ? reviews.reduce((s, r) => s + Number(r.rating || 0), 0) / reviewCount : null
 
   // Лентата се показва само когато е сигурно, че заглавието/снимките и картата за резервация са извън екрана.
-  const showBar = basePrice > 0 && headVisible === false && quoteVisible === false
+  const showBar = fromPrice > 0 && headVisible === false && quoteVisible === false
 
   return (
     <div className="stay" style={themeVars}>
@@ -438,6 +446,42 @@ export default function ListingView({ property, reviews, slug, loadBusy, preview
             <AvailabilityCalendar loadBusy={loadBusy} />
           </section>
 
+          {/* Цени по сезон — само ако собственикът е задал сезони */}
+          {sortedSeasons.length > 0 && (
+            <section className="stay-sec" style={{ order: 5 }}>
+              <h2 className="stay-h2">{t('seasonsTitle')}</h2>
+              <ul className="stay-seasons">
+                {sortedSeasons.map((s, i) => (
+                  <li key={`${s.start_month}-${s.start_day}-${i}`}>
+                    <div>
+                      <b>{s.name || seasonRangeLabel(s, locale)}</b>
+                      <span>
+                        {s.name ? seasonRangeLabel(s, locale) : null}
+                        {Number(s.min_nights) > 1 ? `${s.name ? ' · ' : ''}${t('seasonMinStay', { nights: t('nights', { n: s.min_nights }) })}` : null}
+                      </span>
+                    </div>
+                    <p>
+                      <b>{shortPrice(s.price_per_night)}</b> {t('perNight')}
+                    </p>
+                  </li>
+                ))}
+                {otherDaysLeft && (
+                  <li>
+                    <div>
+                      <b>{t('seasonOtherDates')}</b>
+                    </div>
+                    <p>
+                      <b>{shortPrice(basePrice)}</b> {t('perNight')}
+                    </p>
+                  </li>
+                )}
+              </ul>
+              <p className="stay-muted" style={{ margin: '12px 0 0', fontSize: 14 }}>
+                {t('seasonsNote')}
+              </p>
+            </section>
+          )}
+
           {/* Правила */}
           <section className="stay-sec" style={{ order: 7 }}>
             <h2 className="stay-h2">{t('rulesTitle')}</h2>
@@ -524,10 +568,10 @@ export default function ListingView({ property, reviews, slug, loadBusy, preview
             <>
               <div className="stay-card">
                 <p className="stay-price">
-                  {basePrice > 0 ? (
+                  {fromPrice > 0 ? (
                     <>
                       <small>{t('priceFrom')}</small>
-                      <b>{shortPrice(basePrice)}</b>
+                      <b>{shortPrice(fromPrice)}</b>
                       <span>{t('perNight')}</span>
                     </>
                   ) : (
@@ -685,10 +729,10 @@ export default function ListingView({ property, reviews, slug, loadBusy, preview
       <footer className="stay-foot">{t('footer')}</footer>
 
       {/* Залепена лента на телефона — показва се, когато заглавието и картата за резервация са извън екрана */}
-      {basePrice > 0 && (
+      {fromPrice > 0 && (
         <div className={`stay-bar ${showBar ? 'is-on' : ''}`} aria-hidden={!showBar}>
           <div>
-            <b>{shortPrice(basePrice)}</b>
+            <b>{shortPrice(fromPrice)}</b>
             <small>{t('barNight')}</small>
           </div>
           <button type="button" className="stay-btn" onClick={scrollToQuote} tabIndex={showBar ? 0 : -1}>
