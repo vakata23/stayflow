@@ -37,6 +37,7 @@ const sqlFiles = [
   join(projectDir, 'supabase/migrations/011_photo_rooms.sql'),
   join(projectDir, 'supabase/migrations/012_recurring_rules.sql'),
   join(projectDir, 'supabase/migrations/013_public_photo_thumbs.sql'),
+  join(projectDir, 'supabase/migrations/014_price_seasons.sql'),
 ];
 
 const db = new PGlite({ extensions: { btree_gist } });
@@ -815,6 +816,122 @@ ok('013: правата са върнати след DROP+CREATE — anon мож
 await db.exec(readFileSync(join(projectDir, 'supabase/migrations/013_public_photo_thumbs.sql'), 'utf8'));
 r = await as('anon', null, `select photo_thumbs from public_property('studio-1')`);
 ok('013: е идемпотентна (повторно пускане без грешка, функцията работи)', r.length === 1 && r[0].photo_thumbs.length >= 4);
+
+// ---------------------------------------------------------------- сезонни цени (014)
+const U3 = 'd3d3d3d3-0000-0000-0000-000000000000'; // имот със сезони (отделен, за да не променя по-старите тестове за цена)
+await db.exec(`
+  insert into properties (id, owner_id, name, max_guests, channels, slug, is_listed) values
+    ('${U3}', '${profA}', 'Къща със сезони', 4, '[]', 'sezoni', true);
+  insert into property_settings (property_id, ota_commission_pct, tourist_tax, cleaning_fee, deposit_pct, base_price) values
+    ('${U3}', 15.0, 0, 20, 30, 70);
+  insert into price_seasons (property_id, name, start_month, start_day, end_month, end_day, price_per_night, min_nights, created_at) values
+    ('${U3}', 'Зима',        11,  1,  3, 31,  60, 3, '2026-01-01'),
+    ('${U3}', 'Лято',         6,  1,  9, 30, 120, 4, '2026-01-02'),
+    ('${U3}', 'Август пик',   8, 10,  8, 20, 150, 2, '2026-01-03');
+  insert into pricing_rules (property_id, start_date, end_date, price_per_night, min_nights, created_at) values
+    ('${U3}', '2027-07-01', '2027-07-05', 100, 2, '2026-01-01');
+`);
+const quote = async (a, b) => (await as('anon', null, `select * from quote_stay('sezoni','${a}','${b}',2)`))[0];
+const Q = ['nights', 'accommodation_total', 'total', 'min_nights'];
+
+let q = await quote('2027-12-10', '2027-12-13');
+ok('сезон „Зима“: 3 нощувки × 60 = 180, мин. 3, общо 200 (с почистване 20)', same(q, { nights: 3, accommodation_total: 180, total: 200, min_nights: 3 }), show(q, Q));
+q = await quote('2027-03-30', '2027-04-02');
+ok('зимата минава през Нова година: 30.03 и 31.03 са зима (60+60), 01.04 е извън сезон (основна 70) = 190, мин. 3', same(q, { accommodation_total: 190, min_nights: 3 }), show(q, Q));
+q = await quote('2027-12-30', '2028-01-02');
+ok('през Нова година 30.12 → 02.01: 3 нощувки зима = 180', same(q, { nights: 3, accommodation_total: 180 }), show(q, Q));
+q = await quote('2027-10-30', '2027-11-02');
+ok('границата на сезона: 30.10 и 31.10 са основна (70+70), 01.11 е зима (60) = 200', same(q, { accommodation_total: 200 }), show(q, Q));
+q = await quote('2027-08-01', '2027-08-03');
+ok('сезон „Лято“: 2 нощувки × 120 = 240, мин. 4', same(q, { accommodation_total: 240, min_nights: 4 }), show(q, Q));
+q = await quote('2027-08-12', '2027-08-14');
+ok('сезоните се застъпват (Лято и Август пик): печели по-новият → 2 × 150 = 300, мин. 2', same(q, { accommodation_total: 300, min_nights: 2 }), show(q, Q));
+q = await quote('2027-07-03', '2027-07-07');
+ok('правилото за конкретни дати бие сезона: 3–5.07 по 100, 6.07 по сезона Лято 120 = 420, мин. 2 от правилото', same(q, { accommodation_total: 420, min_nights: 2 }), show(q, Q));
+q = await quote('2027-04-10', '2027-04-12');
+ok('извън правила и сезони важи основната цена: 2 × 70 = 140, мин. 1', same(q, { accommodation_total: 140, min_nights: 1 }), show(q, Q));
+q = await quote('2027-09-29', '2027-10-01');
+ok('последният ден на лятото: 29.09 и 30.09 са сезон (240), 01.10 не влиза в престоя', same(q, { nights: 2, accommodation_total: 240 }), show(q, Q));
+
+// помощната функция за дата
+r = (await db.query(`select
+  public.season_covers(11,1,3,31,'2027-03-31') a, public.season_covers(11,1,3,31,'2027-04-01') b,
+  public.season_covers(11,1,3,31,'2027-11-01') c, public.season_covers(11,1,3,31,'2027-10-31') d,
+  public.season_covers(1,1,12,31,'2027-02-28') e, public.season_covers(5,5,5,5,'2027-05-05') f,
+  public.season_covers(5,5,5,5,'2027-05-06') g, public.season_covers(2,28,3,1,'2028-02-29') h,
+  public.season_covers(12,20,1,10,'2027-12-31') i, public.season_covers(12,20,1,10,'2028-01-11') j`)).rows[0];
+ok('season_covers: край на сезона (31.03 да, 01.04 не), начало (01.11 да, 31.10 не)', r.a && !r.b && r.c && !r.d, JSON.stringify(r));
+ok('season_covers: цяла година, един ден, 29 февруари в 28.02–01.03, 20.12–10.01 през Нова година', r.e && r.f && !r.g && r.h && r.i && !r.j, JSON.stringify(r));
+
+// ограничения
+const ins = (cols, vals) => `insert into price_seasons (property_id, ${cols}) values ('${U3}', ${vals})`;
+await expectError('сезон с несъществуващ ден (30 февруари) се отхвърля', ins('start_month, start_day, end_month, end_day, price_per_night', '2, 30, 3, 1, 50'), /price_seasons_start_valid|check constraint/i);
+await expectError('сезон с несъществуващ ден (31 април) в края се отхвърля', ins('start_month, start_day, end_month, end_day, price_per_night', '4, 1, 4, 31, 50'), /price_seasons_end_valid|check constraint/i);
+await expectError('месец 13 се отхвърля', ins('start_month, start_day, end_month, end_day, price_per_night', '13, 1, 3, 1, 50'), /check constraint/i);
+await expectError('отрицателна цена се отхвърля', ins('start_month, start_day, end_month, end_day, price_per_night', '1, 1, 2, 1, -1'), /check constraint/i);
+await expectError('минимален престой 0 се отхвърля', ins('start_month, start_day, end_month, end_day, price_per_night, min_nights', '1, 1, 2, 1, 50, 0'), /check constraint/i);
+await expectError('име над 60 знака се отхвърля', ins('name, start_month, start_day, end_month, end_day, price_per_night', "'" + 'я'.repeat(61) + "', 1, 1, 2, 1, 50"), /check constraint/i);
+await db.exec(`insert into price_seasons (id, property_id, name, start_month, start_day, end_month, end_day, price_per_night) values ('f0000000-0000-0000-0000-000000000029', '${U3}', 'Високосен ден', 2, 29, 2, 29, 99)`);
+ok('29 февруари като начало и край е позволен', (await db.query(`select count(*)::int n from price_seasons where id = 'f0000000-0000-0000-0000-000000000029'`)).rows[0].n === 1);
+await db.exec(`delete from price_seasons where id = 'f0000000-0000-0000-0000-000000000029'`);
+
+// RLS: само собственикът
+r = await as('authenticated', A, `select name from price_seasons where property_id = '${U3}' order by start_month`);
+ok('собственик A вижда трите си сезона', r.length === 3, r.map((x) => x.name).join(', '));
+r = await as('authenticated', B, `select id from price_seasons where property_id = '${U3}'`);
+ok('друг собственик B не вижда сезоните на A (0 реда)', r.length === 0);
+r = await as('anon', null, 'select id from price_seasons');
+ok('анонимен не чете price_seasons директно (0 реда)', r.length === 0);
+await asErr('B не може да добави сезон към имот на A', 'authenticated', B, ins('start_month, start_day, end_month, end_day, price_per_night', '1, 1, 2, 1, 1'), /row-level security/);
+await asErr('анонимен не може да добави сезон', 'anon', null, ins('start_month, start_day, end_month, end_day, price_per_night', '1, 1, 2, 1, 1'), /row-level security/);
+r = await as('authenticated', B, `update price_seasons set price_per_night = 1 where property_id = '${U3}' returning id`);
+ok('B не може да смени цена на сезон на A (0 засегнати)', r.length === 0);
+r = await as('authenticated', B, `delete from price_seasons where property_id = '${U3}' returning id`);
+ok('B не може да изтрие сезон на A (0 засегнати)', r.length === 0);
+r = await as('authenticated', A, `insert into price_seasons (property_id, name, start_month, start_day, end_month, end_day, price_per_night, min_nights) values ('${U3}', 'Пролет', 4, 1, 5, 31, 80, 2) returning id`);
+ok('собственик A добавя сезон', r.length === 1);
+const springId = r[0].id;
+r = await as('authenticated', A, `update price_seasons set price_per_night = 85 where id = '${springId}' returning price_per_night`);
+ok('собственик A сменя цената на сезон', r.length === 1 && Number(r[0].price_per_night) === 85);
+q = await quote('2027-04-10', '2027-04-12');
+ok('новият сезон „Пролет“ веднага влиза в цената: 2 × 85 = 170, мин. 2', same(q, { accommodation_total: 170, min_nights: 2 }), show(q, Q));
+r = await as('authenticated', A, `delete from price_seasons where id = '${springId}' returning id`);
+ok('собственик A изтрива сезон', r.length === 1);
+q = await quote('2027-04-10', '2027-04-12');
+ok('след изтриването пак важи основната цена (140)', same(q, { accommodation_total: 140, min_nights: 1 }), show(q, Q));
+
+// public_seasons
+r = await as('anon', null, "select * from public_seasons('sezoni')");
+ok('public_seasons: анонимен вижда трите сезона по ред на месеца (Лято, Август пик, Зима)', r.map((x) => x.name).join('|') === 'Лято|Август пик|Зима', r.map((x) => x.name).join('|'));
+ok('public_seasons: само периоди и цени (без id и собственик)', Object.keys(r[0]).sort().join(',') === 'end_day,end_month,min_nights,name,price_per_night,start_day,start_month', Object.keys(r[0]).join(','));
+ok('public_seasons: стойностите са правилни (Зима 1.11–31.03 по 60, мин. 3)', (() => { const z = r.find((x) => x.name === 'Зима'); return z.start_month === 11 && z.start_day === 1 && z.end_month === 3 && z.end_day === 31 && Number(z.price_per_night) === 60 && z.min_nights === 3; })());
+r = await as('anon', null, "select * from public_seasons('няма-такъв')");
+ok('public_seasons: непознат slug → 0 реда', r.length === 0);
+await db.exec(`insert into price_seasons (property_id, name, start_month, start_day, end_month, end_day, price_per_night) values ('${U2}', 'Скрит', 1, 1, 12, 31, 5)`);
+r = await as('anon', null, "select * from public_seasons('apartment-2')");
+ok('public_seasons: непубликуван имот (is_listed=false) → 0 реда, сезоните му не изтичат', r.length === 0);
+r = await as('anon', null, "select * from quote_stay('apartment-2','2027-07-03','2027-07-05',1)");
+ok('quote_stay: непубликуван имот със сезон пак → 0 реда', r.length === 0);
+await db.exec(`delete from price_seasons where property_id = '${U2}'`);
+r = await as('anon', null, `select has_function_privilege('anon','public.public_seasons(text)','execute') as a,
+  has_function_privilege('public','public.public_seasons(text)','execute') as p,
+  has_function_privilege('anon','public.quote_stay(text,date,date,int)','execute') as q,
+  has_function_privilege('public','public.quote_stay(text,date,date,int)','execute') as qp`);
+ok('014: правата — anon може public_seasons и quote_stay, „public“ не може нито едно', r[0].a === true && r[0].p === false && r[0].q === true && r[0].qp === false, JSON.stringify(r[0]));
+
+// изтриване на имот маха сезоните му; повторно пускане на миграцията
+await db.exec(`
+  insert into properties (id, owner_id, name, max_guests, channels, slug, is_listed) values ('c9c9c9c9-0000-0000-0000-000000000000', '${profA}', 'Временен', 2, '[]', null, false);
+  insert into price_seasons (property_id, start_month, start_day, end_month, end_day, price_per_night) values ('c9c9c9c9-0000-0000-0000-000000000000', 1, 1, 12, 31, 5);
+  delete from properties where id = 'c9c9c9c9-0000-0000-0000-000000000000';`);
+ok('014: изтриването на имот каскадно маха и сезоните му', (await db.query("select count(*)::int n from price_seasons where property_id = 'c9c9c9c9-0000-0000-0000-000000000000'")).rows[0].n === 0);
+await db.exec(readFileSync(join(projectDir, 'supabase/migrations/014_price_seasons.sql'), 'utf8'));
+q = await quote('2027-12-10', '2027-12-13');
+ok('014: е идемпотентна — повторно пускане без грешка, цената е същата (180)', same(q, { accommodation_total: 180, min_nights: 3 }), show(q, Q));
+ok('014: след повторното пускане политиките не са задвоени (по една на действие)', (await db.query("select count(*)::int n from pg_policies where tablename = 'price_seasons'")).rows[0].n === 4);
+// старата цена за Студио 1 (без сезони) остава непроменена от новата quote_stay
+r = await as('anon', null, "select * from quote_stay('studio-1','2027-07-03','2027-07-07',2)");
+ok('014: имот без сезони се цени както преди (Студио 1: 370 за 3.07–7.07)', same(r[0], { accommodation_total: 370, min_nights: 2 }), show(r[0], Q));
 
 console.log(`\n${pass} успешни, ${fail} провалени\n`);
 process.exit(fail ? 1 : 0);

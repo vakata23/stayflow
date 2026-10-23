@@ -67,7 +67,7 @@ export default function Pricing() {
       <PageHeader
         icon={BadgePercent}
         title="Ценови планове"
-        description="Цени на нощувка по периоди и минимален престой."
+        description="Цени на нощувка за конкретни дати (празници, събития) и минимален престой. Цените по сезони, които се повтарят всяка година, са в управлението на имота."
         action={
           <Button onClick={openNew} disabled={properties.length === 0}>
             <Plus className="h-4 w-4" />

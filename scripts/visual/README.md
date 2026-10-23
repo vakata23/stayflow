@@ -28,6 +28,7 @@ node scripts/visual/server.mjs /tmp/stayflow-dist 4174
 | Достъпност (axe-core, WCAG 2.x A/AA) | `node scripts/visual/axe.mjs http://localhost:4174 after /login,/,/calendar,/design` |
 | Поведение на компонентите (прозорец, фокус, Esc, размери, намалено движение) | `node scripts/visual/ui-behavior.mjs http://localhost:4174` |
 | Публична страница /stay/<slug>: мозайка, залепена карта, лента на телефон, лайтбокс, цена и заявка, празни секции, axe | `node scripts/visual/stay.mjs http://localhost:4174` (тестови имоти: `tihi-bryag`, `bez-snimki`) |
+| Сезонни цени: редактор в имота и при „Нов имот“ (добавяне, грешки, какво се записва — POST/PATCH/DELETE), календар, „Цени по сезон“ и „от X €“ за гостите на няколко езика, без таблицата (014 непусната) нищо не се показва | `node scripts/visual/seasons.mjs http://localhost:4174` |
 | Езици на /stay (български, English, македонски, српски/srpski, ελληνικά, română): избор и запомняне, всеки език на 375 и 1440 (текстове, дати, удобства), без български остатъци, цена и заявка с превод на съобщенията от сървъра, axe | `node scripts/visual/stay-lang.mjs http://localhost:4174` |
 | Видове паркинг в редакторите (карта на имота и помощник за обявата): групата, отмятане, какво се записва, препълване, axe | `node scripts/visual/parking.mjs http://localhost:4174` |
 | Движение: броене, каскада, график, лист „Още“, хапче в лентата, намалено движение (+ кадри в `out/motion/`) | `node scripts/visual/motion.mjs http://localhost:4174 --frames` |
@@ -36,4 +37,4 @@ node scripts/visual/server.mjs /tmp/stayflow-dist 4174
 Резултатите (снимки, JSON) са в `scripts/visual/out/` (в `.gitignore`). На Windows с Git Bash добавете
 `MSYS_NO_PATHCONV=1` пред командата, ако подавате пътища като `/design`.
 
-Токените и контрастът се проверяват отделно, без браузър: `node scripts/test-design.mjs`; логиката на удобствата (видове паркинг, описание от шаблон): `node scripts/test-amenities.mjs`; речниците на езиците на /stay (еднакви ключове, множествено число, сръбска латиница, избор на език, съобщения от сървъра): `node scripts/test-stay-i18n.mjs`.
+Токените и контрастът се проверяват отделно, без браузър: `node scripts/test-design.mjs`; логиката на удобствата (видове паркинг, описание от шаблон): `node scripts/test-amenities.mjs`; речниците на езиците на /stay (еднакви ключове, множествено число, сръбска латиница, избор на език, съобщения от сървъра): `node scripts/test-stay-i18n.mjs`; логиката на сезонните цени (покриване на дати през Нова година, застъпване, проверка на формата): `node scripts/test-seasons.mjs`.

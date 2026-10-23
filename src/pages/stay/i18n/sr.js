@@ -63,6 +63,11 @@ export default {
   'amenity.crib': 'Бебећи креветац',
   'amenity.step_free': 'Приступ без степеница',
 
+  seasonsTitle: 'Цене по сезонама',
+  seasonOtherDates: 'Остали датуми',
+  seasonMinStay: 'мин. {nights}',
+  seasonsNote: 'Цене по ноћи. Тачан износ за ваше датуме видећете када проверите цену.',
+
   availability: 'Доступност',
   availabilityNote: 'Прецртани дани су већ заузети.',
 

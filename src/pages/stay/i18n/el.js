@@ -60,6 +60,11 @@ export default {
   'amenity.crib': 'Παιδικό κρεβατάκι',
   'amenity.step_free': 'Πρόσβαση χωρίς σκαλιά',
 
+  seasonsTitle: 'Τιμές ανά περίοδο',
+  seasonOtherDates: 'Υπόλοιπες ημερομηνίες',
+  seasonMinStay: 'ελάχ. {nights}',
+  seasonsNote: 'Τιμές ανά διανυκτέρευση. Το ακριβές σύνολο για τις ημερομηνίες σας εμφανίζεται όταν ελέγξετε την τιμή.',
+
   availability: 'Διαθεσιμότητα',
   availabilityNote: 'Οι διαγραμμένες ημέρες είναι ήδη κατειλημμένες.',
 
