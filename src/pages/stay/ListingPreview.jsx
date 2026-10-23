@@ -4,6 +4,7 @@ import { Loader2, ArrowLeft } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { Alert } from '../../components/ui'
 import ListingView from './ListingView'
+import { useDocumentLang } from './i18n'
 
 /**
  * „Преглед като гост“ за собственика: същият изглед като /stay/:slug, но от
@@ -11,6 +12,7 @@ import ListingView from './ListingView'
  * Точната точка на картата е видима само тук; гостите виждат размазаната.
  */
 export default function ListingPreview() {
+  useDocumentLang()
   const { id } = useParams()
   const [property, setProperty] = useState(null)
   const [reviews, setReviews] = useState([])

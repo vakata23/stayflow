@@ -4,7 +4,7 @@
  * избраната точка). showCircle=true рисува полупрозрачен кръг върху картата
  * вместо пин — за госта, за да е ясно, че зоната е ПРИБЛИЗИТЕЛНА, не адрес.
  */
-export default function LocationMap({ lat, lng, showMarker = false, showCircle = false, height = 220 }) {
+export default function LocationMap({ lat, lng, showMarker = false, showCircle = false, height = 220, title = 'Местоположение' }) {
   if (lat == null || lng == null) return null
 
   const d = 0.006 // ≈ 650м кутия около точката — достатъчен контекст
@@ -14,7 +14,7 @@ export default function LocationMap({ lat, lng, showMarker = false, showCircle =
 
   return (
     <div className="relative overflow-hidden rounded-xl border border-line bg-sunken" style={{ height }}>
-      <iframe title="Местоположение" src={src} className="h-full w-full" loading="lazy" style={{ border: 0 }} />
+      <iframe title={title} src={src} className="h-full w-full" loading="lazy" style={{ border: 0 }} />
       {showCircle && (
         <div
           className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-accent bg-accent/20"

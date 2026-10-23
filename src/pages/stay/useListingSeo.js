@@ -7,7 +7,7 @@ import { useEffect } from 'react'
  * бъг тук. При размонтиране връща заглавието/описанието, добавените
  * тагове се трият изцяло (не замърсяват следващата страница в SPA-то).
  */
-export default function useListingSeo(property) {
+export default function useListingSeo(property, lang = 'bg') {
   useEffect(() => {
     if (!property) return
 
@@ -16,7 +16,9 @@ export default function useListingSeo(property) {
 
     const descriptionEl = document.querySelector('meta[name="description"]')
     const prevDescription = descriptionEl?.getAttribute('content') ?? null
-    const description = (property.public_description || property.public_description_en || '').slice(0, 160)
+    // Описанието е на български или английски; за гост на друг език — английското, ако има.
+    const pair = lang === 'bg' ? [property.public_description, property.public_description_en] : [property.public_description_en, property.public_description]
+    const description = (pair[0] || pair[1] || '').slice(0, 160)
     if (descriptionEl && description) descriptionEl.setAttribute('content', description)
 
     // Edge функцията (netlify/edge-functions/stay-og.js) може вече да е сложила
@@ -69,5 +71,5 @@ export default function useListingSeo(property) {
       created.forEach((el) => el.remove())
       restored.forEach(([el, content]) => el.setAttribute('content', content))
     }
-  }, [property])
+  }, [property, lang])
 }

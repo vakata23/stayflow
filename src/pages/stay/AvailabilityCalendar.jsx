@@ -1,16 +1,17 @@
 import { useEffect, useState } from 'react'
-import { MONTHS_BG, WEEKDAYS_BG, monthGrid, toISODate, todayISO } from '../../lib/dates'
+import { monthGrid, toISODate, todayISO } from '../../lib/dates'
 import { addMonths, startOfMonth, endOfMonth } from '../../lib/earnings'
+import { useStayLang, weekdayLabels, monthTitle } from './i18n'
 
-function MonthCard({ year, month, busySet, today }) {
+function MonthCard({ year, month, busySet, today, locale }) {
   const days = monthGrid(year, month)
   return (
     <div className="stay-month">
       <h3>
-        {MONTHS_BG[month]} {year}
+        {monthTitle(locale, year, month)}
       </h3>
       <div className="stay-week" aria-hidden="true">
-        {WEEKDAYS_BG.map((w) => (
+        {weekdayLabels(locale).map((w) => (
           <span key={w}>{w}</span>
         ))}
       </div>
@@ -42,6 +43,7 @@ function MonthCard({ year, month, busySet, today }) {
  * Докато се зареди, държи мястото си със скелет — така страницата не „скача“.
  */
 export default function AvailabilityCalendar({ loadBusy }) {
+  const { t, locale } = useStayLang()
   const [busySet, setBusySet] = useState(new Set())
   const [loading, setLoading] = useState(true)
   const today = new Date()
@@ -68,15 +70,16 @@ export default function AvailabilityCalendar({ loadBusy }) {
   return (
     <div>
       <div className="stay-months">
-        <MonthCard year={today.getFullYear()} month={today.getMonth()} busySet={busySet} today={todayISO()} />
+        <MonthCard year={today.getFullYear()} month={today.getMonth()} busySet={busySet} today={todayISO()} locale={locale} />
         <MonthCard
           year={addMonths(today, 1).getFullYear()}
           month={addMonths(today, 1).getMonth()}
           busySet={busySet}
           today={todayISO()}
+          locale={locale}
         />
       </div>
-      <p className="stay-cal-note">Зачертаните дни вече са заети.</p>
+      <p className="stay-cal-note">{t('availabilityNote')}</p>
     </div>
   )
 }
