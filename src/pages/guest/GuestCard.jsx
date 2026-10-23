@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import {
-  Waves,
   Wifi,
   KeyRound,
   MapPin,
@@ -216,7 +215,7 @@ export default function GuestCard() {
         )}
 
         <div className="flex items-center justify-center gap-1.5 pt-2 text-xs text-ink-muted">
-          <Waves className="h-3.5 w-3.5" />
+          <img src="/brand/logo-mark.png" alt="" width="440" height="242" className="h-4 w-auto" />
           Изготвено със StayFlow
         </div>
       </div>
