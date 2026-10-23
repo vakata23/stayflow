@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { LayoutGrid } from 'lucide-react'
+import { useStayLang } from './i18n'
 
 /**
  * Снимките на имота. Голям екран: мозайка — една голяма и до четири малки (оформлението зависи от броя
@@ -9,6 +10,7 @@ import { LayoutGrid } from 'lucide-react'
  * Без снимки — спокоен градиент от акцентния цвят, не празен блок. items = [{ url, thumb }].
  */
 export default function PhotoMosaic({ items, alt, onOpen }) {
+  const { t } = useStayLang()
   const scroller = useRef(null)
   const [active, setActive] = useState(0)
   const count = items.length
@@ -40,7 +42,7 @@ export default function PhotoMosaic({ items, alt, onOpen }) {
           const small = p.thumb && p.thumb !== p.url
           return (
             <li key={p.url} className="stay-photo">
-              <button type="button" onClick={() => onOpen(i)} aria-label={`Отвори снимка ${i + 1} от ${count}`}>
+              <button type="button" onClick={() => onOpen(i)} aria-label={t('photoOpen', { i: i + 1, n: count })}>
                 <img
                   src={small ? p.thumb : p.url}
                   srcSet={small ? `${p.thumb} 768w, ${p.url} 1600w` : undefined}
@@ -50,7 +52,7 @@ export default function PhotoMosaic({ items, alt, onOpen }) {
                   loading={i === 0 ? 'eager' : 'lazy'}
                   fetchpriority={i === 0 ? 'high' : undefined}
                   decoding="async"
-                  alt={i === 0 ? alt : `${alt} — снимка ${i + 1}`}
+                  alt={i === 0 ? alt : t('photoAlt', { name: alt, i: i + 1 })}
                 />
               </button>
             </li>
@@ -64,7 +66,7 @@ export default function PhotoMosaic({ items, alt, onOpen }) {
           </p>
           <button type="button" className="stay-gallery__all" onClick={() => onOpen(0)}>
             <LayoutGrid className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
-            Всички снимки ({count})
+            {t('photosAll', { n: count })}
           </button>
         </>
       )}

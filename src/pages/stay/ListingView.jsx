@@ -37,8 +37,10 @@ import { todayISO } from '../../lib/dates'
 import { formatMoney } from '../../lib/money'
 import { channelLabel, channelHref } from '../../lib/propertySettings'
 import { isValidPhone, isValidEmail } from '../../lib/bookingRequestServer'
-import { listedAmenities, CANCELLATION_POLICIES, cancellationLabel } from '../../lib/amenities'
+import { listedAmenities } from '../../lib/amenities'
 import { stayThemeVars } from '../../lib/accentColor'
+import { useStayLang, serverErrorKey } from './i18n'
+import LangSwitch from './LangSwitch'
 import PhotoMosaic from './PhotoMosaic'
 import Lightbox from './Lightbox'
 import AvailabilityCalendar from './AvailabilityCalendar'
@@ -114,6 +116,7 @@ function LazyMap(props) {
 
 /** „Сподели“: системното меню за споделяне, а където го няма — копира връзката. */
 function ShareButton({ title }) {
+  const { t } = useStayLang()
   const [copied, setCopied] = useState(false)
   const share = async () => {
     const url = window.location.href
@@ -132,12 +135,10 @@ function ShareButton({ title }) {
   return (
     <button type="button" className="stay-chip" onClick={share}>
       <Share2 className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
-      <span aria-live="polite">{copied ? 'Връзката е копирана' : 'Сподели'}</span>
+      <span aria-live="polite">{copied ? t('shareCopied') : t('share')}</span>
     </button>
   )
 }
-
-const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`
 
 /**
  * Изгледът на обявата — общ за публичната страница (PublicStay, данни от
@@ -147,7 +148,7 @@ const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`
  * Показва се само онова, което собственикът е попълнил: празна секция няма.
  */
 export default function ListingView({ property, reviews, slug, loadBusy, preview = false }) {
-  const [lang, setLang] = useState('bg')
+  const { t, lang } = useStayLang()
   const [descExpanded, setDescExpanded] = useState(false)
   const [amenitiesExpanded, setAmenitiesExpanded] = useState(false)
   const [lightbox, setLightbox] = useState(null)
@@ -178,8 +179,8 @@ export default function ListingView({ property, reviews, slug, loadBusy, preview
     setQuote(null)
     setSent(false)
 
-    if (!checkIn || !checkOut) return setQuoteError('Изберете дата на настаняване и напускане.')
-    if (checkOut <= checkIn) return setQuoteError('Датата на напускане трябва да е след настаняването.')
+    if (!checkIn || !checkOut) return setQuoteError(t('errPickDates'))
+    if (checkOut <= checkIn) return setQuoteError(t('errDateOrder'))
 
     setQuoting(true)
     const { data, error } = await supabase.rpc('quote_stay', {
@@ -191,7 +192,7 @@ export default function ListingView({ property, reviews, slug, loadBusy, preview
     setQuoting(false)
 
     if (error || !data || data.length === 0) {
-      return setQuoteError('Не можахме да изчислим цена за тези дати. Опитайте с друг период.')
+      return setQuoteError(t('errQuote'))
     }
     setQuote(data[0])
   }
@@ -207,15 +208,15 @@ export default function ListingView({ property, reviews, slug, loadBusy, preview
     e.preventDefault()
     setSendError(null)
 
-    if (!guestName.trim()) return setSendError('Името е задължително.')
+    if (!guestName.trim()) return setSendError(t('errName'))
     if (!guestPhone.trim() && !guestEmail.trim()) {
-      return setSendError('Въведете телефон или имейл за връзка.')
+      return setSendError(t('errContact'))
     }
     if (guestPhone.trim() && !isValidPhone(guestPhone.trim())) {
-      return setSendError('Невалиден телефонен номер (само цифри, интервали и +, поне 8 цифри).')
+      return setSendError(t('errPhone'))
     }
     if (guestEmail.trim() && !isValidEmail(guestEmail.trim())) {
-      return setSendError('Невалиден имейл адрес (нужен е домейн, напр. .bg или .com).')
+      return setSendError(t('errEmail'))
     }
 
     setSending(true)
@@ -237,20 +238,26 @@ export default function ListingView({ property, reviews, slug, loadBusy, preview
       })
       const result = await res.json()
       if (!res.ok || !result.ok) {
-        throw new Error(result.error || 'Неуспешно изпращане. Опитайте отново.')
+        throw new Error(result.error || '')
       }
       setSent(true)
     } catch (err) {
-      setSendError(err.message)
+      // Сървърът отговаря на български — показваме превода на познатото съобщение, а не чуждия текст.
+      setSendError(t(serverErrorKey(err.message)))
     } finally {
       setSending(false)
     }
   }
 
-  const description = useMemo(() => {
-    if (!property) return ''
-    if (lang === 'en' && property.public_description_en) return property.public_description_en
-    return property.public_description || property.public_description_en || ''
+  // Собственикът пише описание на български и (по избор) на английски. Гост на друг език получава английското,
+  // а ако него го няма — българското; когато езикът на текста е различен от езика на страницата, го казваме.
+  const { description, descLang } = useMemo(() => {
+    if (!property) return { description: '', descLang: null }
+    const bgText = property.public_description || ''
+    const enText = property.public_description_en || ''
+    const order = lang === 'bg' ? [['bg', bgText], ['en', enText]] : [['en', enText], ['bg', bgText]]
+    const [code, text] = order.find(([, v]) => v) ?? [null, '']
+    return { description: text, descLang: text ? code : null }
   }, [property, lang])
 
   // Корицата (звездата в галерията на собственика) винаги е първа, после
@@ -283,18 +290,22 @@ export default function ListingView({ property, reviews, slug, loadBusy, preview
   const hasLocation = property.public_lat != null && property.public_lng != null
 
   const factsLine = [
-    `до ${property.max_guests} ${property.max_guests === 1 ? 'гост' : 'гости'}`,
-    property.bedrooms ? `${property.bedrooms} ${property.bedrooms === 1 ? 'спалня' : 'спални'}` : null,
-    property.beds ? `${property.beds} ${property.beds === 1 ? 'легло' : 'легла'}` : null,
-    property.bathrooms ? `${property.bathrooms} ${Number(property.bathrooms) === 1 ? 'баня' : 'бани'}` : null,
-    property.area_m2 ? `${property.area_m2} м²` : null,
+    t('guestsUpTo', { n: property.max_guests }),
+    property.bedrooms ? t('bedrooms', { n: property.bedrooms }) : null,
+    property.beds ? t('beds', { n: property.beds }) : null,
+    property.bathrooms ? t('bathrooms', { n: Number(property.bathrooms) }) : null,
+    property.area_m2 ? t('area', { n: property.area_m2 }) : null,
   ].filter(Boolean)
 
-  const policy = CANCELLATION_POLICIES.find((p) => p.value === property.cancellation_policy)
+  const policy = ['flexible', 'moderate', 'strict'].includes(property.cancellation_policy) ? property.cancellation_policy : null
   const highlights = [
-    property.checkin_time && { Icon: DoorOpen, title: `Настаняване след ${property.checkin_time}`, text: property.checkout_time ? `Напускане до ${property.checkout_time}` : null },
-    policy && { Icon: CalendarCheck, title: `${policy.label} анулация`, text: policy.hint },
-    property.city && { Icon: MapPin, title: property.city, text: 'Точният адрес получавате след потвърждение на резервацията.' },
+    property.checkin_time && {
+      Icon: DoorOpen,
+      title: t('checkInAfter', { time: property.checkin_time }),
+      text: property.checkout_time ? t('checkOutBy', { time: property.checkout_time }) : null,
+    },
+    policy && { Icon: CalendarCheck, title: t(`cancel.${policy}.badge`), text: t(`cancel.${policy}.hint`) },
+    property.city && { Icon: MapPin, title: property.city, text: t('exactAddress') },
   ].filter(Boolean)
 
   const reviewCount = reviews.length
@@ -306,7 +317,7 @@ export default function ListingView({ property, reviews, slug, loadBusy, preview
   return (
     <div className="stay" style={themeVars}>
       <a href="#stay-main" className="stay-skip">
-        Към съдържанието
+        {t('skip')}
       </a>
 
       {preview && (
@@ -324,18 +335,7 @@ export default function ListingView({ property, reviews, slug, loadBusy, preview
           </div>
           <div className="stay-actions">
             <ShareButton title={property.name} />
-            {Boolean(property.public_description_en && property.public_description) && (
-              <button
-                type="button"
-                className="stay-chip"
-                onClick={() => setLang((l) => (l === 'bg' ? 'en' : 'bg'))}
-                aria-label={lang === 'bg' ? 'Покажи описанието на английски' : 'Покажи описанието на български'}
-              >
-                <b className={lang === 'bg' ? '' : 'is-off'}>BG</b>
-                {' · '}
-                <b className={lang === 'en' ? '' : 'is-off'}>EN</b>
-              </button>
-            )}
+            <LangSwitch />
           </div>
         </div>
         <div className="stay-gallery-wrap">
@@ -347,7 +347,7 @@ export default function ListingView({ property, reviews, slug, loadBusy, preview
         <div className="stay-main">
           {/* Накратко за имота */}
           <section className="stay-sec" style={{ order: 1 }}>
-            <h2 className="stay-sub">{property.city ? `Цял имот в ${property.city}` : 'Цял имот'}</h2>
+            <h2 className="stay-sub">{property.city ? t('entire', { city: property.city }) : t('entireNoCity')}</h2>
             <p className="stay-facts">
               {factsLine.map((f) => (
                 <span key={f}>{f}</span>
@@ -355,26 +355,26 @@ export default function ListingView({ property, reviews, slug, loadBusy, preview
             </p>
             {policy && (
               <ul className="stay-badges">
-                <li className="stay-badge stay-badge--accent">{policy.label} анулация</li>
+                <li className="stay-badge stay-badge--accent">{t(`cancel.${policy}.badge`)}</li>
               </ul>
             )}
             {avg != null && (
               <div className="stay-rating">
                 <span className="stay-rating__num">{avg.toFixed(1)}</span>
                 <span className="stay-rating__meta">
-                  <span className="stay-stars" role="img" aria-label={`Средна оценка ${avg.toFixed(1)} от 5`}>
+                  <span className="stay-stars" role="img" aria-label={t('ratingAria', { avg: avg.toFixed(1) })}>
                     {Array.from({ length: 5 }).map((_, i) => (
                       <Star key={i} className="h-4 w-4" strokeWidth={1.6} fill={i < Math.round(avg) ? 'currentColor' : 'none'} />
                     ))}
                   </span>
-                  <a href="#reviews">{plural(reviewCount, 'отзив', 'отзива')}</a>
+                  <a href="#reviews">{t('reviewsCount', { n: reviewCount })}</a>
                 </span>
               </div>
             )}
           </section>
 
           {highlights.length > 0 && (
-            <section className="stay-sec" style={{ order: 2 }} aria-label="Накратко">
+            <section className="stay-sec" style={{ order: 2 }} aria-label={t('highlightsLabel')}>
               <ul className="stay-hl">
                 {highlights.map(({ Icon, title, text }) => (
                   <li key={title}>
@@ -392,13 +392,18 @@ export default function ListingView({ property, reviews, slug, loadBusy, preview
           {/* Описание */}
           {description && (
             <section className="stay-sec" style={{ order: 3 }}>
-              <h2 className="stay-h2">За това място</h2>
+              <h2 className="stay-h2">{t('about')}</h2>
               <p className="stay-prose">{visibleDescription}</p>
               {showDescToggle && (
                 <p style={{ margin: '14px 0 0' }}>
                   <button type="button" onClick={() => setDescExpanded((v) => !v)} className="stay-link">
-                    {descExpanded ? 'Покажи по-малко' : 'Прочети повече'}
+                    {descExpanded ? t('showLess') : t('readMore')}
                   </button>
+                </p>
+              )}
+              {descLang !== lang && (
+                <p className="stay-muted" style={{ margin: '14px 0 0', fontSize: 14 }}>
+                  {t(descLang === 'bg' ? 'descNoteBg' : 'descNoteEn')}
                 </p>
               )}
             </section>
@@ -407,21 +412,21 @@ export default function ListingView({ property, reviews, slug, loadBusy, preview
           {/* Удобства */}
           {selectedAmenities.length > 0 && (
             <section className="stay-sec" style={{ order: 4 }}>
-              <h2 className="stay-h2">Какво предлага имотът</h2>
+              <h2 className="stay-h2">{t('amenitiesTitle')}</h2>
               <ul className="stay-amenities">
                 {visibleAmenities.map((a) => {
                   const Icon = AMENITY_ICONS[a.key] ?? CheckCircle2
                   return (
                     <li key={a.key}>
                       <Icon className="h-6 w-6" strokeWidth={1.5} aria-hidden="true" />
-                      {a.label}
+                      {t(`amenity.${a.key}`)}
                     </li>
                   )
                 })}
               </ul>
               {selectedAmenities.length > 8 && (
                 <button type="button" onClick={() => setAmenitiesExpanded((v) => !v)} className="stay-btn-outline" aria-expanded={amenitiesExpanded}>
-                  {amenitiesExpanded ? 'Покажи по-малко' : `Покажи всички ${selectedAmenities.length} удобства`}
+                  {amenitiesExpanded ? t('showLess') : t('showAllAmenities', { n: selectedAmenities.length })}
                 </button>
               )}
             </section>
@@ -429,37 +434,39 @@ export default function ListingView({ property, reviews, slug, loadBusy, preview
 
           {/* Наличност */}
           <section className="stay-sec" style={{ order: 5 }}>
-            <h2 className="stay-h2">Наличност</h2>
+            <h2 className="stay-h2">{t('availability')}</h2>
             <AvailabilityCalendar loadBusy={loadBusy} />
           </section>
 
           {/* Правила */}
           <section className="stay-sec" style={{ order: 7 }}>
-            <h2 className="stay-h2">Правила на имота</h2>
+            <h2 className="stay-h2">{t('rulesTitle')}</h2>
             <dl className="stay-rules">
               <div>
-                <dt>Настаняване</dt>
-                <dd>след {property.checkin_time}</dd>
+                <dt>{t('ruleCheckIn')}</dt>
+                <dd>{t('ruleCheckInValue', { time: property.checkin_time })}</dd>
               </div>
               <div>
-                <dt>Напускане</dt>
-                <dd>до {property.checkout_time}</dd>
+                <dt>{t('ruleCheckOut')}</dt>
+                <dd>{t('ruleCheckOutValue', { time: property.checkout_time })}</dd>
               </div>
               <div>
-                <dt>Пушене</dt>
-                <dd>{property.smoking_allowed ? 'Разрешено' : 'Не се пуши'}</dd>
+                <dt>{t('ruleSmoking')}</dt>
+                <dd>{property.smoking_allowed ? t('smokingYes') : t('smokingNo')}</dd>
               </div>
               <div>
-                <dt>Партита</dt>
-                <dd>{property.parties_allowed ? 'Разрешени' : 'Без партита'}</dd>
+                <dt>{t('ruleParties')}</dt>
+                <dd>{property.parties_allowed ? t('partiesYes') : t('partiesNo')}</dd>
               </div>
-              <div className="wide">
-                <dt>Анулиране</dt>
-                <dd>{cancellationLabel(property.cancellation_policy)} политика</dd>
-              </div>
+              {policy && (
+                <div className="wide">
+                  <dt>{t('ruleCancellation')}</dt>
+                  <dd>{t(`cancel.${policy}.rule`)}</dd>
+                </div>
+              )}
               {property.house_rules && (
                 <div className="wide">
-                  <dt>Домашни правила</dt>
+                  <dt>{t('ruleHouse')}</dt>
                   <dd className="plain">{property.house_rules}</dd>
                 </div>
               )}
@@ -469,10 +476,10 @@ export default function ListingView({ property, reviews, slug, loadBusy, preview
           {/* Местоположение */}
           {hasLocation && (
             <section className="stay-sec" style={{ order: 8 }}>
-              <h2 className="stay-h2">Къде ще бъдете</h2>
-              <LazyMap lat={property.public_lat} lng={property.public_lng} showCircle height={320} />
+              <h2 className="stay-h2">{t('whereTitle')}</h2>
+              <LazyMap lat={property.public_lat} lng={property.public_lng} showCircle height={320} title={t('mapTitle')} />
               <p className="stay-muted" style={{ margin: '12px 0 0', fontSize: 14 }}>
-                Показаната зона е приблизителна. Точният адрес се предоставя след потвърждение на резервацията.
+                {t('mapNote')}
               </p>
             </section>
           )}
@@ -482,14 +489,14 @@ export default function ListingView({ property, reviews, slug, loadBusy, preview
             <section id="reviews" className="stay-sec" style={{ order: 9 }}>
               <h2 className="stay-h2" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Star className="h-5 w-5" fill="currentColor" strokeWidth={1.5} aria-hidden="true" />
-                {avg.toFixed(1)} · {plural(reviewCount, 'отзив', 'отзива')}
+                {avg.toFixed(1)} · {t('reviewsCount', { n: reviewCount })}
               </h2>
               <div className="stay-reviews">
                 {reviews.map((r) => (
                   <figure key={r.id} className="stay-review">
                     <figcaption>
                       {r.guest_name}
-                      <span className="stay-stars" role="img" aria-label={`${r.rating} от 5 звезди`}>
+                      <span className="stay-stars" role="img" aria-label={t('starsAria', { n: r.rating })}>
                         {Array.from({ length: r.rating }).map((_, i) => (
                           <Star key={i} className="h-3.5 w-3.5" fill="currentColor" strokeWidth={1.5} />
                         ))}
@@ -519,71 +526,69 @@ export default function ListingView({ property, reviews, slug, loadBusy, preview
                 <p className="stay-price">
                   {basePrice > 0 ? (
                     <>
-                      <small>от</small>
+                      <small>{t('priceFrom')}</small>
                       <b>{shortPrice(basePrice)}</b>
-                      <span>/ нощувка</span>
+                      <span>{t('perNight')}</span>
                     </>
                   ) : (
-                    <b>Проверете цена</b>
+                    <b>{t('checkPrice')}</b>
                   )}
                 </p>
                 <form onSubmit={handleQuote} className="stay-stack" noValidate>
                   <div className="stay-dates">
-                    <Field label="Настаняване">
+                    <Field label={t('dateCheckIn')}>
                       <input className="stay-input" type="date" min={todayISO()} value={checkIn} onChange={(e) => setCheckIn(e.target.value)} />
                     </Field>
-                    <Field label="Напускане">
+                    <Field label={t('dateCheckOut')}>
                       <input className="stay-input" type="date" min={checkIn || todayISO()} value={checkOut} onChange={(e) => setCheckOut(e.target.value)} />
                     </Field>
-                    <Field label="Брой гости">
+                    <Field label={t('guestsLabel')}>
                       <input className="stay-input" type="number" min={1} max={property.max_guests} value={guests} onChange={(e) => setGuests(e.target.value)} />
                     </Field>
                   </div>
                   {quoteError && <Note kind="error">{quoteError}</Note>}
                   <button type="submit" disabled={quoting} className="stay-btn stay-btn--block">
                     {quoting && <Loader2 className="h-4 w-4 animate-spin" />}
-                    Провери цена
+                    {t('checkPriceBtn')}
                   </button>
-                  <p className="stay-fine">Няма да бъдете таксувани сега.</p>
+                  <p className="stay-fine">{t('noCharge')}</p>
                 </form>
 
                 {quote && (
                   <div className="stay-quote">
                     {!quote.is_available ? (
-                      <Note kind="error">Тези дати вече са заети. Опитайте с друг период.</Note>
+                      <Note kind="error">{t('quoteTaken')}</Note>
                     ) : !quote.fits_guests ? (
-                      <Note kind="error">Имотът побира максимум {property.max_guests} гости.</Note>
+                      <Note kind="error">{t('quoteMaxGuests', { n: property.max_guests })}</Note>
                     ) : quote.nights < quote.min_nights ? (
-                      <Note kind="error">Минималният престой за тези дати е {quote.min_nights} нощувки.</Note>
+                      <Note kind="error">{t('quoteMinStay', { nights: t('nights', { n: quote.min_nights }) })}</Note>
                     ) : Number(quote.total) <= 0 ? (
-                      <Note kind="error">Цената за тези дати не е зададена — свържете се със собственика.</Note>
+                      <Note kind="error">{t('quoteNoPrice')}</Note>
                     ) : (
-                      <Note kind="success">Свободно е за избрания период.</Note>
+                      <Note kind="success">{t('quoteOk')}</Note>
                     )}
 
                     <div className="stay-line">
-                      <span>
-                        Настаняване ({quote.nights} {quote.nights === 1 ? 'нощувка' : 'нощувки'})
-                      </span>
+                      <span>{t('stayLine', { nights: t('nights', { n: quote.nights }) })}</span>
                       <span>{formatMoney(quote.accommodation_total)}</span>
                     </div>
                     {Number(quote.cleaning_fee) > 0 && (
                       <div className="stay-line">
-                        <span>Такса почистване</span>
+                        <span>{t('cleaningFee')}</span>
                         <span>{formatMoney(quote.cleaning_fee)}</span>
                       </div>
                     )}
                     <div className="stay-total">
-                      <span>Общо</span>
+                      <span>{t('total')}</span>
                       <span>{formatMoney(quote.total)}</span>
                     </div>
                     {Number(quote.tourist_tax) > 0 && (
                       <p className="stay-muted" style={{ margin: 0, fontSize: 13 }}>
-                        + туристически данък {formatMoney(quote.tourist_tax)} (плаща се на място)
+                        {t('touristTax', { amount: formatMoney(quote.tourist_tax) })}
                       </p>
                     )}
                     <p className="stay-muted" style={{ margin: 0, fontSize: 13 }}>
-                      Капаро при потвърждение: {formatMoney(quote.deposit)}
+                      {t('deposit', { amount: formatMoney(quote.deposit) })}
                     </p>
                   </div>
                 )}
@@ -592,39 +597,39 @@ export default function ListingView({ property, reviews, slug, loadBusy, preview
               {/* Заявка за резервация */}
               {canRequest && !sent && (
                 <div className="stay-card">
-                  <h2>Изпрати заявка</h2>
+                  <h2>{t('requestTitle')}</h2>
                   <p className="stay-muted" style={{ margin: '-4px 0 16px', fontSize: 14 }}>
-                    Това е заявка, не плащане. Собственикът ще се свърже с вас за потвърждение.
+                    {t('requestNote')}
                   </p>
                   <form onSubmit={handleSubmitRequest} className="stay-stack" noValidate>
                     {sendError && <Note kind="error">{sendError}</Note>}
-                    <Field label="Име" required>
-                      <input className="stay-input" value={guestName} onChange={(e) => setGuestName(e.target.value)} placeholder="Иван Иванов" autoComplete="name" />
+                    <Field label={t('fieldName')} required>
+                      <input className="stay-input" value={guestName} onChange={(e) => setGuestName(e.target.value)} placeholder={t('placeholderName')} autoComplete="name" />
                     </Field>
                     <div className="stay-grid2">
-                      <Field label="Телефон">
+                      <Field label={t('fieldPhone')}>
                         <input
                           className="stay-input"
                           type="tel"
                           inputMode="tel"
                           value={guestPhone}
                           onChange={(e) => setGuestPhone(e.target.value)}
-                          placeholder="+359 88…"
+                          placeholder={t('placeholderPhone')}
                           autoComplete="tel"
                         />
                       </Field>
-                      <Field label="Имейл">
+                      <Field label={t('fieldEmail')}>
                         <input
                           className="stay-input"
                           type="email"
                           value={guestEmail}
                           onChange={(e) => setGuestEmail(e.target.value)}
-                          placeholder="вие@примерен.бг"
+                          placeholder={t('placeholderEmail')}
                           autoComplete="email"
                         />
                       </Field>
                     </div>
-                    <Field label="Съобщение (по избор)">
+                    <Field label={t('fieldMessage')}>
                       <textarea className="stay-input" rows={3} value={message} onChange={(e) => setMessage(e.target.value)} style={{ resize: 'vertical' }} />
                     </Field>
                     {/* Honeypot — скрито поле, невидимо за хора, но ботовете го попълват. */}
@@ -639,7 +644,7 @@ export default function ListingView({ property, reviews, slug, loadBusy, preview
                     />
                     <button type="submit" disabled={sending} className="stay-btn stay-btn--block">
                       {sending && <Loader2 className="h-4 w-4 animate-spin" />}
-                      Изпрати заявка
+                      {t('requestBtn')}
                     </button>
                   </form>
                 </div>
@@ -648,9 +653,9 @@ export default function ListingView({ property, reviews, slug, loadBusy, preview
               {sent && (
                 <div className="stay-card" style={{ textAlign: 'center' }} role="status">
                   <CheckCircle2 className="mx-auto h-8 w-8" style={{ color: 'var(--stay-accent-text)' }} strokeWidth={1.5} />
-                  <h2 style={{ margin: '10px 0 4px' }}>Заявката е изпратена</h2>
+                  <h2 style={{ margin: '10px 0 4px' }}>{t('sentTitle')}</h2>
                   <p className="stay-muted" style={{ margin: 0, fontSize: 15 }}>
-                    Собственикът ще се свърже с вас за потвърждение.
+                    {t('sentText')}
                   </p>
                 </div>
               )}
@@ -659,7 +664,7 @@ export default function ListingView({ property, reviews, slug, loadBusy, preview
 
           {channels.length > 0 && (
             <div>
-              <p className="stay-contact-title">Предпочитате да пишете директно?</p>
+              <p className="stay-contact-title">{t('contactTitle')}</p>
               <div className="stay-contact" style={{ justifyContent: 'center' }}>
                 {channels.map((ch, i) => {
                   const Icon = CHANNEL_ICONS[ch.type] ?? MessageCircle
@@ -667,7 +672,7 @@ export default function ListingView({ property, reviews, slug, loadBusy, preview
                   return (
                     <a key={i} href={href ?? undefined} target={href?.startsWith('http') ? '_blank' : undefined} rel="noreferrer">
                       <Icon className="h-4 w-4" strokeWidth={1.6} aria-hidden="true" />
-                      {channelLabel(ch.type)}
+                      {t(`channel.${ch.type}`) === `channel.${ch.type}` ? channelLabel(ch.type) : t(`channel.${ch.type}`)}
                     </a>
                   )
                 })}
@@ -677,17 +682,17 @@ export default function ListingView({ property, reviews, slug, loadBusy, preview
         </aside>
       </main>
 
-      <footer className="stay-foot">Изготвено със StayFlow</footer>
+      <footer className="stay-foot">{t('footer')}</footer>
 
       {/* Залепена лента на телефона — показва се, когато заглавието и картата за резервация са извън екрана */}
       {basePrice > 0 && (
         <div className={`stay-bar ${showBar ? 'is-on' : ''}`} aria-hidden={!showBar}>
           <div>
             <b>{shortPrice(basePrice)}</b>
-            <small>на нощувка</small>
+            <small>{t('barNight')}</small>
           </div>
           <button type="button" className="stay-btn" onClick={scrollToQuote} tabIndex={showBar ? 0 : -1}>
-            Провери дати
+            {t('barDates')}
           </button>
         </div>
       )}

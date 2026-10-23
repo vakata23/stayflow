@@ -35,7 +35,7 @@ const properties = [
     channels: [{ type: 'viber', value: '+359 88 712 4093' }, { type: 'phone', value: '+359 88 712 4093' }],
     slug: 'tihi-bryag', is_listed: true, public_description: 'Двуетажна къща на 200 метра от плажа.', bedrooms: 3, beds: 5, bathrooms: 2, area_m2: 94,
     amenities: ['wifi', 'parking', 'parking_free', 'ev_charger', 'ac', 'kitchen', 'balcony'], checkin_time: '14:00', checkout_time: '11:00', smoking_allowed: false, parties_allowed: false,
-    cancellation_policy: 'moderate', lat: 42.1667, lng: 27.8667, public_description_en: null, accent_color: '#a8652a', ai_assistant: false,
+    cancellation_policy: 'moderate', lat: 42.1667, lng: 27.8667, public_description_en: 'Two-storey house 200 metres from the beach.', accent_color: '#a8652a', ai_assistant: false,
   },
   {
     id: P2, owner_id: PROFILE, name: 'Студио „Морски бриз“', address: 'ул. Аполония 5', city: 'Созопол', property_type: 'apartment', max_guests: 2,

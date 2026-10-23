@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { X, ChevronLeft, ChevronRight } from 'lucide-react'
+import { useStayLang } from './i18n'
 
 /**
  * Лайтбокс на цял екран. Затваря се с Esc или клик извън снимката, стрелките
@@ -7,6 +8,7 @@ import { X, ChevronLeft, ChevronRight } from 'lucide-react'
  * там, откъдето е отворен; страницата зад него не се скролира.
  */
 export default function Lightbox({ photos, index, alt, onClose, onChange }) {
+  const { t } = useStayLang()
   const closeRef = useRef(null)
   const touchX = useRef(null)
   const count = photos.length
@@ -65,7 +67,7 @@ export default function Lightbox({ photos, index, alt, onClose, onChange }) {
       data-lightbox
       role="dialog"
       aria-modal="true"
-      aria-label={`${alt} — снимка ${index + 1} от ${count}`}
+      aria-label={t('lbLabel', { name: alt, i: index + 1, n: count })}
       className="stay-lightbox"
       onClick={onClose}
       onTouchStart={(e) => {
@@ -78,7 +80,7 @@ export default function Lightbox({ photos, index, alt, onClose, onChange }) {
         if (Math.abs(dx) > 50) (dx > 0 ? prev : next)()
       }}
     >
-      <button ref={closeRef} type="button" onClick={onClose} className="stay-lightbox__btn stay-lightbox__close" aria-label="Затвори">
+      <button ref={closeRef} type="button" onClick={onClose} className="stay-lightbox__btn stay-lightbox__close" aria-label={t('lbClose')}>
         <X className="h-5 w-5" strokeWidth={1.6} />
       </button>
       {count > 1 && (
@@ -89,7 +91,7 @@ export default function Lightbox({ photos, index, alt, onClose, onChange }) {
             prev()
           }}
           className="stay-lightbox__btn stay-lightbox__prev"
-          aria-label="Предишна снимка"
+          aria-label={t('lbPrev')}
         >
           <ChevronLeft className="h-6 w-6" strokeWidth={1.6} />
         </button>
@@ -97,7 +99,7 @@ export default function Lightbox({ photos, index, alt, onClose, onChange }) {
       <img
         key={photo.url}
         src={photo.url}
-        alt={`${alt} — снимка ${index + 1}`}
+        alt={t('photoAlt', { name: alt, i: index + 1 })}
         className="stay-lightbox__img"
         onClick={(e) => e.stopPropagation()}
       />
@@ -109,7 +111,7 @@ export default function Lightbox({ photos, index, alt, onClose, onChange }) {
             next()
           }}
           className="stay-lightbox__btn stay-lightbox__next"
-          aria-label="Следваща снимка"
+          aria-label={t('lbNext')}
         >
           <ChevronRight className="h-6 w-6" strokeWidth={1.6} />
         </button>
