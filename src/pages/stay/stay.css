@@ -1146,3 +1146,37 @@
   color: var(--s-ink);
   font-size: 16px;
 }
+
+/* Оферти и пакети */
+.stay-offers {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+@media (min-width: 560px) {
+  .stay-offers {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.stay-offers li {
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  padding: 16px 18px;
+  border: 1px solid var(--s-line);
+  border-radius: var(--s-r-md, 14px);
+}
+.stay-offers li b {
+  font-weight: 600;
+  font-size: 16px;
+}
+.stay-offers li span {
+  color: var(--s-muted);
+  font-size: 14px;
+}
+.stay-line--offer {
+  color: var(--stay-accent-text);
+  font-weight: 600;
+}

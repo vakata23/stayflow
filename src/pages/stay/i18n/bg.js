@@ -65,6 +65,22 @@ export default {
   seasonMinStay: 'мин. {nights}',
   seasonsNote: 'Цени на нощувка. Точната сума за вашите дати виждате, когато проверите цена.',
 
+  offersTitle: "Оферти",
+  offersNote: "Ако са подходящи няколко оферти, важи най-изгодната — отстъпките не се събират.",
+  days: { one: "{n} ден", other: "{n} дни" },
+  pkgFreeNights: "Платете {paid}, останете {total}",
+  pkgRepeat: "за всеки пълен блок",
+  pkgPercent: "−{percent}% при престой от {nights} нагоре",
+  pkgFixed: "{nights} за {price}",
+  pkgFixedWeekday: "Ден на настаняване: {weekday}",
+  pkgEarly: "−{percent}% при резервация поне {days} по-рано",
+  pkgLast: "−{percent}% при настаняване до {days} от днес",
+  pkgLastToday: "−{percent}% при настаняване днес",
+  pkgValidBetween: "Настаняване от {from} до {to}",
+  pkgValidFrom: "Настаняване от {from}",
+  pkgValidTo: "Настаняване до {to}",
+  quoteOffer: "Оферта „{name}“",
+
   availability: 'Наличност',
   availabilityNote: 'Зачертаните дни вече са заети.',
 

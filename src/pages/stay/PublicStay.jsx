@@ -5,6 +5,7 @@ import ListingView from './ListingView'
 import useListingSeo from './useListingSeo'
 import { useStayLang, useDocumentLang } from './i18n'
 import { loadPublicSeasons } from '../../lib/seasons'
+import { loadPublicPackages } from '../../lib/packages'
 
 /** Скелет с формата на страницата: докато идват данните, не се показва завъртащ се кръг. */
 function StayLoading() {
@@ -30,6 +31,7 @@ export default function PublicStay() {
   const [property, setProperty] = useState(null)
   const [reviews, setReviews] = useState([])
   const [seasons, setSeasons] = useState([])
+  const [packages, setPackages] = useState([])
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
 
@@ -39,12 +41,14 @@ export default function PublicStay() {
       supabase.rpc('public_property', { p_slug: slug }),
       supabase.rpc('public_reviews', { p_slug: slug }),
       loadPublicSeasons(slug),
-    ]).then(([propRes, reviewsRes, seasonRows]) => {
+      loadPublicPackages(slug),
+    ]).then(([propRes, reviewsRes, seasonRows, packageRows]) => {
       if (cancelled) return
       if (propRes.error || !propRes.data || propRes.data.length === 0) setNotFound(true)
       else setProperty(propRes.data[0])
       setReviews(reviewsRes.data ?? [])
       setSeasons(seasonRows)
+      setPackages(packageRows)
       setLoading(false)
     })
     return () => {
@@ -80,5 +84,5 @@ export default function PublicStay() {
     )
   }
 
-  return <ListingView property={property} reviews={reviews} seasons={seasons} slug={slug} loadBusy={loadBusy} />
+  return <ListingView property={property} reviews={reviews} seasons={seasons} packages={packages} slug={slug} loadBusy={loadBusy} />
 }

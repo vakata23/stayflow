@@ -65,6 +65,22 @@ export default {
   seasonMinStay: 'ελάχ. {nights}',
   seasonsNote: 'Τιμές ανά διανυκτέρευση. Το ακριβές σύνολο για τις ημερομηνίες σας εμφανίζεται όταν ελέγξετε την τιμή.',
 
+  offersTitle: "Προσφορές",
+  offersNote: "Αν ισχύουν περισσότερες προσφορές, εφαρμόζεται η πιο συμφέρουσα — οι εκπτώσεις δεν αθροίζονται.",
+  days: { one: "{n} ημέρα", other: "{n} ημέρες" },
+  pkgFreeNights: "Πληρώστε {paid}, μείνετε {total}",
+  pkgRepeat: "ισχύει για κάθε πλήρες μπλοκ",
+  pkgPercent: "−{percent}% για διαμονή {nights} και άνω",
+  pkgFixed: "{nights} για {price}",
+  pkgFixedWeekday: "Ημέρα άφιξης: {weekday}",
+  pkgEarly: "−{percent}% αν κλείσετε τουλάχιστον {days} νωρίτερα",
+  pkgLast: "−{percent}% για άφιξη εντός {days} από σήμερα",
+  pkgLastToday: "−{percent}% για άφιξη σήμερα",
+  pkgValidBetween: "Άφιξη από {from} έως {to}",
+  pkgValidFrom: "Άφιξη από {from}",
+  pkgValidTo: "Άφιξη έως {to}",
+  quoteOffer: "Προσφορά «{name}»",
+
   availability: 'Διαθεσιμότητα',
   availabilityNote: 'Οι διαγραμμένες ημέρες είναι ήδη κατειλημμένες.',
 

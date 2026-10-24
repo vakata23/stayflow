@@ -38,6 +38,7 @@ const sqlFiles = [
   join(projectDir, 'supabase/migrations/012_recurring_rules.sql'),
   join(projectDir, 'supabase/migrations/013_public_photo_thumbs.sql'),
   join(projectDir, 'supabase/migrations/014_price_seasons.sql'),
+  join(projectDir, 'supabase/migrations/015_stay_packages.sql'),
 ];
 
 const db = new PGlite({ extensions: { btree_gist } });
@@ -925,13 +926,225 @@ await db.exec(`
   insert into price_seasons (property_id, start_month, start_day, end_month, end_day, price_per_night) values ('c9c9c9c9-0000-0000-0000-000000000000', 1, 1, 12, 31, 5);
   delete from properties where id = 'c9c9c9c9-0000-0000-0000-000000000000';`);
 ok('014: изтриването на имот каскадно маха и сезоните му', (await db.query("select count(*)::int n from price_seasons where property_id = 'c9c9c9c9-0000-0000-0000-000000000000'")).rows[0].n === 0);
-await db.exec(readFileSync(join(projectDir, 'supabase/migrations/014_price_seasons.sql'), 'utf8'));
+// Повторно пускане на 014 — без раздела за quote_stay: 015 вече го е сменил (повече колони), а връщането му към 014 би махнало офертите.
+const m014 = readFileSync(join(projectDir, 'supabase/migrations/014_price_seasons.sql'), 'utf8').replace(/\r\n/g, '\n');
+await db.exec(m014.slice(0, m014.indexOf('-- 4. quote_stay')) + m014.slice(m014.indexOf('-- 5. public_seasons')));
 q = await quote('2027-12-10', '2027-12-13');
 ok('014: е идемпотентна — повторно пускане без грешка, цената е същата (180)', same(q, { accommodation_total: 180, min_nights: 3 }), show(q, Q));
 ok('014: след повторното пускане политиките не са задвоени (по една на действие)', (await db.query("select count(*)::int n from pg_policies where tablename = 'price_seasons'")).rows[0].n === 4);
 // старата цена за Студио 1 (без сезони) остава непроменена от новата quote_stay
 r = await as('anon', null, "select * from quote_stay('studio-1','2027-07-03','2027-07-07',2)");
 ok('014: имот без сезони се цени както преди (Студио 1: 370 за 3.07–7.07)', same(r[0], { accommodation_total: 370, min_nights: 2 }), show(r[0], Q));
+
+// ---------------------------------------------------------------- пакети и оферти (015)
+const U4 = 'd4d4d4d4-0000-0000-0000-000000000000'; // имот само за пакети: основна цена 100, почистване 20, капаро 30%
+await db.exec(`
+  insert into properties (id, owner_id, name, max_guests, channels, slug, is_listed) values
+    ('${U4}', '${profA}', 'Къща с пакети', 4, '[]', 'pakety', true);
+  insert into property_settings (property_id, ota_commission_pct, tourist_tax, cleaning_fee, deposit_pct, base_price) values
+    ('${U4}', 15.0, 0, 20, 30, 100);
+`);
+const sofiaToday = () => new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Sofia' });
+const plus = (n) => { const d = new Date(sofiaToday() + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+const isodow = (iso) => { const w = new Date(iso + 'T00:00:00Z').getUTCDay(); return w === 0 ? 7 : w; };
+const qp = async (inOffset, nights) => (await as('anon', null, `select * from quote_stay('pakety','${plus(inOffset)}','${plus(inOffset + nights)}',2)`))[0];
+const QP = ['nights', 'accommodation_total', 'discount', 'total', 'deposit'];
+const addPkg = async (cols, vals) => (await db.query(`insert into stay_packages (property_id, ${cols}) values ('${U4}', ${vals}) returning id`)).rows[0].id;
+const clearPkgs = () => db.exec(`delete from stay_packages where property_id = '${U4}'`);
+
+let q4 = await qp(60, 3);
+ok('без пакети: 3 × 100 + почистване 20 = 320, отстъпка 0 и без package_id', same(q4, { nights: 3, accommodation_total: 300, discount: 0, total: 320 }) && q4.package_id === null, show(q4, QP));
+
+// --- „6+1“
+const six1 = await addPkg('kind, name, paid_nights, free_nights', `'free_nights', '6+1', 6, 1`);
+q4 = await qp(60, 7);
+ok('„6+1“: 7 нощувки → 1 безплатна: 700 − 100 = 600 + 20 = 620, капаро 30% = 186', same(q4, { accommodation_total: 700, discount: 100, total: 620, deposit: 186 }) && q4.package_id === six1, show(q4, QP));
+q4 = await qp(60, 6);
+ok('„6+1“: 6 нощувки още не са достатъчни — без отстъпка (620 − 20 = 600 за 6 × 100)', same(q4, { discount: 0, total: 620 }) && q4.package_id === null, show(q4, QP));
+q4 = await qp(60, 8);
+ok('„6+1“ без повторение: 8 нощувки пак 1 безплатна', same(q4, { accommodation_total: 800, discount: 100 }), show(q4, QP));
+q4 = await qp(60, 14);
+ok('„6+1“ без повторение: 14 нощувки пак само 1 безплатна', same(q4, { accommodation_total: 1400, discount: 100 }), show(q4, QP));
+await clearPkgs();
+await addPkg('kind, name, paid_nights, free_nights, repeat_block', `'free_nights', '6+1', 6, 1, true`);
+q4 = await qp(60, 14);
+ok('„6+1“ с повторение: 14 нощувки → 2 безплатни (2 пълни блока по 7)', same(q4, { accommodation_total: 1400, discount: 200, total: 1220 }), show(q4, QP));
+q4 = await qp(60, 13);
+ok('„6+1“ с повторение: 13 нощувки → 1 безплатна (един пълен блок)', same(q4, { discount: 100 }), show(q4, QP));
+await clearPkgs();
+
+// --- безплатни са най-евтините нощувки
+await db.exec(`insert into pricing_rules (property_id, start_date, end_date, price_per_night, min_nights, created_at) values ('${U4}', '${plus(200)}', '${plus(205)}', 150, 1, '2026-01-01')`);
+await addPkg('kind, paid_nights, free_nights', `'free_nights', 6, 1`);
+q4 = await qp(200, 7);
+ok('безплатната нощувка е най-евтината: 6 нощувки по 150 и 1 по 100 → отстъпка 100 (не 150)', same(q4, { accommodation_total: 1000, discount: 100, total: 920 }), show(q4, QP));
+await clearPkgs();
+
+// --- отстъпка за по-дълъг престой
+const week = await addPkg('kind, name, min_nights, percent', `'percent_off', 'Седмица', 7, 10`);
+q4 = await qp(60, 7);
+ok('седмица −10%: 7 нощувки → 700 − 70 = 630 + 20 = 650', same(q4, { accommodation_total: 700, discount: 70, total: 650 }) && q4.package_id === week, show(q4, QP));
+q4 = await qp(60, 6);
+ok('седмица −10%: 6 нощувки — без отстъпка', same(q4, { discount: 0 }), show(q4, QP));
+q4 = await qp(60, 30);
+ok('седмица −10%: 30 нощувки → −300', same(q4, { accommodation_total: 3000, discount: 300 }), show(q4, QP));
+await clearPkgs();
+
+// --- фиксирана цена
+await addPkg('kind, name, fixed_nights, fixed_total', `'fixed_price', '3 нощувки за 250', 3, 250`);
+q4 = await qp(60, 3);
+ok('фиксирана цена: 3 нощувки за 250 вместо 300 → отстъпка 50, общо 270', same(q4, { accommodation_total: 300, discount: 50, total: 270 }), show(q4, QP));
+q4 = await qp(60, 4);
+ok('фиксирана цена важи само за точно 3 нощувки (4 → без отстъпка)', same(q4, { discount: 0 }), show(q4, QP));
+await clearPkgs();
+await addPkg('kind, fixed_nights, fixed_total', `'fixed_price', 3, 300`);
+q4 = await qp(60, 3);
+ok('фиксирана цена, която не е по-ниска от сметката (300 при 300), не дава „отстъпка“', same(q4, { discount: 0 }) && q4.package_id === null, show(q4, QP));
+await clearPkgs();
+await addPkg('kind, fixed_nights, fixed_total, checkin_weekday', `'fixed_price', 2, 150, ${isodow(plus(60))}`);
+q4 = await qp(60, 2);
+ok('фиксирана цена само при настаняване в определен ден: в правилния ден важи (2 за 150)', same(q4, { accommodation_total: 200, discount: 50 }), show(q4, QP));
+q4 = await qp(61, 2);
+ok('… а на следващия ден (друг ден от седмицата) — не', same(q4, { discount: 0 }), show(q4, QP));
+await clearPkgs();
+
+// --- ранно записване и последна минута (спрямо днешна дата по българско време)
+await addPkg('kind, name, days_before, percent', `'early_bird', 'Ранно', 30, 20`);
+q4 = await qp(40, 2);
+ok('ранно записване −20% (≥ 30 дни по-рано): настаняване след 40 дни → −40 от 200', same(q4, { accommodation_total: 200, discount: 40 }), show(q4, QP));
+q4 = await qp(30, 2);
+ok('ранно записване: точно 30 дни по-рано още важи', same(q4, { discount: 40 }), show(q4, QP));
+q4 = await qp(29, 2);
+ok('ранно записване: 29 дни — вече не', same(q4, { discount: 0 }), show(q4, QP));
+await clearPkgs();
+await addPkg('kind, name, days_before, percent', `'last_minute', 'Последна минута', 3, 15`);
+q4 = await qp(0, 2);
+ok('последна минута −15% (настаняване до 3 дни): днес → −30 от 200', same(q4, { accommodation_total: 200, discount: 30, total: 190 }), show(q4, QP));
+q4 = await qp(3, 2);
+ok('последна минута: след точно 3 дни още важи', same(q4, { discount: 30 }), show(q4, QP));
+q4 = await qp(4, 2);
+ok('последна минута: след 4 дни — вече не', same(q4, { discount: 0 }), show(q4, QP));
+await clearPkgs();
+
+// --- най-изгодният печели; отстъпките не се събират
+const sixPlus = await addPkg('kind, name, paid_nights, free_nights, created_at', `'free_nights', '6+1', 6, 1, '2026-01-01'`);
+const twenty = await addPkg('kind, name, min_nights, percent, created_at', `'percent_off', '−20% от 7', 7, 20, '2026-01-02'`);
+q4 = await qp(60, 7);
+ok('две подходящи оферти: важи по-изгодната за госта (−20% = 140, не 6+1 = 100) и не се събират', same(q4, { accommodation_total: 700, discount: 140, total: 580 }) && q4.package_id === twenty, show(q4, QP));
+await db.exec(`update stay_packages set percent = 14.29 where id = '${twenty}'`);
+q4 = await qp(60, 7);
+ok('при по-малка отстъпка (14.29% = 100.03 > 100) печели пак процентът; при 14% (98) — „6+1“', same(q4, { discount: 100.03 }), show(q4, QP));
+await db.exec(`update stay_packages set percent = 14 where id = '${twenty}'`);
+q4 = await qp(60, 7);
+ok('при −14% (98) печели „6+1“ (100)', same(q4, { discount: 100 }) && q4.package_id === sixPlus, show(q4, QP));
+// равни отстъпки: „7 нощувки за 600“ също дава 100 — при равенство печели по-рано създаденият
+const fixed7 = await addPkg('kind, fixed_nights, fixed_total, created_at', `'fixed_price', 7, 600, '2026-01-03'`);
+await db.exec(`delete from stay_packages where id = '${twenty}'`);
+q4 = await qp(60, 7);
+ok('при равни отстъпки (100 и 100) печели по-рано създаденият („6+1“)', same(q4, { discount: 100 }) && q4.package_id === sixPlus, show(q4, QP));
+await db.exec(`update stay_packages set created_at = '2026-01-04' where id = '${sixPlus}'`);
+q4 = await qp(60, 7);
+ok('… и ако „6+1“ е по-нов — печели фиксираната цена', same(q4, { discount: 100 }) && q4.package_id === fixed7, show(q4, QP));
+await clearPkgs();
+
+// --- период на важене и изключване
+const jul = await addPkg('kind, min_nights, percent, valid_from, valid_to', `'percent_off', 2, 10, '${plus(100)}', '${plus(110)}'`);
+q4 = await qp(105, 2);
+ok('оферта с период: настаняване вътре в периода важи', same(q4, { discount: 20 }), show(q4, QP));
+q4 = await qp(111, 2);
+ok('… настаняване след края на периода — не', same(q4, { discount: 0 }), show(q4, QP));
+q4 = await qp(99, 2);
+ok('… настаняване преди началото — не', same(q4, { discount: 0 }), show(q4, QP));
+q4 = await qp(110, 2);
+ok('… последният ден на периода още важи (по датата на настаняване, не на напускане)', same(q4, { discount: 20 }), show(q4, QP));
+await db.exec(`update stay_packages set is_active = false where id = '${jul}'`);
+q4 = await qp(105, 2);
+ok('изключена оферта (is_active = false) не се прилага', same(q4, { discount: 0 }), show(q4, QP));
+await clearPkgs();
+
+// --- отстъпката не надвишава сметката
+await addPkg('kind, min_nights, percent', `'percent_off', 1, 90`);
+q4 = await qp(60, 2);
+ok('максималната отстъпка 90% — остава поне 10% (200 → 180 отстъпка, общо 20 + 20)', same(q4, { accommodation_total: 200, discount: 180, total: 40 }), show(q4, QP));
+await clearPkgs();
+
+// --- ограничения на таблицата
+const bad = (cols, vals) => `insert into stay_packages (property_id, ${cols}) values ('${U4}', ${vals})`;
+await expectError('непознат вид се отхвърля', bad('kind', `'нещо'`), /check constraint/i);
+await expectError('„6+1“ без безплатни нощувки се отхвърля', bad('kind, paid_nights', `'free_nights', 6`), /stay_packages_params|check constraint/i);
+await expectError('отстъпка без процент се отхвърля', bad('kind, min_nights', `'percent_off', 7`), /stay_packages_params|check constraint/i);
+await expectError('процент 0 се отхвърля', bad('kind, min_nights, percent', `'percent_off', 7, 0`), /check constraint/i);
+await expectError('процент над 90 се отхвърля', bad('kind, min_nights, percent', `'percent_off', 7, 95`), /check constraint/i);
+await expectError('фиксирана цена без сума се отхвърля', bad('kind, fixed_nights', `'fixed_price', 3`), /stay_packages_params|check constraint/i);
+await expectError('фиксирана цена 0 се отхвърля', bad('kind, fixed_nights, fixed_total', `'fixed_price', 3, 0`), /check constraint/i);
+await expectError('ранно записване с 0 дни се отхвърля', bad('kind, days_before, percent', `'early_bird', 0, 10`), /stay_packages_params|check constraint/i);
+await expectError('ден от седмицата 8 се отхвърля', bad('kind, fixed_nights, fixed_total, checkin_weekday', `'fixed_price', 3, 200, 8`), /check constraint/i);
+await expectError('край на периода преди началото се отхвърля', bad('kind, min_nights, percent, valid_from, valid_to', `'percent_off', 2, 10, '2027-02-01', '2027-01-01'`), /stay_packages_valid_dates|check constraint/i);
+await expectError('име над 60 знака се отхвърля', bad('kind, name, min_nights, percent', `'percent_off', '${'я'.repeat(61)}', 2, 10`), /check constraint/i);
+await expectError('0 платени нощувки се отхвърля', bad('kind, paid_nights, free_nights', `'free_nights', 0, 1`), /check constraint/i);
+
+// --- RLS: само собственикът
+const pa = (await as('authenticated', A, `insert into stay_packages (property_id, kind, name, min_nights, percent) values ('${U4}', 'percent_off', 'Моя', 5, 12) returning id`))[0].id;
+ok('собственик A добавя оферта', !!pa);
+let rp = await as('authenticated', A, `select id from stay_packages where property_id = '${U4}'`);
+ok('собственик A я вижда', rp.length === 1);
+rp = await as('authenticated', B, `select id from stay_packages where property_id = '${U4}'`);
+ok('друг собственик B не вижда офертите на A (0 реда)', rp.length === 0);
+rp = await as('anon', null, 'select id from stay_packages');
+ok('анонимен не чете stay_packages директно (0 реда)', rp.length === 0);
+await asErr('B не може да добави оферта към имот на A', 'authenticated', B, bad('kind, min_nights, percent', `'percent_off', 2, 10`), /row-level security/);
+await asErr('анонимен не може да добави оферта', 'anon', null, bad('kind, min_nights, percent', `'percent_off', 2, 10`), /row-level security/);
+rp = await as('authenticated', B, `update stay_packages set percent = 90 where id = '${pa}' returning id`);
+ok('B не може да смени оферта на A (0 засегнати)', rp.length === 0);
+rp = await as('authenticated', B, `delete from stay_packages where id = '${pa}' returning id`);
+ok('B не може да изтрие оферта на A (0 засегнати)', rp.length === 0);
+rp = await as('authenticated', A, `update stay_packages set percent = 15 where id = '${pa}' returning percent`);
+ok('собственик A сменя процента', rp.length === 1 && Number(rp[0].percent) === 15);
+q4 = await qp(60, 5);
+ok('променената оферта веднага влиза в цената: 5 × 100 = 500, −15% = 75', same(q4, { accommodation_total: 500, discount: 75, total: 445 }), show(q4, QP));
+
+// --- public_packages
+await db.exec(`
+  insert into stay_packages (property_id, kind, name, is_active, min_nights, percent, valid_to) values ('${U4}', 'percent_off', 'Изключена', false, 3, 5, null);
+  insert into stay_packages (property_id, kind, name, min_nights, percent, valid_from, valid_to) values ('${U4}', 'percent_off', 'Изтекла', 3, 5, '2026-01-01', '2026-02-01');
+  insert into stay_packages (property_id, kind, name, fixed_nights, fixed_total, checkin_weekday) values ('${U4}', 'fixed_price', 'Уикенд', 2, 150, 5);
+`);
+let pubs = await as('anon', null, "select * from public_packages('pakety') ");
+ok('public_packages: само активните и неизтеклите (Моя и Уикенд), по ред на създаване', pubs.map((x) => x.name).join('|') === 'Моя|Уикенд', pubs.map((x) => x.name).join('|'));
+ok('public_packages: само параметри на офертата (без имот и собственик)', Object.keys(pubs[0]).sort().join(',') === 'checkin_weekday,days_before,fixed_nights,fixed_total,free_nights,id,kind,min_nights,name,paid_nights,percent,repeat_block,valid_from,valid_to', Object.keys(pubs[0]).join(','));
+ok('public_packages: ден от седмицата е число (5 = петък), процентът е правилен', pubs[1].checkin_weekday === 5 && Number(pubs[0].percent) === 15);
+pubs = await as('anon', null, "select * from public_packages('няма-такъв')");
+ok('public_packages: непознат адрес → 0 реда', pubs.length === 0);
+await db.exec(`insert into stay_packages (property_id, kind, name, min_nights, percent) values ('${U2}', 'percent_off', 'Скрита', 2, 10)`);
+pubs = await as('anon', null, "select * from public_packages('apartment-2')");
+ok('public_packages: непубликуван имот → 0 реда', pubs.length === 0);
+r = await as('anon', null, "select * from quote_stay('apartment-2','2027-07-03','2027-07-05',1)");
+ok('quote_stay: непубликуван имот с оферта пак → 0 реда', r.length === 0);
+await db.exec(`delete from stay_packages where property_id = '${U2}'`);
+
+// --- остава всичко старо: имотите със сезони и без пакети се цеnят както преди
+r = await as('anon', null, "select * from quote_stay('sezoni','2027-12-10','2027-12-13',2)");
+ok('015: имот със сезони без пакети — същата цена като преди (180 + 20 = 200), отстъпка 0', same(r[0], { accommodation_total: 180, total: 200, discount: 0, min_nights: 3 }) && r[0].package_id === null, show(r[0], ['accommodation_total', 'total', 'discount', 'min_nights']));
+r = await as('anon', null, "select * from quote_stay('studio-1','2027-07-03','2027-07-07',2)");
+ok('015: Студио 1 (правило за дати + основна цена) — същата цена като преди (370)', same(r[0], { accommodation_total: 370, discount: 0, min_nights: 2 }), show(r[0], ['accommodation_total', 'discount', 'min_nights']));
+
+// --- права, каскада, повторно пускане
+r = await as('anon', null, `select has_function_privilege('anon','public.public_packages(text)','execute') as a,
+  has_function_privilege('public','public.public_packages(text)','execute') as p,
+  has_function_privilege('anon','public.quote_stay(text,date,date,int)','execute') as q,
+  has_function_privilege('authenticated','public.quote_stay(text,date,date,int)','execute') as qa,
+  has_function_privilege('public','public.quote_stay(text,date,date,int)','execute') as qp`);
+ok('015: правата — anon и логнат може quote_stay и public_packages, „public“ не може нито едно', r[0].a === true && r[0].p === false && r[0].q === true && r[0].qa === true && r[0].qp === false, JSON.stringify(r[0]));
+await db.exec(`
+  insert into properties (id, owner_id, name, max_guests, channels, slug, is_listed) values ('c8c8c8c8-0000-0000-0000-000000000000', '${profA}', 'Временен 2', 2, '[]', null, false);
+  insert into stay_packages (property_id, kind, min_nights, percent) values ('c8c8c8c8-0000-0000-0000-000000000000', 'percent_off', 2, 10);
+  delete from properties where id = 'c8c8c8c8-0000-0000-0000-000000000000';`);
+ok('015: изтриването на имот каскадно маха и офертите му', (await db.query("select count(*)::int n from stay_packages where property_id = 'c8c8c8c8-0000-0000-0000-000000000000'")).rows[0].n === 0);
+await db.exec(readFileSync(join(projectDir, 'supabase/migrations/015_stay_packages.sql'), 'utf8'));
+q4 = await qp(60, 5);
+ok('015: е идемпотентна — повторно пускане без грешка, цената е същата (500 − 75)', same(q4, { accommodation_total: 500, discount: 75, total: 445 }), show(q4, QP));
+ok('015: след повторното пускане политиките не са задвоени (по една на действие)', (await db.query("select count(*)::int n from pg_policies where tablename = 'stay_packages'")).rows[0].n === 4);
+ok('015: функцията quote_stay е една (без остатък от стария подпис)', (await db.query("select count(*)::int n from pg_proc where proname = 'quote_stay'")).rows[0].n === 1);
 
 console.log(`\n${pass} успешни, ${fail} провалени\n`);
 process.exit(fail ? 1 : 0);
