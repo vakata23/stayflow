@@ -9,6 +9,7 @@ import mk from './mk.js'
 import sr from './sr.js'
 import el from './el.js'
 import ro from './ro.js'
+import { monthName, weekdayShort } from '../../../lib/localeDates.js'
 
 export const DEFAULT_LANG = 'bg'
 
@@ -143,15 +144,11 @@ const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1)
 
 /** Дните от седмицата, от понеделник: „Пн Вт …“ / „Mon Tue …“ / „Δευ Τρί …“ — без точка накрая. */
 export function weekdayLabels(locale) {
-  const f = new Intl.DateTimeFormat(locale, { weekday: 'short', timeZone: 'UTC' })
-  return Array.from({ length: 7 }, (_, i) => cap(f.format(new Date(Date.UTC(2024, 0, 1 + i))).replace(/\.$/, '')))
+  return Array.from({ length: 7 }, (_, i) => cap(weekdayShort(locale, i)))
 }
 
 /** „Октомври 2026“ — месецът в именителен падеж (отделно от датата), с главна буква във всеки език. */
 export function monthTitle(locale, year, month) {
-  // Месецът се взема от формата „месец + година“: само той е в именителен падеж на всеки език
-  // (самостоятелно гръцкото „Οκτωβρίου“ е родителен), а годината и суфиксът („г.“) си ги слагаме сами.
-  const parts = new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric', timeZone: 'UTC' }).formatToParts(new Date(Date.UTC(year, month, 1)))
-  const name = parts.find((p) => p.type === 'month')?.value ?? ''
-  return `${cap(name)} ${year}`
+  // monthName взема месеца от формата „месец + година“ (само той е в именителен падеж на всеки език), годината я слагаме сами
+  return `${cap(monthName(locale, month, 'long'))} ${year}`
 }

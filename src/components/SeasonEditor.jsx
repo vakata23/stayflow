@@ -1,5 +1,6 @@
 import { Plus, Trash2, Snowflake, Sun, CalendarRange } from 'lucide-react'
 import { Field, Input, Select, Button, IconButton, Alert } from './ui'
+import { useAppLang } from '../i18n/appLang'
 import {
   DAYS_IN_MONTH, SEASON_PRESETS, emptySeason, validateSeason, overlappingSeasons, uncoveredDays, seasonRangeLabel, monthLabel,
 } from '../lib/seasonLogic'
@@ -13,6 +14,7 @@ const PRESET_ICONS = { winter: Snowflake, summer: Sun }
  * и при управление на имота (SeasonPrices го обвива със запис). Основната цена е за останалото време.
  */
 export default function SeasonEditor({ seasons, onChange, basePrice, showErrors = false, disabled = false }) {
+  const { locale } = useAppLang()
   const update = (key, patch) => onChange(seasons.map((s) => (s.key === key ? { ...s, ...patch } : s)))
   const remove = (key) => onChange(seasons.filter((s) => s.key !== key))
   const add = (presetKey) => onChange([...seasons, emptySeason(presetKey)])
@@ -45,7 +47,7 @@ export default function SeasonEditor({ seasons, onChange, basePrice, showErrors 
                     {datesOk && (
                       <p className="mt-0.5 flex items-center gap-1.5 text-xs text-ink-muted">
                         <CalendarRange className="h-3.5 w-3.5" aria-hidden="true" />
-                        {seasonRangeLabel(s)}, всяка година
+                        {seasonRangeLabel(s, locale)}, всяка година
                       </p>
                     )}
                   </div>
@@ -74,7 +76,7 @@ export default function SeasonEditor({ seasons, onChange, basePrice, showErrors 
                       <Select aria-label={`Сезон ${i + 1}: начало, месец`} value={s.start_month} onChange={(e) => update(s.key, { start_month: Number(e.target.value) })} disabled={disabled}>
                         {MONTHS.map((m) => (
                           <option key={m} value={m}>
-                            {monthLabel(m)}
+                            {monthLabel(m, locale)}
                           </option>
                         ))}
                       </Select>
@@ -87,7 +89,7 @@ export default function SeasonEditor({ seasons, onChange, basePrice, showErrors 
                       <Select aria-label={`Сезон ${i + 1}: край, месец`} value={s.end_month} onChange={(e) => update(s.key, { end_month: Number(e.target.value) })} disabled={disabled}>
                         {MONTHS.map((m) => (
                           <option key={m} value={m}>
-                            {monthLabel(m)}
+                            {monthLabel(m, locale)}
                           </option>
                         ))}
                       </Select>
@@ -102,7 +104,7 @@ export default function SeasonEditor({ seasons, onChange, basePrice, showErrors 
                 )}
                 {clashes.length > 0 && (
                   <Alert kind="info" className="mt-4">
-                    Застъпва се със {clashes.map((c) => `„${c.name.trim() || 'сезон'}“ (${seasonRangeLabel(c)})`).join(', ')} — в общите дни важи по-новият сезон.
+                    Застъпва се със {clashes.map((c) => `„${c.name.trim() || 'сезон'}“ (${seasonRangeLabel(c, locale)})`).join(', ')} — в общите дни важи по-новият сезон.
                   </Alert>
                 )}
               </li>
@@ -117,7 +119,7 @@ export default function SeasonEditor({ seasons, onChange, basePrice, showErrors 
           return (
             <Button key={p.key} type="button" variant="secondary" size="sm" onClick={() => add(p.key)} disabled={disabled}>
               <Icon className="h-4 w-4" aria-hidden="true" />
-              {p.name} ({monthLabel(p.start_month)}–{monthLabel(p.end_month)})
+              {p.name} ({monthLabel(p.start_month, locale)}–{monthLabel(p.end_month, locale)})
             </Button>
           )
         })}

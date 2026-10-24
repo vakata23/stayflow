@@ -22,6 +22,8 @@ import {
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
 import { formatDateBG, todayISO, toISODate } from '../../lib/dates'
+import { appLocale } from '../../i18n/appLang'
+import { formatDate } from '../../lib/localeDates'
 import { formatMoney } from '../../lib/money'
 import { incompleteBookingsFilter } from '../../lib/bookings'
 import {
@@ -65,7 +67,7 @@ function monthRange(ym) {
 
 const capitalize = (s) => s.charAt(0).toUpperCase() + s.slice(1)
 const monthName = (iso, withYear) =>
-  new Intl.DateTimeFormat('bg-BG', withYear ? { month: 'long', year: 'numeric' } : { month: 'long' }).format(new Date(`${iso}T12:00:00`))
+  formatDate(appLocale(), new Date(`${iso}T12:00:00`), withYear ? { month: 'long', year: 'numeric' } : { month: 'long' })
 
 const fmtInt = (n) => String(Math.round(n))
 
