@@ -19,3 +19,6 @@ ios/DerivedData/
 
 # визуални проверки (снимки и отчети)
 scripts/visual/out/
+
+# Помощен изход на scripts/i18n (списък на българските текстове)
+scripts/i18n/out/

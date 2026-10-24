@@ -1,4 +1,6 @@
 import { toISODate, fromISODate, todayISO, MONTHS_BG } from './dates'
+import { getAppLang, appLocale } from '../i18n/appLang'
+import { monthName } from './localeDates'
 
 export function addMonths(date, n) {
   return new Date(date.getFullYear(), date.getMonth() + n, date.getDate())
@@ -105,7 +107,9 @@ function round2(n) {
 /** 'YYYY-MM-01' → 'Яну 2026' (кратко, за оста на графиката). */
 export function shortMonthLabel(monthISO) {
   const d = fromISODate(monthISO.slice(0, 10))
-  return `${MONTHS_BG[d.getMonth()].slice(0, 3)} ${String(d.getFullYear()).slice(2)}`
+  // на български — първите 3 букви на месеца (Окт); на другите езици — краткото име на месеца по Intl
+  const month = getAppLang() === 'bg' ? MONTHS_BG[d.getMonth()].slice(0, 3) : (() => { const m = monthName(appLocale(), d.getMonth(), 'short'); return m.charAt(0).toUpperCase() + m.slice(1) })()
+  return `${month} ${String(d.getFullYear()).slice(2)}`
 }
 
 /** Сглобява и сваля CSV файл — за счетоводителя. */

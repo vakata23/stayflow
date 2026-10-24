@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom'
 import { LogIn, LogOut, Building2, Plus, Moon } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { todayISO, formatDateBG, addDays, toISODate, nightsBetween } from '../lib/dates'
+import { appLocale } from '../i18n/appLang'
+import { formatDate } from '../lib/localeDates'
 import { SOURCE_STYLES, sourceLabel } from '../lib/bookings'
 import { Card, Spinner, Alert, EmptyState, Button, PageHeader } from '../components/ui'
 import CountUp from '../components/CountUp'
@@ -11,7 +13,7 @@ import { rise, useIntro } from '../lib/motion'
 const HORIZON_DAYS = 14
 
 const capitalize = (s) => s.charAt(0).toUpperCase() + s.slice(1)
-const bg = (iso, opts) => new Intl.DateTimeFormat('bg-BG', opts).format(new Date(`${iso}T12:00:00`))
+const bg = (iso, opts) => formatDate(appLocale(), new Date(`${iso}T12:00:00`), opts)
 const initials = (name) =>
   (name || '?')
     .split(/\s+/)

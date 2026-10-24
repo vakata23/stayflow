@@ -21,6 +21,8 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Modal } from './ui'
 import BottomNav from './BottomNav'
+import AppLangSwitch from '../i18n/AppLangSwitch'
+import { useAppLang } from '../i18n/appLang'
 
 /* Пет места в долната лента на телефон; всичко останало е в листа „Още“. */
 const tabs = [
@@ -118,6 +120,7 @@ export default function Layout() {
   const { user, profile, signOut } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
+  const { lang } = useAppLang()
   const [moreOpen, setMoreOpen] = useState(false)
   const [pendingRequests, setPendingRequests] = useState(0)
 
@@ -161,6 +164,9 @@ export default function Layout() {
           <NavGroup title="Работа" items={workNav} />
           <NavGroup title="Настройки" items={settingsNav} />
         </nav>
+        <div className="mt-3 px-3">
+          <AppLangSwitch />
+        </div>
         <div className="mt-3 flex items-center gap-3 border-t border-line px-3 pt-4">
           <Avatar initials={initials} className="h-10 w-10 text-[0.9375rem]" />
           <div className="min-w-0 flex-1">
@@ -180,7 +186,8 @@ export default function Layout() {
 
       <main className="lg:pl-[17.25rem]">
         <div className="mx-auto max-w-[72rem] px-4 pb-[calc(7.5rem+env(safe-area-inset-bottom))] pt-2 sm:px-6 lg:px-12 lg:pb-20 lg:pt-12">
-          <div key={location.pathname} className="page-in">
+          {/* При смяна на езика екранът се прерисува (дати и месеци по Intl на новия език) */}
+          <div key={`${location.pathname}|${lang}`} className="page-in">
             <Outlet />
           </div>
         </div>
@@ -196,6 +203,9 @@ export default function Layout() {
           <p className="px-2 pb-2 pt-4 font-display text-[0.9375rem] font-medium italic text-ink-muted">Работа</p>
           <MoreList items={workNav} grid />
         </nav>
+        <div className="mt-4">
+          <AppLangSwitch />
+        </div>
         <div className="mt-4 flex items-center gap-3 border-t border-line pt-4">
           <Avatar initials={initials} className="h-11 w-11 text-[0.9375rem]" />
           <div className="min-w-0 flex-1">

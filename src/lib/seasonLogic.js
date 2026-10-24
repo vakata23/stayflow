@@ -1,3 +1,5 @@
+import { formatDate, monthName } from './localeDates.js'
+
 /**
  * Сезонни цени — чиста логика (без Supabase, тества се с node). Сезонът е „от ден/месец до ден/месец“
  * и се повтаря всяка година; ако началото е след края (1 ноември → 31 март), минава през Нова година.
@@ -158,7 +160,7 @@ export function overlappingSeasons(season, all) {
 
 /** „1 ноември“ на даден език (Intl; година 2000 е високосна, та 29 февруари да се показва). */
 export function dayMonthLabel(month, day, locale = 'bg-BG') {
-  return new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long', timeZone: 'UTC' }).format(new Date(Date.UTC(2000, int(month) - 1, int(day))))
+  return formatDate(locale, new Date(Date.UTC(2000, int(month) - 1, int(day))), { day: 'numeric', month: 'long', timeZone: 'UTC' })
 }
 
 /** „1 ноември – 31 март“. */
@@ -168,6 +170,5 @@ export function seasonRangeLabel(s, locale = 'bg-BG') {
 
 /** Името на месеца (за падащите списъци): „ноември“. */
 export function monthLabel(month, locale = 'bg-BG') {
-  const parts = new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric', timeZone: 'UTC' }).formatToParts(new Date(Date.UTC(2000, month - 1, 1)))
-  return parts.find((p) => p.type === 'month')?.value ?? String(month)
+  return monthName(locale, month - 1, 'long')
 }
