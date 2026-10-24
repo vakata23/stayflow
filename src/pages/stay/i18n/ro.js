@@ -65,6 +65,22 @@ export default {
   seasonMinStay: 'min. {nights}',
   seasonsNote: 'Prețuri pe noapte. Totalul exact pentru datele dvs. apare când verificați prețul.',
 
+  offersTitle: "Oferte",
+  offersNote: "Dacă se aplică mai multe oferte, se acordă cea mai avantajoasă — reducerile nu se cumulează.",
+  days: { one: "{n} zi", few: "{n} zile", other: "{n} de zile" },
+  pkgFreeNights: "Plătiți {paid}, rămâneți {total}",
+  pkgRepeat: "se aplică pentru fiecare bloc complet",
+  pkgPercent: "−{percent}% pentru sejururi de {nights} sau mai mult",
+  pkgFixed: "{nights} pentru {price}",
+  pkgFixedWeekday: "Ziua de sosire: {weekday}",
+  pkgEarly: "−{percent}% dacă rezervați cu cel puțin {days} înainte",
+  pkgLast: "−{percent}% pentru sosire în {days} de azi",
+  pkgLastToday: "−{percent}% pentru sosire astăzi",
+  pkgValidBetween: "Sosire între {from} și {to}",
+  pkgValidFrom: "Sosire din {from}",
+  pkgValidTo: "Sosire până la {to}",
+  quoteOffer: "Ofertă „{name}”",
+
   availability: 'Disponibilitate',
   availabilityNote: 'Zilele tăiate sunt deja ocupate.',
 

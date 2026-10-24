@@ -1,5 +1,7 @@
 // Реалистични тестови данни (български), с дати спрямо „днес“ по Europe/Sofia.
 // Ползва се само от тестовата среда в scratchpad — нищо от това не е в репото и не отива в базата.
+import { bestPackage } from '../../src/lib/packageLogic.js'
+
 const sofiaToday = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Sofia' }).format(new Date())
 export const TODAY = sofiaToday()
 const iso = (offset) => {
@@ -171,10 +173,22 @@ const price_seasons = [
   { id: 'e1111111-0000-4000-8000-000000000002', property_id: P1, name: 'Лято', start_month: 6, start_day: 1, end_month: 9, end_day: 30, price_per_night: 120, min_nights: 2, created_at: '2026-02-01T08:01:00Z' },
 ]
 
+// Пакети и оферти (миграция 015) на „Тихи бряг“: „6+1“, отстъпка за месец и уикенд пакет (2 нощувки за 150 при настаняване в петък)
+const pkg = (id, kind, name, extra) => ({
+  id: `f1111111-0000-4000-8000-00000000000${id}`, property_id: P1, kind, name, is_active: true, repeat_block: false,
+  paid_nights: null, free_nights: null, min_nights: null, percent: null, fixed_nights: null, fixed_total: null, checkin_weekday: null, days_before: null,
+  valid_from: null, valid_to: null, created_at: `2026-02-0${id}T08:00:00Z`, ...extra,
+})
+const stay_packages = [
+  pkg(1, 'free_nights', '6+1', { paid_nights: 6, free_nights: 1 }),
+  pkg(2, 'percent_off', 'Месец', { min_nights: 30, percent: 25 }),
+  pkg(3, 'fixed_price', 'Уикенд', { fixed_nights: 2, fixed_total: 150, checkin_weekday: 5 }),
+]
+
 export const TABLES = {
   profiles: [{ id: PROFILE, user_id: U, full_name: 'Иван Петров', company_name: 'Морски имоти ЕООД', phone: '+359 88 712 4093', created_at: '2026-01-10T08:00:00Z' }],
   properties, bookings, payments, property_photos: photos, booking_requests: requests, cleaning_tasks, cleaning_notes, pricing_rules,
-  money_entries, recurring_rules, invoices, notification_targets, outbox, reviews, property_settings, booking_balances, ai_runs: [], price_seasons,
+  money_entries, recurring_rules, invoices, notification_targets, outbox, reviews, property_settings, booking_balances, ai_runs: [], price_seasons, stay_packages,
 }
 
 // ---------------------------------------------------------------- RPC
@@ -296,11 +310,16 @@ export const RPC = {
     }
     return nights
   },
+  public_packages: (a) => (a.p_slug === 'tihi-bryag' ? stay_packages.map(({ property_id, created_at, is_active, ...rest }) => rest) : []),
   quote_stay: (a) => {
     const nights = Math.round((new Date(a.p_check_out) - new Date(a.p_check_in)) / 86400000)
     const acc = 87 * nights
     const busy = RPC.busy_nights({}).some((r) => r.night >= a.p_check_in && r.night < a.p_check_out)
-    return [{ nights, accommodation_total: acc, cleaning_fee: 25, tourist_tax: 2 * a.p_guests * nights, total: acc + 25, deposit: Math.round((acc + 25) * 0.3), min_nights: 2, fits_guests: a.p_guests <= 6, is_available: !busy }]
+    // най-изгодната оферта на имота (същата логика като в SQL — виж packageLogic.js)
+    const best = a.p_slug === 'tihi-bryag' ? bestPackage(stay_packages, { prices: Array(nights).fill(87), checkIn: a.p_check_in, today: new Date().toISOString().slice(0, 10) }) : null
+    const discount = best?.saving ?? 0
+    const total = acc - discount + 25
+    return [{ nights, accommodation_total: acc, cleaning_fee: 25, tourist_tax: 2 * a.p_guests * nights, total, deposit: Math.round(total * 0.3), min_nights: 2, fits_guests: a.p_guests <= 6, is_available: !busy, discount, package_id: best?.pkg.id ?? null }]
   },
   generate_my_auto_entries: () => 0,
   send_test_notification: () => null,

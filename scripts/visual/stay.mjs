@@ -57,7 +57,7 @@ const plus = (n) => new Date(Date.now() + n * 86400000).toISOString().slice(0, 1
 
   // секции в ред, залепена карта
   const order = await page.evaluate(() => [...document.querySelectorAll('.stay-sec h2, .stay-sec .stay-sub')].map((h) => h.textContent.trim().slice(0, 28)))
-  ok('секциите са в ред: Цял имот → За това място → Какво предлага → Наличност → Цени по сезон → Правила → Къде → Отзиви', ['Цял имот', 'За това място', 'Какво предлага', 'Наличност', 'Цени по сезон', 'Правила', 'Къде', '4.'].every((t, i) => order[i] && order[i].startsWith(t.replace('4.', '4')) || (t === '4.' && /\d\.\d/.test(order[i] ?? ''))), order.join(' | '))
+  ok('секциите са в ред: Цял имот → За това място → Какво предлага → Наличност → Цени по сезон → Оферти → Правила → Къде → Отзиви', ['Цял имот', 'За това място', 'Какво предлага', 'Наличност', 'Цени по сезон', 'Оферти', 'Правила', 'Къде', '4.'].every((t, i) => order[i] && order[i].startsWith(t.replace('4.', '4')) || (t === '4.' && /\d\.\d/.test(order[i] ?? ''))), order.join(' | '))
   await page.evaluate(() => window.scrollTo(0, 1100))
   await page.waitForTimeout(300)
   const sticky = await page.evaluate(() => { const r = document.querySelector('.stay-booking').getBoundingClientRect(); return { top: Math.round(r.top), bottom: Math.round(r.bottom), vh: innerHeight } })

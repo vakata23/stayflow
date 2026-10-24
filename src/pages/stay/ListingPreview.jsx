@@ -6,6 +6,7 @@ import { Alert } from '../../components/ui'
 import ListingView from './ListingView'
 import { useDocumentLang } from './i18n'
 import { loadSeasonRows } from '../../lib/seasons'
+import { loadPackageRows } from '../../lib/packages'
 
 /**
  * „Преглед като гост“ за собственика: същият изглед като /stay/:slug, но от
@@ -18,6 +19,7 @@ export default function ListingPreview() {
   const [property, setProperty] = useState(null)
   const [reviews, setReviews] = useState([])
   const [seasons, setSeasons] = useState([])
+  const [packages, setPackages] = useState([])
   const [error, setError] = useState(null)
 
   useEffect(() => {
@@ -28,7 +30,8 @@ export default function ListingPreview() {
       supabase.from('property_settings').select('base_price').eq('property_id', id).maybeSingle(),
       supabase.from('reviews').select('*').eq('property_id', id).order('created_at', { ascending: false }),
       loadSeasonRows([id]),
-    ]).then(([p, photos, settings, revs, seasonRows]) => {
+      loadPackageRows(id),
+    ]).then(([p, photos, settings, revs, seasonRows, packageRows]) => {
       if (cancelled) return
       if (p.error || !p.data) return setError('Имотът не е намерен или нямате достъп до него.')
       setProperty({
@@ -41,6 +44,7 @@ export default function ListingPreview() {
       })
       setReviews(revs.data ?? [])
       setSeasons(seasonRows)
+      setPackages(packageRows)
     })
     return () => {
       cancelled = true
@@ -92,7 +96,7 @@ export default function ListingPreview() {
         <ArrowLeft className="h-4 w-4" />
         Обратно към редакцията
       </Link>
-      <ListingView property={property} reviews={reviews} seasons={seasons} slug={property.slug} loadBusy={loadBusy} preview />
+      <ListingView property={property} reviews={reviews} seasons={seasons} packages={packages} slug={property.slug} loadBusy={loadBusy} preview />
     </>
   )
 }

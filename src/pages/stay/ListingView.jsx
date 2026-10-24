@@ -42,6 +42,7 @@ import { stayThemeVars } from '../../lib/accentColor'
 import { useStayLang, serverErrorKey } from './i18n'
 import { lowestPrice, uncoveredDays, seasonRangeLabel } from '../../lib/seasonLogic'
 import LangSwitch from './LangSwitch'
+import { describeOffer } from './packagesText'
 import PhotoMosaic from './PhotoMosaic'
 import Lightbox from './Lightbox'
 import AvailabilityCalendar from './AvailabilityCalendar'
@@ -148,7 +149,7 @@ function ShareButton({ title }) {
  * проверка на цена и заявка — те минават само през публикуван slug.
  * Показва се само онова, което собственикът е попълнил: празна секция няма.
  */
-export default function ListingView({ property, reviews, seasons = [], slug, loadBusy, preview = false }) {
+export default function ListingView({ property, reviews, seasons = [], packages = [], slug, loadBusy, preview = false }) {
   const { t, lang, locale } = useStayLang()
   const [descExpanded, setDescExpanded] = useState(false)
   const [amenitiesExpanded, setAmenitiesExpanded] = useState(false)
@@ -291,6 +292,8 @@ export default function ListingView({ property, reviews, seasons = [], slug, loa
     [seasons]
   )
   const otherDaysLeft = basePrice > 0 && uncoveredDays(seasons) > 0
+  const offers = useMemo(() => packages.map((p) => ({ pkg: p, ...describeOffer(p, t, locale) })), [packages, t, locale])
+  const appliedOffer = quote && Number(quote.discount) > 0 ? offers.find((o) => o.pkg.id === quote.package_id) : null
   const showDescToggle = description.length > DESCRIPTION_PREVIEW_LEN
   const visibleDescription =
     !descExpanded && showDescToggle ? description.slice(0, DESCRIPTION_PREVIEW_LEN).trimEnd() + '…' : description
@@ -482,6 +485,28 @@ export default function ListingView({ property, reviews, seasons = [], slug, loa
             </section>
           )}
 
+          {/* Оферти и пакети — само ако собственикът е задал */}
+          {offers.length > 0 && (
+            <section className="stay-sec" style={{ order: 5 }}>
+              <h2 className="stay-h2">{t('offersTitle')}</h2>
+              <ul className="stay-offers">
+                {offers.map((o) => (
+                  <li key={o.pkg.id}>
+                    <b>{o.title}</b>
+                    {o.lines.map((line) => (
+                      <span key={line}>{line}</span>
+                    ))}
+                  </li>
+                ))}
+              </ul>
+              {offers.length > 1 && (
+                <p className="stay-muted" style={{ margin: '12px 0 0', fontSize: 14 }}>
+                  {t('offersNote')}
+                </p>
+              )}
+            </section>
+          )}
+
           {/* Правила */}
           <section className="stay-sec" style={{ order: 7 }}>
             <h2 className="stay-h2">{t('rulesTitle')}</h2>
@@ -616,6 +641,12 @@ export default function ListingView({ property, reviews, seasons = [], slug, loa
                       <span>{t('stayLine', { nights: t('nights', { n: quote.nights }) })}</span>
                       <span>{formatMoney(quote.accommodation_total)}</span>
                     </div>
+                    {Number(quote.discount) > 0 && (
+                      <div className="stay-line stay-line--offer">
+                        <span>{t('quoteOffer', { name: appliedOffer?.label ?? '' })}</span>
+                        <span>−{formatMoney(quote.discount)}</span>
+                      </div>
+                    )}
                     {Number(quote.cleaning_fee) > 0 && (
                       <div className="stay-line">
                         <span>{t('cleaningFee')}</span>

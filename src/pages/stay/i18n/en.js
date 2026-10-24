@@ -70,6 +70,22 @@ export default {
   seasonMinStay: 'min. {nights}',
   seasonsNote: 'Rates per night. The exact total for your dates appears when you check the price.',
 
+  offersTitle: "Offers",
+  offersNote: "If more than one offer applies, you get the best one — offers don't add up.",
+  days: { one: "{n} day", other: "{n} days" },
+  pkgFreeNights: "Pay for {paid}, stay {total}",
+  pkgRepeat: "applies to every full block",
+  pkgPercent: "{percent}% off stays of {nights} or more",
+  pkgFixed: "{nights} for {price}",
+  pkgFixedWeekday: "Check-in day: {weekday}",
+  pkgEarly: "{percent}% off when you book {days} or more in advance",
+  pkgLast: "{percent}% off when you check in within {days}",
+  pkgLastToday: "{percent}% off when you check in today",
+  pkgValidBetween: "Check-in from {from} to {to}",
+  pkgValidFrom: "Check-in from {from}",
+  pkgValidTo: "Check-in until {to}",
+  quoteOffer: "Offer “{name}”",
+
   availability: 'Availability',
   availabilityNote: 'Crossed-out days are already taken.',
 

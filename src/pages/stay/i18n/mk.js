@@ -65,6 +65,22 @@ export default {
   seasonMinStay: 'мин. {nights}',
   seasonsNote: 'Цени по ноќевање. Точниот износ за вашите датуми го гледате кога ќе проверите цена.',
 
+  offersTitle: "Понуди",
+  offersNote: "Ако важат повеќе понуди, се применува најповолната — попустите не се собираат.",
+  days: { one: "{n} ден", other: "{n} дена" },
+  pkgFreeNights: "Платете {paid}, останете {total}",
+  pkgRepeat: "важи за секој цел блок",
+  pkgPercent: "−{percent}% при престој од {nights} нагоре",
+  pkgFixed: "{nights} за {price}",
+  pkgFixedWeekday: "Ден на пристигнување: {weekday}",
+  pkgEarly: "−{percent}% при резервација најмалку {days} однапред",
+  pkgLast: "−{percent}% при пристигнување во рок од {days} од денес",
+  pkgLastToday: "−{percent}% при пристигнување денес",
+  pkgValidBetween: "Пристигнување од {from} до {to}",
+  pkgValidFrom: "Пристигнување од {from}",
+  pkgValidTo: "Пристигнување до {to}",
+  quoteOffer: "Понуда „{name}“",
+
   availability: 'Достапност',
   availabilityNote: 'Прецртаните денови се веќе зафатени.',
 
