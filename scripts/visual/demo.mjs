@@ -57,11 +57,11 @@ for (const [w, h] of [[1440, 900], [375, 812]]) {
     title: document.title, robots: document.querySelector('meta[name="robots"]')?.content ?? null,
     font: getComputedStyle(document.querySelector('h1')).fontFamily.slice(0, 10),
   }))
-  ok(`/demo @${w}: един h1, един main, заглавие „Така изглежда…“`, m.h1n === 1 && m.mains === 1 && /Така изглежда страницата на вашия имот/.test(m.h1), m.h1)
+  ok(`/demo @${w}: един h1, един main, заглавие „Вижте какво има вътре…“`, m.h1n === 1 && m.mains === 1 && /Вижте какво има вътре, преди да се регистрирате/.test(m.h1), m.h1)
   ok(`/demo @${w}: три карти към /demo/<имот> с бадж „Демо“`, m.cards.length === 3 && m.cards.every((c, i) => c.href === `/demo/${SLUGS[i]}` && c.tag === 'Демо'), JSON.stringify(m.cards.map((c) => c.href)))
   ok(`/demo @${w}: „от“ цените са 50 €, 118 €, 74 €`, m.cards.map((c) => c.price).join('|').replace(/\s/g, '') === 'от50€/нощ|от118€/нощ|от74€/нощ', m.cards.map((c) => c.price).join(' | '))
   ok(`/demo @${w}: връзки „Създай профил“ и „Вход“, h1 с Literata, без noindex`, m.signup && m.login && /Literata/.test(m.font) && m.robots === null, m.font)
-  ok(`/demo @${w}: заглавие на страницата е демо`, /Демо — как изглежда/.test(m.title), m.title)
+  ok(`/demo @${w}: заглавие на страницата е демо`, /Вижте какво има вътре — демо на StayFlow/.test(m.title), m.title)
   ok(`/demo @${w}: без заявки към базата и функциите`, calls.length === 0, calls.join(', '))
   ok(`/demo @${w}: без хоризонтално препълване и без грешки`, !(await overflow(page)) && errors.length === 0, errors.join(' | '))
   const v = await axe(page)
@@ -72,6 +72,70 @@ for (const [w, h] of [[1440, 900], [375, 812]]) {
     await page.waitForURL('**/demo/svetal-apartament-sofia')
     await page.waitForSelector('.stay-title')
     ok('/demo: щракване върху картата отваря страницата на имота', /Светъл апартамент/.test(await page.locator('h1').innerText()))
+  }
+  await ctx.close()
+}
+
+/* ============================================================ „Какво има вътре“ (табове с екрани на приложението) */
+const TITLES = ['Какво се случва днес', 'Всички имоти в един календар', 'Резервации и плащания', 'Колко реално печелите', 'Имотът: описание, цени и оферти', 'Почистване и забележки', 'Фактури в PDF', 'Заявките идват при вас', 'На няколко езика']
+for (const [w, h] of [[1440, 900], [375, 812]]) {
+  const phone = w < 900
+  const { ctx, page, errors, calls } = await open('/demo', w, h)
+  const imgReqs = []
+  page.on('request', (r) => { if (/\/demo\/tour\//.test(r.url())) imgReqs.push(r.url().split('/').pop()) })
+  const tabs = page.getByRole('tab')
+  ok(`тур @${w}: 9 таба в списък с етикет, първият е избран`, (await tabs.count()) === 9 && (await page.getByRole('tablist').getAttribute('aria-label')) === 'Функции на StayFlow' && (await tabs.first().getAttribute('aria-selected')) === 'true')
+  ok(`тур @${w}: само избраният таб е в реда на табулатора (roving tabindex)`, (await page.locator('[role="tab"][tabindex="0"]').count()) === 1)
+  let allLoaded = true
+  const seen = []
+  for (let i = 0; i < 9; i++) {
+    await tabs.nth(i).scrollIntoViewIfNeeded()
+    await tabs.nth(i).click()
+    await page.waitForFunction((n) => { const imgs = [...document.querySelectorAll('.tour-panel img')]; return imgs.length > 0 && imgs.every((im) => im.complete) }, i, { timeout: 8000 }).catch(() => {})
+    const st = await page.evaluate(() => ({
+      title: document.querySelector('.tour-panel h3')?.textContent,
+      points: document.querySelectorAll('.tour-points li').length,
+      imgs: [...document.querySelectorAll('.tour-panel img')].map((im) => ({ ok: im.naturalWidth > 0, alt: im.alt, src: im.getAttribute('src').split('/').pop() })),
+      selected: document.querySelector('[role="tab"][aria-selected="true"]')?.textContent.trim(),
+      panelLabel: document.querySelector('[role="tabpanel"]').getAttribute('aria-labelledby'),
+    }))
+    seen.push(st.title)
+    if (st.title !== TITLES[i] || st.points < 3 || !st.imgs.every((im) => im.ok) || st.imgs.length !== (phone ? 1 : 2)) allLoaded = false
+    if (st.title !== TITLES[i] || !st.imgs.every((im) => im.ok)) console.log('   ', i, JSON.stringify(st))
+  }
+  ok(`тур @${w}: всеки от 9-те таба показва своя текст, 3–4 точки и ${phone ? 'снимка на телефон' : 'снимка на компютър + телефон'} (всички се зареждат)`, allLoaded, seen.join(' | '))
+  ok(`тур @${w}: ${phone ? 'на телефон не се теглят снимките за компютър' : 'на компютър се теглят и двете снимки'}`, phone ? !imgReqs.some((f) => f.startsWith('desktop-')) : imgReqs.some((f) => f.startsWith('desktop-')) && imgReqs.some((f) => f.startsWith('phone-')), imgReqs.join(','))
+  ok(`тур @${w}: снимките са с размери (без скок на страницата) и описание`, await page.evaluate(() => [...document.querySelectorAll('.tour-panel img')].every((im) => im.getAttribute('width') && im.getAttribute('height'))))
+  // клавиатура
+  await tabs.nth(2).click()
+  await tabs.nth(2).focus()
+  await page.keyboard.press('ArrowRight')
+  let st = await page.evaluate(() => ({ sel: document.querySelector('[role="tab"][aria-selected="true"]')?.textContent.trim(), focus: document.activeElement.textContent.trim() }))
+  ok(`тур @${w}: стрелка надясно избира и фокусира следващия таб`, st.sel === 'Приходи' && st.focus === 'Приходи', JSON.stringify(st))
+  await page.keyboard.press('End')
+  st = await page.evaluate(() => document.querySelector('[role="tab"][aria-selected="true"]')?.textContent.trim())
+  ok(`тур @${w}: End → последният (Езици)`, st === 'Езици', st)
+  await page.keyboard.press('ArrowRight')
+  st = await page.evaluate(() => document.querySelector('[role="tab"][aria-selected="true"]')?.textContent.trim())
+  ok(`тур @${w}: след последния се връща към първия (Табло)`, st === 'Табло', st)
+  await page.keyboard.press('ArrowLeft')
+  st = await page.evaluate(() => document.querySelector('[role="tab"][aria-selected="true"]')?.textContent.trim())
+  ok(`тур @${w}: стрелка наляво от първия → последния`, st === 'Езици', st)
+  if (phone) {
+    ok('тур @375: лентата с табове се плъзга хоризонтално, страницата — не', (await page.evaluate(() => { const t = document.querySelector('.tour-tabs'); return t.scrollWidth > t.clientWidth })) && !(await overflow(page)))
+    ok('hero на телефон: без картинка с екрани (не се тегли излишно)', (await page.locator('.demo-hero__art').count()) === 0)
+  } else {
+    ok('hero на компютър: екран на календара + телефон с таблото', (await page.locator('.demo-hero__art img').count()) === 2 && (await page.locator('.demo-hero__art img').first().evaluate((im) => im.naturalWidth > 0)))
+  }
+  ok(`тур @${w}: без хоризонтално препълване, без грешки, без заявки към базата`, !(await overflow(page)) && errors.length === 0 && calls.length === 0, errors.concat(calls).join(' | '))
+  await page.waitForTimeout(450) // да свърши входната анимация на панела
+  const v = await axe(page)
+  ok(`тур @${w}: axe — 0 нарушения`, v.length === 0, v.join(' ; '))
+  if (shots) {
+    await tabs.nth(3).click()
+    await page.locator('#tour').scrollIntoViewIfNeeded()
+    await page.waitForTimeout(500)
+    await page.screenshot({ path: `${shots}/demo-tour-${w}.png` })
   }
   await ctx.close()
 }
@@ -167,7 +231,7 @@ for (const [w, h] of [[1440, 900], [375, 812]]) {
 {
   // приложението на собственика на гръцки не превежда демото
   const { ctx, page } = await open('/demo', 1440, 900, () => { try { localStorage.setItem('stayflow.appLang', 'el') } catch {} })
-  ok('приложението на гръцки не превежда /demo', /Така изглежда страницата/.test(await page.locator('h1').innerText()) && (await page.locator('html').getAttribute('lang')) === 'bg')
+  ok('приложението на гръцки не превежда /demo', /Вижте какво има вътре/.test(await page.locator('h1').innerText()) && (await page.locator('html').getAttribute('lang')) === 'bg')
   await ctx.close()
 }
 
@@ -183,7 +247,7 @@ for (const [w, h] of [[1440, 900], [375, 812]]) {
       await link.click()
       await page.waitForURL('**/demo')
       await page.waitForSelector('.demo-hero h1')
-      ok(`${route}: връзката отвежда към /demo`, /Така изглежда/.test(await page.locator('h1').innerText()))
+      ok(`${route}: връзката отвежда към /demo`, /Вижте какво има вътре/.test(await page.locator('h1').innerText()))
     }
     await ctx.close()
   }

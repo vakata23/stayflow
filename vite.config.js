@@ -176,8 +176,8 @@ export default defineConfig(({ mode }) => {
       analyzePhotosDevPlugin(env),
       VitePWA({
         registerType: 'autoUpdate',
-        // Регистрацията на service worker-а не блокира първото изобразяване (script defer).
-        injectRegister: 'script-defer',
+        // Регистрацията е в src/pwa.js (след „load“, не блокира изобразяването) — там се проверява и за нова версия.
+        injectRegister: false,
         includeAssets: ['apple-touch-icon.png', 'favicon-32.png'],
         manifest: {
           name: 'StayFlow — Управление на имоти',
@@ -203,6 +203,10 @@ export default defineConfig(({ mode }) => {
           // (Roboto, 515KB) се тегли при нужда — не бива да тежи в SW.
           globPatterns: ['**/*.{js,css,html,png,svg,ico}', 'fonts/onest-*.woff2', 'fonts/literata-*.woff2'],
           globIgnores: ['**/fonts/Roboto*'],
+          // Новата версия поема веднага (не чака да се затворят всички раздели) — виж src/pwa.js.
+          skipWaiting: true,
+          clientsClaim: true,
+          cleanupOutdatedCaches: true,
           // API заявките към Supabase и /api/ical никога не се кешират.
           navigateFallbackDenylist: [/^\/api\//],
           maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,

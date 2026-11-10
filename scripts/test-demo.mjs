@@ -3,6 +3,7 @@
 import { existsSync } from 'node:fs'
 import { DEMO_PROPERTIES, findDemo, demoFromPrice, demoQuote, demoBusyNights } from '../src/lib/demoData.js'
 import { AMENITIES } from '../src/lib/amenities.js'
+import { TOUR, MORE } from '../src/lib/demoTour.js'
 import { toDraft as pkgDraft, validatePackage, addDaysISO } from '../src/lib/packageLogic.js'
 import { toDraft as seasonDraft, validateSeason } from '../src/lib/seasonLogic.js'
 
@@ -41,6 +42,13 @@ for (const d of DEMO_PROPERTIES) {
   ok(`${who}: без измислени отзиви и контакти`, !p.reviews && Array.isArray(p.channels) && p.channels.length === 0)
 }
 ok('„от“ цената: сезонът може да е по-евтин (50), без сезони е основната (118), по-скъп сезон не я вдига (74)', demoFromPrice(NK) === 50 && demoFromPrice(SOFIA) === 118 && demoFromPrice(LOFT) === 74)
+
+/* ---------- „Какво има вътре“ ---------- */
+ok('тур: 9 функции с различни ключове', TOUR.length === 9 && new Set(TOUR.map((t) => t.key)).size === 9)
+ok('тур: всяка функция има таб, заглавие, увод, 3–4 точки и описание на снимката', TOUR.every((t) => t.tab && t.title && t.lead && t.points.length >= 3 && t.points.length <= 4 && t.alt.length > 15), TOUR.filter((t) => !(t.points.length >= 3 && t.points.length <= 4)).map((t) => t.key).join(','))
+ok('тур: снимките за компютър и телефон съществуват за всяка функция', TOUR.every((t) => existsSync(`public/demo/tour/desktop-${t.key}.webp`) && existsSync(`public/demo/tour/phone-${t.key}.webp`)), TOUR.filter((t) => !existsSync(`public/demo/tour/desktop-${t.key}.webp`) || !existsSync(`public/demo/tour/phone-${t.key}.webp`)).map((t) => t.key).join(','))
+ok('тур: иконите са познати (lucide)', ['LayoutDashboard', 'CalendarDays', 'ClipboardList', 'TrendingUp', 'House', 'Sparkles', 'FileText', 'Inbox', 'Languages'].length === new Set(TOUR.map((t) => t.icon)).size && TOUR.every((t) => ['LayoutDashboard', 'CalendarDays', 'ClipboardList', 'TrendingUp', 'House', 'Sparkles', 'FileText', 'Inbox', 'Languages'].includes(t.icon)))
+ok('„И още“: 6 точки със заглавие и описание', MORE.length === 6 && MORE.every(([t, d]) => t && d.length > 20))
 
 /* ---------- сметка: Неа Каликратия (основна 65; лято 85 мин. 3; зима 50 мин. 2; почистване 25) ---------- */
 let r = q(NK, '2027-01-10', '2027-01-13')
