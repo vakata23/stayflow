@@ -33,6 +33,8 @@ const Rules = lazy(() => import('./pages/earnings/Rules'))
 const BookingRequests = lazy(() => import('./pages/BookingRequests'))
 const Notifications = lazy(() => import('./pages/Notifications'))
 const PublicStay = lazy(() => import('./pages/stay/PublicStay'))
+const DemoHome = lazy(() => import('./pages/demo/DemoHome'))
+const DemoStay = lazy(() => import('./pages/demo/DemoStay'))
 const DesignSystem = lazy(() => import('./pages/DesignSystem'))
 
 function PageFallback() {
@@ -61,6 +63,9 @@ export default function App() {
 
             {/* Публична страница за резервации — без login */}
             <Route path="/stay/:slug" element={<PublicStay />} />
+            {/* Демо без регистрация: примерни страници на имоти (без база данни) */}
+            <Route path="/demo" element={<DemoHome />} />
+            <Route path="/demo/:slug" element={<DemoStay />} />
 
             {/* Витрина на дизайн системата — без данни, noindex */}
             <Route path="/design" element={<DesignSystem />} />

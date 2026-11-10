@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import {
   Eye,
   CheckCircle2,
@@ -149,7 +150,7 @@ function ShareButton({ title }) {
  * проверка на цена и заявка — те минават само през публикуван slug.
  * Показва се само онова, което собственикът е попълнил: празна секция няма.
  */
-export default function ListingView({ property, reviews, seasons = [], packages = [], slug, loadBusy, preview = false }) {
+export default function ListingView({ property, reviews, seasons = [], packages = [], slug, loadBusy, preview = false, demo = null }) {
   const { t, lang, locale } = useStayLang()
   const [descExpanded, setDescExpanded] = useState(false)
   const [amenitiesExpanded, setAmenitiesExpanded] = useState(false)
@@ -183,6 +184,12 @@ export default function ListingView({ property, reviews, seasons = [], packages 
 
     if (!checkIn || !checkOut) return setQuoteError(t('errPickDates'))
     if (checkOut <= checkIn) return setQuoteError(t('errDateOrder'))
+
+    // Демо (/demo): цената се смята на място, без база данни
+    if (demo) {
+      const q = demo.quote(checkIn, checkOut, Number(guests))
+      return q ? setQuote(q) : setQuoteError(t('errQuote'))
+    }
 
     setQuoting(true)
     const { data, error } = await supabase.rpc('quote_stay', {
@@ -220,6 +227,9 @@ export default function ListingView({ property, reviews, seasons = [], packages 
     if (guestEmail.trim() && !isValidEmail(guestEmail.trim())) {
       return setSendError(t('errEmail'))
     }
+
+    // Демо: показваме потвърждението, но нищо не се изпраща никъде
+    if (demo) return setSent(true)
 
     setSending(true)
     try {
@@ -335,6 +345,20 @@ export default function ListingView({ property, reviews, seasons = [], packages 
         <div className="stay-preview-bar">
           <Eye className="h-4 w-4 shrink-0" />
           Преглед като гост — {property.is_listed ? 'страницата е публикувана' : 'още НЕ е публикувана, никой друг не я вижда'}
+        </div>
+      )}
+
+      {demo && (
+        <div className="stay-demo-bar">
+          <Link to="/demo" className="stay-demo-bar__back">
+            ← Всички примери
+          </Link>
+          <span className="stay-demo-bar__text">
+            <b>Демо на StayFlow.</b> Примерна страница на имот — запитването не се изпраща никъде.
+          </span>
+          <Link to="/signup" className="stay-demo-bar__cta">
+            Създай свой профил
+          </Link>
         </div>
       )}
 
@@ -732,6 +756,11 @@ export default function ListingView({ property, reviews, seasons = [], packages 
                   <p className="stay-muted" style={{ margin: 0, fontSize: 15 }}>
                     {t('sentText')}
                   </p>
+                  {demo && (
+                    <p className="stay-muted" style={{ margin: '12px 0 0', fontSize: 14 }}>
+                      Това е демо — запитването не е изпратено до никого. В истинската страница то идва при вас като известие.
+                    </p>
+                  )}
                 </div>
               )}
             </>
@@ -756,6 +785,23 @@ export default function ListingView({ property, reviews, seasons = [], packages 
           )}
         </aside>
       </main>
+
+      {demo && (
+        <section className="stay-wrap stay-demo-cta" aria-labelledby="demo-cta-title">
+          <h2 id="demo-cta-title" className="stay-h2">
+            Искате такава страница за вашия имот?
+          </h2>
+          <p className="stay-muted">Снимки, цена, сезони и оферти, календар и запитвания с дати — подготвени за вас в StayFlow.</p>
+          <div className="stay-demo-cta__row">
+            <Link to="/signup" className="stay-btn">
+              Създай свой профил
+            </Link>
+            <Link to="/demo" className="stay-btn-outline">
+              Още примери
+            </Link>
+          </div>
+        </section>
+      )}
 
       <footer className="stay-foot">{t('footer')}</footer>
 

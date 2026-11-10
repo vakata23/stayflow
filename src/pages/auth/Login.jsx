@@ -29,7 +29,7 @@ export default function Login() {
   }
 
   return (
-    <AuthLayout title="Вход" subtitle="Влезте в акаунта си, за да управлявате имотите си.">
+    <AuthLayout title="Вход" subtitle="Влезте в акаунта си, за да управлявате имотите си." demoLink>
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && <Alert>{error}</Alert>}
         <Field label="Имейл">

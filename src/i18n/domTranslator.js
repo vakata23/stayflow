@@ -15,7 +15,7 @@ const CYR = /[Ѐ-ӿ]/
 const ATTRS = ['placeholder', 'title', 'aria-label', 'alt', 'aria-description', 'aria-valuetext']
 const ATTR_SELECTOR = ATTRS.map((a) => `[${a}]`).join(',')
 const SKIP_TAGS = new Set(['SCRIPT', 'STYLE', 'TEXTAREA', 'NOSCRIPT'])
-const EXCLUDED_PATHS = [/^\/stay(\/|$)/, /^\/guest(\/|$)/, /^\/design(\/|$)/, /^\/properties\/[^/]+\/preview(\/|$)/]
+const EXCLUDED_PATHS = [/^\/stay(\/|$)/, /^\/demo(\/|$)/, /^\/guest(\/|$)/, /^\/design(\/|$)/, /^\/properties\/[^/]+\/preview(\/|$)/]
 
 const textRec = new WeakMap() // възел → { src, out }
 const attrRec = new WeakMap() // елемент → { [атрибут]: { src, out } }
