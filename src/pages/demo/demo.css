@@ -224,3 +224,229 @@
   text-decoration: none;
   margin-top: 0;
 }
+
+/* ---------- „Какво има вътре“ (табове + снимки на екрани) ---------- */
+.demo-lead {
+  margin: -10px 0 26px;
+  max-width: 40em;
+  color: var(--s-muted);
+  font-size: 1.05rem;
+}
+.demo-hero__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 26px;
+}
+.demo-hero__row a {
+  margin-top: 0;
+  text-decoration: none;
+}
+.tour {
+  scroll-margin-top: 76px;
+}
+.tour-tabs {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 2px 2px 14px;
+  margin: 0 -2px;
+  scrollbar-width: thin;
+  scroll-snap-type: x proximity;
+}
+@media (min-width: 900px) {
+  .tour-tabs {
+    flex-wrap: wrap;
+    overflow: visible;
+    padding-bottom: 6px;
+  }
+}
+.tour-tab {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 46px;
+  padding: 0 16px;
+  border: 1.5px solid var(--s-line);
+  border-radius: 999px;
+  background: var(--s-paper);
+  color: var(--s-ink);
+  font: 600 15px/1 var(--s-body);
+  cursor: pointer;
+  scroll-snap-align: start;
+  transition: background-color 0.18s var(--s-ease), border-color 0.18s var(--s-ease), color 0.18s var(--s-ease), transform 0.1s var(--s-ease);
+}
+.tour-tab:hover {
+  border-color: var(--s-ink);
+}
+.tour-tab:active {
+  transform: scale(0.97);
+}
+.tour-tab[aria-selected='true'] {
+  background: var(--s-ink);
+  border-color: var(--s-ink);
+  color: #fff;
+}
+.tour-panel {
+  display: grid;
+  gap: 28px 48px;
+  margin-top: 18px;
+  animation: tour-in 0.28s var(--s-ease);
+}
+.tour-panel:focus-visible {
+  outline-offset: 6px;
+}
+@media (min-width: 900px) {
+  .tour-panel {
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.25fr);
+    align-items: center;
+    margin-top: 28px;
+  }
+}
+@keyframes tour-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+.tour-text h3 {
+  margin: 0;
+  font-family: var(--s-display);
+  font-weight: 600;
+  font-size: clamp(1.5rem, 3vw, 2.1rem);
+  line-height: 1.15;
+}
+.tour-lead {
+  margin: 12px 0 0;
+  color: var(--s-muted);
+  font-size: 1.05rem;
+}
+.tour-points {
+  display: grid;
+  gap: 12px;
+  margin: 22px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.tour-points li {
+  display: grid;
+  grid-template-columns: 22px 1fr;
+  gap: 10px;
+  align-items: start;
+}
+.tour-points svg {
+  margin-top: 2px;
+  color: var(--stay-accent-text);
+}
+.tour-shots {
+  position: relative;
+  min-width: 0;
+  padding-bottom: 0;
+}
+@media (min-width: 900px) {
+  .tour-shots {
+    padding: 0 0 36px 36px;
+  }
+}
+.tour-win {
+  overflow: hidden;
+  border: 1px solid var(--s-line);
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 30px 70px -34px rgb(0 0 0 / 0.4);
+}
+.tour-win__bar {
+  display: flex;
+  gap: 6px;
+  padding: 10px 12px;
+  background: var(--s-soft);
+  border-bottom: 1px solid var(--s-line);
+}
+.tour-win__bar i {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #d3d3d3;
+}
+.tour-win img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1440 / 900;
+}
+.tour-phone {
+  overflow: hidden;
+  width: min(280px, 72%);
+  margin-inline: auto;
+  border: 7px solid #1b1b1b;
+  border-radius: 34px;
+  background: #1b1b1b;
+  box-shadow: 0 30px 60px -28px rgb(0 0 0 / 0.5);
+}
+.tour-phone img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 780 / 1688;
+  border-radius: 26px;
+}
+@media (min-width: 900px) {
+  .tour-phone {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 26%;
+    margin: 0;
+    border-width: 5px;
+    border-radius: 26px;
+  }
+  .tour-phone img {
+    border-radius: 20px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tour-panel {
+    animation: none;
+  }
+}
+
+/* ---------- hero с екрани, малко място на телефон ---------- */
+@media (min-width: 1000px) {
+  .demo-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.08fr);
+    gap: 48px;
+    align-items: center;
+  }
+  .demo-hero__art {
+    padding: 0 0 36px 36px;
+  }
+}
+.demo-hero__text {
+  min-width: 0;
+}
+@media (max-width: 899px) {
+  .tour-shots {
+    order: -1;
+  }
+  .tour-phone {
+    width: min(250px, 66%);
+  }
+}
+@media (max-width: 560px) {
+  .demo-brand img {
+    height: 28px;
+  }
+  .demo-top__in {
+    gap: 10px;
+  }
+  .demo-nav {
+    gap: 10px;
+  }
+  .demo-nav .stay-btn {
+    white-space: nowrap;
+    padding: 0 14px;
+    font-size: 14px;
+  }
+}
