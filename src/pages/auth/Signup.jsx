@@ -52,7 +52,7 @@ export default function Signup() {
   }
 
   return (
-    <AuthLayout title="Регистрация" subtitle="Създайте акаунт и добавете първия си имот за минути.">
+    <AuthLayout title="Регистрация" subtitle="Създайте акаунт и добавете първия си имот за минути." demoLink>
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && <Alert>{error}</Alert>}
         <Field label="Име и фамилия">

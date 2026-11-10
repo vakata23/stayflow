@@ -15,6 +15,8 @@ const SRC = join(ROOT, 'src')
 /** Какво НЕ се превежда: публичните страници за гости (имат собствен превод или са за гости), PDF фактурите, сървърният код. */
 export const EXCLUDE = [
   `pages${sep}stay${sep}`, // публичната страница — свой превод на 6 езика
+  `pages${sep}demo${sep}`, // демо витрината — публична, без превод на приложението
+  `lib${sep}demoData.js`, // примерните данни на демото
   `pages${sep}guest${sep}`, // картата за госта — публична, за гостите на собственика
   `lib${sep}invoicePdf.js`, `lib${sep}localeDates.js`, // македонските имена на месеци (изход, не изходен текст) // фактурата е документ на български (за гост/счетоводство)
   `lib${sep}icalServer.js`, `lib${sep}bookingRequestServer.js`, `lib${sep}outboxProcessor.js`, `lib${sep}notificationAdapters.js`,
