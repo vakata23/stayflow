@@ -37,6 +37,7 @@ node scripts/visual/server.mjs /tmp/stayflow-dist 4174
 | Видове паркинг в редакторите (карта на имота и помощник за обявата): групата, отмятане, какво се записва, препълване, axe | `node scripts/visual/parking.mjs http://localhost:4174` |
 | Движение: броене, каскада, график, лист „Още“, хапче в лентата, намалено движение (+ кадри в `out/motion/`) | `node scripts/visual/motion.mjs http://localhost:4174 --frames` |
 | Хоризонтално препълване на всички екрани, вкл. /demo (360 / 375 / 768 / 1440 px) | `node scripts/visual/overflow.mjs http://localhost:4174` |
+| Табло: „Чака вас“ (връзки, броячи), „Първи стъпки“ (празен, частично готов, завършен акаунт; свиване и запомняне), „Нова резервация“ (`/bookings?new=1`), редове с клик (`?focus=`), форма, отворена при превъртяна страница (бъг с анимацията на екрана), меню отстрани на нисък екран, телефон (препълване, докосване ≥ 44 px), axe | `node scripts/visual/home.mjs http://localhost:4174 [папка за снимки]` (логика: `node scripts/test-home.mjs`) |
 
 Резултатите (снимки, JSON) са в `scripts/visual/out/` (в `.gitignore`). На Windows с Git Bash добавете
 `MSYS_NO_PATHCONV=1` пред командата, ако подавате пътища като `/design`.

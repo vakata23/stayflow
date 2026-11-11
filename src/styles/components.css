@@ -732,9 +732,12 @@
   /* Само transform и opacity; времената и кривите са от tokens.css. Под
      prefers-reduced-motion base.css скъсява всяка анимация до 0 и се вижда крайното състояние. */
 
-  /* преход между екрани ≤ 200 ms */
+  /* преход между екрани ≤ 200 ms
+     ВАЖНО: fill-mode е backwards, не both. С both крайното състояние остава „приложено“ и екранът става
+     containing block за position:fixed — всеки прозорец, отворен от екран (форма за резервация), се
+     позиционира спрямо екрана, а не спрямо прозореца на браузъра, и при превъртане излиза извън видимото. */
   .page-in {
-    animation: page-in var(--duration-base) var(--ease-out) both;
+    animation: page-in var(--duration-base) var(--ease-out) backwards;
   }
   @keyframes page-in {
     from {
@@ -745,7 +748,7 @@
 
   /* първите ~8 карти/редове се появяват меко, стъпка 32 ms */
   [data-rise] {
-    animation: rise-in var(--duration-base) var(--ease-out) both;
+    animation: rise-in var(--duration-base) var(--ease-out) backwards;
   }
   [data-rise="1"] { animation-delay: 32ms; }
   [data-rise="2"] { animation-delay: 64ms; }

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { NavLink, Link, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard,
@@ -63,7 +63,7 @@ const exactPaths = new Set(['/', '/earnings'])
 function NavGroup({ title, items, onNavigate, badges }) {
   return (
     <div>
-      <p className="px-3.5 pb-1.5 pt-5 font-display text-[0.9375rem] font-medium italic text-ink-muted">{title}</p>
+      <p className="px-3.5 pb-1 pt-4 font-display text-[0.9375rem] font-medium italic text-ink-muted">{title}</p>
       <ul className="space-y-0.5">
         {items.map(({ to, label, icon: Icon }) => {
           const badge = badges?.[to]
@@ -74,7 +74,7 @@ function NavGroup({ title, items, onNavigate, badges }) {
                 end={exactPaths.has(to)}
                 onClick={onNavigate}
                 className={({ isActive }) =>
-                  `group flex min-h-11 items-center gap-3 rounded-[0.8125rem] px-3.5 text-[0.9375rem] transition-colors [@media(hover:hover)_and_(pointer:fine)]:min-h-10 ${
+                  `group flex min-h-11 items-center gap-3 rounded-[0.8125rem] px-3.5 text-[0.9375rem] transition-colors [@media(hover:hover)_and_(pointer:fine)]:min-h-9 ${
                     isActive ? 'bg-accent-soft font-semibold text-accent-ink' : 'font-medium text-ink-soft hover:bg-sunken hover:text-ink'
                   }`
                 }
@@ -108,6 +108,29 @@ function Brand({ className = '' }) {
   )
 }
 
+/**
+ * Менюто отстрани се превърта на нисък екран. Докато има още скрити места под видимите, долният
+ * ръб бледнее — иначе „Известия“ и „Правила“ стояха отрязани без никакъв знак, че има още.
+ */
+function useScrollFade() {
+  const ref = useRef(null)
+  const [fade, setFade] = useState(false)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const update = () => setFade(el.scrollHeight - el.scrollTop - el.clientHeight > 4)
+    update()
+    el.addEventListener('scroll', update, { passive: true })
+    const ro = new ResizeObserver(update)
+    ro.observe(el)
+    return () => {
+      el.removeEventListener('scroll', update)
+      ro.disconnect()
+    }
+  }, [])
+  return [ref, fade]
+}
+
 function Avatar({ initials, className = '' }) {
   return (
     <span className={`grid shrink-0 place-items-center rounded-full bg-accent-soft font-bold text-accent-ink ${className}`} aria-hidden="true">
@@ -123,6 +146,7 @@ export default function Layout() {
   const { lang } = useAppLang()
   const [moreOpen, setMoreOpen] = useState(false)
   const [pendingRequests, setPendingRequests] = useState(0)
+  const [navRef, navFade] = useScrollFade()
 
   // Презарежда се при всяка смяна на страница — лека заявка, пресен брой
   // след всяко приемане/отказ на заявка от собственика.
@@ -159,7 +183,11 @@ export default function Layout() {
       {/* Голям екран: светла странична лента в крем */}
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-[17.25rem] flex-col border-r border-line bg-surface px-5 pb-5 pt-8 lg:flex">
         <Brand className="px-3 pb-3" />
-        <nav aria-label="Основно меню" className="-mx-1 min-h-0 flex-1 overflow-y-auto px-1">
+        <nav
+          ref={navRef}
+          aria-label="Основно меню"
+          className={`-mx-1 min-h-0 flex-1 overflow-y-auto px-1 ${navFade ? '[mask-image:linear-gradient(to_bottom,black_calc(100%-2.5rem),transparent)]' : ''}`}
+        >
           <NavGroup title="Управление" items={manageNav} badges={badges} />
           <NavGroup title="Работа" items={workNav} />
           <NavGroup title="Настройки" items={settingsNav} />

@@ -76,6 +76,22 @@ export default function BookingsList() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // „Нова резервация“ от таблото и от „Първи стъпки“ (/bookings?new=1) — отваря формата веднага,
+  // щом имотите са заредени (без имот резервация не може), и маха параметъра от адреса.
+  useEffect(() => {
+    if (searchParams.get('new') !== '1' || properties.length === 0) return
+    setEditing(null)
+    setModalOpen(true)
+    setSearchParams(
+      (p) => {
+        p.delete('new')
+        return p
+      },
+      { replace: true }
+    )
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [properties])
+
   const refreshIncompleteCount = useCallback(async () => {
     const { count } = await incompleteBookingsFilter(
       supabase.from('bookings').select('id', { count: 'exact', head: true })

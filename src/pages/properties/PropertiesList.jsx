@@ -113,7 +113,7 @@ export default function PropertiesList() {
     <div>
       <PageHeader
         icon={Building2}
-        title="Поддръжка на имоти"
+        title="Имоти"
         description="Всички имоти, които управлявате."
         action={
           <Link to="/properties/new">
