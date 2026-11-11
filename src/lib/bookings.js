@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { OTA_SOURCES, isOtaSource } from './sources'
 
 export const BOOKING_SOURCES = [
   { value: 'manual', label: 'Ръчно въведена' },
@@ -35,11 +36,8 @@ export function statusLabel(v) {
   return BOOKING_STATUSES.find((s) => s.value === v)?.label ?? v
 }
 
-// Платформи, които удържат комисиона — всичко друго е директна резервация.
-export const OTA_SOURCES = ['airbnb', 'booking']
-export function isOtaSource(source) {
-  return OTA_SOURCES.includes(source)
-}
+// Платформи, които удържат комисиона — всичко друго е директна резервация (виж sources.js).
+export { OTA_SOURCES, isOtaSource }
 
 /**
  * Резервации от платформа без попълнена цена или комисиона (напр. донесени

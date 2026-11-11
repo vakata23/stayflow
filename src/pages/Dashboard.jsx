@@ -8,6 +8,9 @@ import { formatDate } from '../lib/localeDates'
 import { SOURCE_STYLES, sourceLabel } from '../lib/bookings'
 import { Card, Spinner, Alert, EmptyState, Button, PageHeader } from '../components/ui'
 import CountUp from '../components/CountUp'
+import AttentionPanel from '../components/AttentionPanel'
+import GettingStarted from '../components/GettingStarted'
+import { fetchAttentionFacts, fetchChecklistFacts } from '../lib/homeData'
 import { rise, useIntro } from '../lib/motion'
 
 const HORIZON_DAYS = 14
@@ -38,31 +41,33 @@ function StayCard({ booking, propertyName, today, animate, index }) {
 
   return (
     <li {...rise(index, animate)}>
-      <article
-        className={`grid h-full grid-cols-[auto_1fr_auto] items-center gap-x-3 gap-y-3 rounded-2xl p-5 shadow-card ${
-          arrives ? 'bg-accent-soft ring-1 ring-accent/30' : 'bg-card'
-        }`}
-      >
-        <span className={`grid h-12 w-12 place-items-center rounded-full text-[0.9375rem] font-bold ${arrives ? 'bg-card text-accent-ink' : 'bg-accent-soft text-accent-ink'}`} aria-hidden="true">
-          {initials(booking.guest_name)}
-        </span>
-        <div className="col-span-2 min-w-0">
-          <p className="truncate text-[1.0625rem] font-semibold leading-tight">{booking.guest_name}</p>
-          <p className="truncate text-sm text-ink-soft">{propertyName}</p>
-        </div>
-        <p className={`col-span-2 flex items-center gap-2 text-sm ${arrives ? 'font-semibold text-accent-ink' : 'text-ink-soft'}`}>
-          <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
-          {state}
-        </p>
-        <SourceTag source={booking.source} />
-        <div
-          className={`col-span-3 h-1.5 overflow-hidden rounded-full ${arrives ? 'bg-accent/15' : 'bg-sunken'}`}
-          role="img"
-          aria-label={`${done} от ${total} нощувки`}
+      <Link to={`/bookings?focus=${booking.id}`} className="card-interactive block h-full rounded-2xl">
+        <article
+          className={`grid h-full grid-cols-[auto_1fr_auto] items-center gap-x-3 gap-y-3 rounded-2xl p-5 shadow-card ${
+            arrives ? 'bg-accent-soft ring-1 ring-accent/30' : 'bg-card'
+          }`}
         >
-          <div className={`h-full rounded-full ${arrives ? 'bg-accent' : 'bg-accent/70'}`} style={{ width: `${Math.round((done / total) * 100)}%` }} />
-        </div>
-      </article>
+          <span className={`grid h-12 w-12 place-items-center rounded-full text-[0.9375rem] font-bold ${arrives ? 'bg-card text-accent-ink' : 'bg-accent-soft text-accent-ink'}`} aria-hidden="true">
+            {initials(booking.guest_name)}
+          </span>
+          <div className="col-span-2 min-w-0">
+            <p className="truncate text-[1.0625rem] font-semibold leading-tight">{booking.guest_name}</p>
+            <p className="truncate text-sm text-ink-soft">{propertyName}</p>
+          </div>
+          <p className={`col-span-2 flex items-center gap-2 text-sm ${arrives ? 'font-semibold text-accent-ink' : 'text-ink-soft'}`}>
+            <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+            {state}
+          </p>
+          <SourceTag source={booking.source} />
+          <div
+            className={`col-span-3 h-1.5 overflow-hidden rounded-full ${arrives ? 'bg-accent/15' : 'bg-sunken'}`}
+            role="img"
+            aria-label={`${done} от ${total} нощувки`}
+          >
+            <div className={`h-full rounded-full ${arrives ? 'bg-accent' : 'bg-accent/70'}`} style={{ width: `${Math.round((done / total) * 100)}%` }} />
+          </div>
+        </article>
+      </Link>
     </li>
   )
 }
@@ -84,16 +89,21 @@ function DayGroup({ date, events, propertyName, animate, index }) {
         {events.map(({ booking, kind }) => {
           const arrival = kind === 'arrival'
           return (
-            <li key={`${kind}-${booking.id}`} className="flex items-center gap-3.5 border-t border-line py-3.5 first:border-t-0 first:pt-0 last:pb-0 sm:first:pt-0">
-              <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-full ${arrival ? 'bg-success-soft text-success' : 'bg-warning-soft text-warning'}`}>
-                {arrival ? <LogIn className="h-4 w-4" aria-hidden="true" /> : <LogOut className="h-4 w-4" aria-hidden="true" />}
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="truncate font-semibold leading-tight">{booking.guest_name}</p>
-                <p className="truncate text-sm text-ink-soft">{propertyName(booking.property_id)}</p>
-              </div>
-              <span className="hidden text-sm text-ink-muted sm:block">{arrival ? 'Настаняване' : 'Напускане'}</span>
-              <SourceTag source={booking.source} />
+            <li key={`${kind}-${booking.id}`} className="border-t border-line first:border-t-0">
+              <Link
+                to={`/bookings?focus=${booking.id}`}
+                className="-mx-2 flex min-h-14 items-center gap-3.5 rounded-xl px-2 py-3 transition-colors active:bg-sunken [@media(hover:hover)_and_(pointer:fine)]:hover:bg-sunken"
+              >
+                <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-full ${arrival ? 'bg-success-soft text-success' : 'bg-warning-soft text-warning'}`}>
+                  {arrival ? <LogIn className="h-4 w-4" aria-hidden="true" /> : <LogOut className="h-4 w-4" aria-hidden="true" />}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-semibold leading-tight">{booking.guest_name}</p>
+                  <p className="truncate text-sm text-ink-soft">{propertyName(booking.property_id)}</p>
+                </div>
+                <span className="hidden text-sm text-ink-muted sm:block">{arrival ? 'Настаняване' : 'Напускане'}</span>
+                <SourceTag source={booking.source} />
+              </Link>
             </li>
           )
         })}
@@ -129,6 +139,8 @@ function Panel({ title, count, children }) {
 export default function Dashboard() {
   const [properties, setProperties] = useState([])
   const [bookings, setBookings] = useState([])
+  const [attention, setAttention] = useState(null)
+  const [checklist, setChecklist] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
@@ -139,7 +151,8 @@ export default function Dashboard() {
       const today = todayISO()
       const horizon = toISODate(addDays(new Date(), HORIZON_DAYS))
 
-      const [propsRes, bookingsRes] = await Promise.all([
+      // „Чака вас“ и „Първи стъпки“ са допълнение: ако някоя от тези заявки се провали, таблото си работи без тях.
+      const [propsRes, bookingsRes, attentionFacts, checklistFacts] = await Promise.all([
         supabase.from('properties').select('id, name').order('name'),
         supabase
           .from('bookings')
@@ -148,6 +161,8 @@ export default function Dashboard() {
           .lte('check_in', horizon)
           .gte('check_out', today)
           .order('check_in'),
+        fetchAttentionFacts(today).catch(() => null),
+        fetchChecklistFacts().catch(() => null),
       ])
 
       if (cancelled) return
@@ -155,6 +170,8 @@ export default function Dashboard() {
 
       setProperties(propsRes.data ?? [])
       setBookings(bookingsRes.data ?? [])
+      setAttention(attentionFacts)
+      setChecklist(checklistFacts)
       setLoading(false)
     }
 
@@ -199,6 +216,15 @@ export default function Dashboard() {
         eyebrow={capitalize(bg(today, { weekday: 'long', day: 'numeric', month: 'long' }))}
         title="Табло"
         description={`Какво се случва в имотите днес и през следващите ${HORIZON_DAYS} дни.`}
+        action={
+          !loading &&
+          properties.length > 0 && (
+            <Link to="/bookings?new=1" className="btn">
+              <Plus className="h-4 w-4" aria-hidden="true" />
+              Нова резервация
+            </Link>
+          )
+        }
       />
       <div className="mt-8 sm:mt-10" />
 
@@ -209,22 +235,33 @@ export default function Dashboard() {
           <Spinner />
         </Card>
       ) : properties.length === 0 ? (
-        <EmptyState
-          icon={Building2}
-          title="Добре дошли в StayFlow"
-          description="Добавете първия си имот, за да започнете да следите настанявания, почиствания и приходи."
-          action={
-            <Link to="/properties/new">
-              <Button>
-                <Plus className="h-4 w-4" />
-                Добави имот
-              </Button>
-            </Link>
-          }
-        />
+        checklist ? (
+          <GettingStarted facts={checklist} welcome />
+        ) : (
+          <EmptyState
+            icon={Building2}
+            title="Добре дошли в StayFlow"
+            description="Добавете първия си имот, за да започнете да следите настанявания, почиствания и приходи."
+            action={
+              <Link to="/properties/new">
+                <Button>
+                  <Plus className="h-4 w-4" />
+                  Добави имот
+                </Button>
+              </Link>
+            }
+          />
+        )
       ) : (
         <>
-          <section aria-label="Днес накратко" className="card grid grid-cols-3 divide-x divide-line py-1 sm:py-2" {...rise(0, animate)}>
+          {(attention || checklist) && (
+            <div className="mb-5 space-y-5 sm:mb-6" {...rise(0, animate)}>
+              <AttentionPanel facts={attention} />
+              <GettingStarted facts={checklist} />
+            </div>
+          )}
+
+          <section aria-label="Днес накратко" className="card grid grid-cols-3 divide-x divide-line py-1 sm:py-2" {...rise(1, animate)}>
             <Kpi label="Пристигат днес" value={arrivingToday.length} id="dash-arrive" hero hint={firstOf(arrivingToday) ?? 'няма'} />
             <Kpi label="Напускат днес" value={departingToday.length} id="dash-leave" hint={firstOf(departingToday) ?? 'няма'} />
             <Kpi label="Настанени сега" value={inHouse.length} id="dash-house" hint={`${distinctProps} от ${properties.length} ${properties.length === 1 ? 'имот' : 'имота'}`} />
