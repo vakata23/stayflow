@@ -1,7 +1,25 @@
-import { Navigate } from 'react-router-dom'
+import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
-export default function ProtectedRoute({ children }) {
+/** Инсталирано приложение (PWA на телефона, Capacitor): там е собственикът, а не нов посетител. */
+function isInstalledApp() {
+  try {
+    return (
+      window.matchMedia('(display-mode: standalone)').matches ||
+      window.navigator.standalone === true ||
+      Boolean(window.Capacitor?.isNativePlatform?.())
+    )
+  } catch {
+    return false
+  }
+}
+
+/**
+ * guest — по избор: какво да видят НЕвлезли посетители на „/“ (началната страница с демото).
+ * На всички други адреси, както и в инсталираното приложение, невлезлият отива на вход.
+ */
+export default function ProtectedRoute({ children, guest = null }) {
+  const location = useLocation()
   const { session, loading } = useAuth()
 
   if (loading) {
@@ -12,7 +30,10 @@ export default function ProtectedRoute({ children }) {
     )
   }
 
-  if (!session) return <Navigate to="/login" replace />
+  if (!session) {
+    if (guest && location.pathname === '/' && !isInstalledApp()) return guest
+    return <Navigate to="/login" replace />
+  }
 
   return children
 }

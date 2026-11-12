@@ -5,7 +5,7 @@
  * В картата на сайта са само публичните страници, които не зависят от потребител. Страниците /stay/<имот> на
  * клиентите не са вписани (списъкът им е в базата) — те се откриват през връзките, които собствениците споделят.
  */
-export const SITEMAP_PATHS = ['/', '/demo', '/signup']
+export const SITEMAP_PATHS = ['/', '/signup'] // /demo е същото като / (canonical)
 
 export function robotsTxt(origin) {
   return [

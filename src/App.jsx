@@ -82,7 +82,8 @@ export default function App() {
 
             <Route
               element={
-                <ProtectedRoute>
+                // „/“: влезлият вижда таблото, невлезлият — демото (началната страница на сайта), а не вход
+                <ProtectedRoute guest={<DemoHome home />}>
                   <Layout />
                 </ProtectedRoute>
               }

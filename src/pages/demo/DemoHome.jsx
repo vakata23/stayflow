@@ -9,25 +9,29 @@ import useWide from './useWide'
 import '../stay/stay.css'
 import './demo.css'
 
+// На „/“ (началната страница за невлезли) заглавието е на продукта; на /demo — на демото. Същите текстове са в
+// netlify/edge-functions/page-meta.js (scripts/test-site-meta.mjs ги сверява).
+const HOME_TITLE = 'StayFlow — Управление на краткосрочни наеми'
+const HOME_DESC = 'Управление на краткосрочни наеми — резервации, календар, почистване, фактури.'
 const PAGE_TITLE = 'Вижте какво има вътре — демо на StayFlow, без регистрация'
 const PAGE_DESC =
   'Разгледайте StayFlow преди да се регистрирате: истинските екрани — табло, календар, резервации, приходи — и примерни страници за гости със сезонни цени и оферти.'
 
 /** /demo — достъпна без регистрация: какво има в приложението на собственика и как изглежда страницата за гостите. */
-export default function DemoHome() {
+export default function DemoHome({ home = false }) {
   useDocumentLang()
   const wide = useWide('(min-width: 1000px)')
   useEffect(() => {
     const prevTitle = document.title
     const descEl = document.querySelector('meta[name="description"]')
     const prevDesc = descEl?.getAttribute('content') ?? null
-    document.title = PAGE_TITLE
-    if (descEl) descEl.setAttribute('content', PAGE_DESC)
+    document.title = home ? HOME_TITLE : PAGE_TITLE
+    if (descEl) descEl.setAttribute('content', home ? HOME_DESC : PAGE_DESC)
     return () => {
       document.title = prevTitle
       if (descEl && prevDesc !== null) descEl.setAttribute('content', prevDesc)
     }
-  }, [])
+  }, [home])
 
   return (
     <div className="stay demo">
@@ -36,7 +40,7 @@ export default function DemoHome() {
       </a>
       <header className="demo-top">
         <div className="stay-wrap demo-top__in">
-          <Link to="/demo" className="demo-brand" aria-label="StayFlow — демо">
+          <Link to={home ? '/' : '/demo'} className="demo-brand" aria-label={home ? 'StayFlow' : 'StayFlow — демо'}>
             <img src="/brand/logo-horizontal.png" alt="" width="1100" height="241" />
           </Link>
           <nav className="demo-nav" aria-label="Вход и регистрация">

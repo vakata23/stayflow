@@ -106,7 +106,7 @@ for (const [p, page] of Object.entries(PAGES)) {
   ok(page.description.length >= 50 && page.description.length <= 200, `${p}: описание 50–200 знака (${page.description.length})`)
   ok(count(/property="og:title"/g) === 1 && count(/property="og:image"/g) === 1 && count(/property="og:url"/g) === 1, `${p}: по един og:title/image/url`)
   ok(html.includes(`<meta property="og:image" content="${origin}${OG_IMAGE_PATH}" />`), `${p}: og:image с абсолютен адрес`)
-  ok(html.includes(`<link rel="canonical" href="${origin}${p === '/' ? '/' : p}" />`), `${p}: canonical`)
+  ok(html.includes(`<link rel="canonical" href="${origin}${page.canonical ?? p}" />`), `${p}: canonical`)
   ok(count(/name="robots"/g) === (page.noindex ? 1 : 0), `${p}: robots ${page.noindex ? 'noindex' : 'без ограничение'}`)
   ok(html.includes('</head>') && html.indexOf('og:title') < html.indexOf('</head>'), `${p}: таговете са в <head>`)
 }
@@ -124,6 +124,10 @@ const demoTitle = /const PAGE_TITLE = '([^']+)'/.exec(demo)?.[1]
 const demoDesc = /const PAGE_DESC =\s*'([^']+)'/.exec(demo)?.[1]
 ok(demoTitle === PAGES['/demo'].title, '/demo: заглавието в edge функцията = PAGE_TITLE в DemoHome.jsx')
 ok(demoDesc === PAGES['/demo'].description, '/demo: описанието в edge функцията = PAGE_DESC в DemoHome.jsx')
+ok(/const HOME_TITLE = '([^']+)'/.exec(demo)?.[1] === PAGES['/'].title, '/: заглавието в edge функцията = HOME_TITLE в DemoHome.jsx')
+ok(/const HOME_DESC = '([^']+)'/.exec(demo)?.[1] === PAGES['/'].description, '/: описанието в edge функцията = HOME_DESC в DemoHome.jsx')
+ok(PAGES['/demo'].canonical === '/' && !sm.includes('/demo<'), '/demo: canonical към / и не е в картата на сайта')
+ok(/guest=\{<DemoHome home \/>\}/.test(app), 'App.jsx: „/“ за невлезли показва DemoHome')
 // /stay/* не е в page-meta (там работи stay-og.js)
 ok(!Object.keys(PAGES).some((p) => p.startsWith('/stay')), 'page-meta не пипа /stay/*')
 

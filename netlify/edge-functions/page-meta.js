@@ -26,6 +26,8 @@ export const PAGES = {
     title: 'Вижте какво има вътре — демо на StayFlow, без регистрация',
     description:
       'Разгледайте StayFlow преди да се регистрирате: истинските екрани — табло, календар, резервации, приходи — и примерни страници за гости със сезонни цени и оферти.',
+    // „/“ показва същото демо на невлезлите посетители — една индексируема страница, а не две еднакви
+    canonical: '/',
   },
 }
 
@@ -46,10 +48,11 @@ export function normalizePath(pathname) {
 export function injectMeta(html, page, origin, pathname) {
   const path = normalizePath(pathname)
   const url = origin + (path === '/' ? '/' : path)
+  const canonical = origin + (page.canonical ?? path)
   const image = origin + OG_IMAGE_PATH
 
   const tags = [
-    `<link rel="canonical" href="${esc(url)}" />`,
+    `<link rel="canonical" href="${esc(canonical)}" />`,
     page.noindex && `<meta name="robots" content="noindex, follow" />`,
     `<meta property="og:site_name" content="StayFlow" />`,
     `<meta property="og:type" content="website" />`,
