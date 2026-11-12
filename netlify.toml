@@ -36,8 +36,233 @@
   to = "/.netlify/functions/telegram-webhook"
   status = 200
 
-# SPA fallback — react-router поема всички останали пътища.
+# SPA — react-router поема САМО познатите адреси на приложението. Всичко останало получава истинска 404
+# (public/404.html със статус 404), а не началната страница със статус 200. Нов адрес в src/App.jsx трябва да се
+# добави и тук — scripts/test-site-meta.mjs проваля билда на проверката, ако е пропуснат.
 [[redirects]]
-  from = "/*"
+  from = "/"
   to = "/index.html"
   status = 200
+
+[[redirects]]
+  from = "/login"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/signup"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/reset-password"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/update-password"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/guest/*"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/stay/*"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/demo"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/demo/*"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/design"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/cleaning-tasks"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/cleaning-notes"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/calendar"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/pricing"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/bookings"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/guest-cards"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/access-codes"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/invoicing"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/earnings"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/earnings/rules"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/booking-requests"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/notifications"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/properties"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/properties/*"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/*"
+  to = "/404.html"
+  status = 404
+
+# Защитни заглавия. Пълна Content-Security-Policy не е включена нарочно: приложението зарежда Supabase, карти и
+# снимки от външни адреси и твърда политика без внимателна проверка би счупила страници. frame-ancestors е безопасна.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    X-Frame-Options = "DENY"
+    Content-Security-Policy = "frame-ancestors 'none'"
+    Permissions-Policy = "camera=(), microphone=(), payment=(), geolocation=(self)"
+
+# Вътрешни и лични страници не трябва да се появяват в търсачките.
+[[headers]]
+  for = "/guest/*"
+  [headers.values]
+    X-Robots-Tag = "noindex"
+
+[[headers]]
+  for = "/design"
+  [headers.values]
+    X-Robots-Tag = "noindex"
+
+[[headers]]
+  for = "/reset-password"
+  [headers.values]
+    X-Robots-Tag = "noindex"
+
+[[headers]]
+  for = "/update-password"
+  [headers.values]
+    X-Robots-Tag = "noindex"
+
+[[headers]]
+  for = "/properties/*"
+  [headers.values]
+    X-Robots-Tag = "noindex"
+
+[[headers]]
+  for = "/cleaning-tasks"
+  [headers.values]
+    X-Robots-Tag = "noindex"
+
+[[headers]]
+  for = "/cleaning-notes"
+  [headers.values]
+    X-Robots-Tag = "noindex"
+
+[[headers]]
+  for = "/calendar"
+  [headers.values]
+    X-Robots-Tag = "noindex"
+
+[[headers]]
+  for = "/pricing"
+  [headers.values]
+    X-Robots-Tag = "noindex"
+
+[[headers]]
+  for = "/bookings"
+  [headers.values]
+    X-Robots-Tag = "noindex"
+
+[[headers]]
+  for = "/guest-cards"
+  [headers.values]
+    X-Robots-Tag = "noindex"
+
+[[headers]]
+  for = "/access-codes"
+  [headers.values]
+    X-Robots-Tag = "noindex"
+
+[[headers]]
+  for = "/invoicing"
+  [headers.values]
+    X-Robots-Tag = "noindex"
+
+[[headers]]
+  for = "/earnings"
+  [headers.values]
+    X-Robots-Tag = "noindex"
+
+[[headers]]
+  for = "/earnings/*"
+  [headers.values]
+    X-Robots-Tag = "noindex"
+
+[[headers]]
+  for = "/booking-requests"
+  [headers.values]
+    X-Robots-Tag = "noindex"
+
+[[headers]]
+  for = "/notifications"
+  [headers.values]
+    X-Robots-Tag = "noindex"
+
+[[headers]]
+  for = "/login"
+  [headers.values]
+    X-Robots-Tag = "noindex"
+
