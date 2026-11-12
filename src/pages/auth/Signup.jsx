@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import AuthLayout from '../../components/AuthLayout'
-import { Field, Input, Button, Alert } from '../../components/ui'
+import { Field, Input, Button, Alert, Checkbox } from '../../components/ui'
+import { useLegalT, withLinks } from '../../lib/legalI18n'
 
 export default function Signup() {
   const [fullName, setFullName] = useState('')
@@ -11,6 +12,8 @@ export default function Signup() {
   const [error, setError] = useState(null)
   const [success, setSuccess] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [consent, setConsent] = useState(false)
+  const { t } = useLegalT()
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -18,6 +21,10 @@ export default function Signup() {
 
     if (password.length < 8) {
       setError('Паролата трябва да е поне 8 символа.')
+      return
+    }
+    if (!consent) {
+      setError(t('errConsent'))
       return
     }
 
@@ -86,6 +93,25 @@ export default function Signup() {
             onChange={(e) => setPassword(e.target.value)}
           />
         </Field>
+        <Checkbox
+          checked={consent}
+          onChange={(e) => {
+            setConsent(e.target.checked)
+            setError(null)
+          }}
+          label={withLinks(t('consentSignup', { terms: '{terms}', privacy: '{privacy}' }), {
+            terms: (
+              <a href="/terms" target="_blank" rel="noopener noreferrer" className="font-semibold text-accent underline underline-offset-2">
+                {t('legalTerms')}
+              </a>
+            ),
+            privacy: (
+              <a href="/privacy" target="_blank" rel="noopener noreferrer" className="font-semibold text-accent underline underline-offset-2">
+                {t('legalPrivacy')}
+              </a>
+            ),
+          })}
+        />
         <Button type="submit" loading={loading} className="w-full">Създай акаунт</Button>
       </form>
       <p className="mt-6 text-center text-sm text-ink-soft">

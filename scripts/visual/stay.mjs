@@ -95,6 +95,7 @@ const plus = (n) => new Date(Date.now() + n * 86400000).toISOString().slice(0, 1
   ok('проверка на цена: „Свободно е…“, 3 нощувки, общо 286.00 €, капаро', /Свободно е за избрания период/.test(q) && /3 нощувки/.test(q) && /286\.00 €/.test(q) && /Капаро/.test(q), q.slice(0, 120))
   await page.getByLabel('Име *').fill('Иван Тестов')
   await page.locator('.stay-booking input[type="tel"]').fill('+359 88 123 4567')
+  await page.locator('.stay-consent input').check() // съгласие за предаване на данните (задължително)
   await page.getByRole('button', { name: 'Изпрати заявка' }).click()
   await page.waitForSelector('[role="status"]:has-text("Заявката е изпратена")', { timeout: 5000 })
   ok('заявка: изпраща се и се показва потвърждение', true)

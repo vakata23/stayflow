@@ -26,6 +26,10 @@ function send(res, status, body, headers = {}) {
 }
 const readBody = (req) => new Promise((resolve) => { let s = ''; req.on('data', (c) => (s += c)); req.on('end', () => resolve(s)) })
 
+// Банерът за бисквитки би закрил екрани и би пречил на всички по-стари проверки, затова тестовата среда
+// предварително „приема“ — освен когато заявката има заглавие x-consent-fresh (scripts/visual/legal.mjs).
+const CONSENT_SCRIPT = `<script>try{if(!localStorage.getItem('stayflow.consent'))localStorage.setItem('stayflow.consent',JSON.stringify({v:1,choice:'all',at:'2026-01-01T00:00:00.000Z'}))}catch(e){}</script>`
+
 function serveFile(req, res, file, immutable) {
   const ext = path.extname(file)
   const enc = COMPRESSIBLE.has(ext) && /\bbr\b/.test(req.headers['accept-encoding'] || '') ? 'br' : null
@@ -33,6 +37,7 @@ function serveFile(req, res, file, immutable) {
   let body = immutable ? cache.get(key) : null
   if (!body) {
     body = fs.readFileSync(file)
+    if (ext === '.html' && !req.headers['x-consent-fresh']) body = Buffer.from(body.toString('utf8').replace('</head>', `${CONSENT_SCRIPT}</head>`))
     if (enc) body = zlib.brotliCompressSync(body, { params: { [zlib.constants.BROTLI_PARAM_QUALITY]: 5 } })
     if (immutable) cache.set(key, body)
   }

@@ -868,6 +868,37 @@
   gap: 14px;
   grid-template-columns: 1fr 1fr;
 }
+
+/* отметка за съгласие под формата за заявка — целият ред е цел за докосване (≥ 44 px) */
+.stay-consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-height: 44px;
+  padding: 4px 0;
+  color: var(--s-ink);
+  font-size: 14px;
+  line-height: 1.5;
+  cursor: pointer;
+}
+.stay-consent input {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  margin-top: 1px;
+  accent-color: var(--s-ink);
+  cursor: pointer;
+}
+.stay-consent a {
+  color: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.stay-consent input:focus-visible {
+  outline: 2px solid var(--s-ink);
+  outline-offset: 2px;
+}
 @media (max-width: 430px) {
   .stay-grid2 {
     grid-template-columns: 1fr;

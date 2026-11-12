@@ -203,6 +203,7 @@ for (const [loc, want, probe] of [['ro-RO', 'ro', 'Despre această locuință'],
   ok('имейл без домейн → съобщение за имейл на румънски', (await err()) === t('errEmail'), await err())
   await page.locator('.stay-booking input[type="email"]').fill('')
   await page.locator('.stay-booking input[type="tel"]').fill('+40 712 345 678')
+  await page.locator('.stay-consent input').check() // съгласие за предаване на данните (задължително)
 
   let mode = 'rate'
   await page.route('**/api/booking-request', (route) => {

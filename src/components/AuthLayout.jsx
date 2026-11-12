@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { Eye } from 'lucide-react'
 import AppLangSwitch from '../i18n/AppLangSwitch'
+import LegalLinks from './LegalLinks'
 
 export default function AuthLayout({ title, subtitle, children, demoLink = false }) {
   return (
@@ -25,6 +26,7 @@ export default function AuthLayout({ title, subtitle, children, demoLink = false
             </Link>
           </p>
         )}
+        <LegalLinks className="mt-4 text-ink-muted" />
       </div>
     </main>
   )
