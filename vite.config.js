@@ -202,13 +202,13 @@ export default defineConfig(({ mode }) => {
           // Onest (~78 KB) и на заглавията Literata (~90 KB), за да не мига текстът офлайн. Шрифтът за фактурите
           // (Roboto, 515KB) се тегли при нужда — не бива да тежи в SW.
           globPatterns: ['**/*.{js,css,html,png,svg,ico}', 'fonts/onest-*.woff2', 'fonts/literata-*.woff2'],
-          globIgnores: ['**/fonts/Roboto*'],
+          globIgnores: ['**/fonts/Roboto*', '404.html', 'og-default.png'], // 404 и картинката за споделяне са за сървъра/търсачките, не за офлайн
           // Новата версия поема веднага (не чака да се затворят всички раздели) — виж src/pwa.js.
           skipWaiting: true,
           clientsClaim: true,
           cleanupOutdatedCaches: true,
           // API заявките към Supabase и /api/ical никога не се кешират.
-          navigateFallbackDenylist: [/^\/api\//],
+          navigateFallbackDenylist: [/^\/api\//, /^\/robots\.txt$/, /^\/sitemap\.xml$/, /^\/404\.html$/],
           maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
         },
       }),
