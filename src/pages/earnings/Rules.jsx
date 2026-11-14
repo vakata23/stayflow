@@ -18,6 +18,7 @@ import {
 } from '../../lib/recurringRules'
 import { PageHeader, Card, Button, Alert, Spinner, EmptyState, Modal, Field, Input, Select } from '../../components/ui'
 import SetupWizard from './SetupWizard'
+import { useDialogA11y } from '../../lib/useDialogA11y'
 
 export default function Rules() {
   const { profile } = useAuth()
@@ -214,6 +215,7 @@ export default function Rules() {
 }
 
 function RuleEditModal({ rule, properties, onClose, onSaved }) {
+  const dlg = useDialogA11y(true, onClose)
   const [v, setV] = useState({
     amount: String(rule.amount),
     frequency: rule.frequency,
@@ -253,9 +255,9 @@ function RuleEditModal({ rule, properties, onClose, onSaved }) {
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-4 sm:p-8">
       <div className="fixed inset-0 bg-ink/40" onClick={onClose} />
-      <div className="relative w-full max-w-md rounded-2xl border border-line bg-card shadow-xl">
+      <div ref={dlg.ref} {...dlg.props} className="outline-none relative w-full max-w-md rounded-2xl border border-line bg-card shadow-xl">
         <header className="border-b border-line px-6 py-4">
-          <h2 className="text-lg font-bold">Редакция на правило</h2>
+          <h2 id={dlg.titleId} className="text-lg font-bold">Редакция на правило</h2>
           <p className="text-xs text-ink-muted">{rule.label}</p>
         </header>
         <form onSubmit={save} className="space-y-4 px-6 py-5">

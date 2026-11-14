@@ -3,6 +3,7 @@ import { supabase } from '../../lib/supabase'
 import { todayISO } from '../../lib/dates'
 import { TASK_STATUSES } from '../../lib/cleaning'
 import { Field, Input, Textarea, Select, Button, Alert } from '../../components/ui'
+import { useDialogA11y } from '../../lib/useDialogA11y'
 
 const empty = {
   property_id: '',
@@ -14,6 +15,7 @@ const empty = {
 }
 
 export default function TaskFormModal({ open, onClose, onSaved, properties, initial }) {
+  const dlg = useDialogA11y(open, onClose)
   const [values, setValues] = useState(empty)
   const [checkouts, setCheckouts] = useState([])
   const [error, setError] = useState(null)
@@ -120,9 +122,9 @@ export default function TaskFormModal({ open, onClose, onSaved, properties, init
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-4 sm:p-8">
       <div className="fixed inset-0 bg-ink/40" onClick={onClose} />
 
-      <div className="relative w-full max-w-lg rounded-2xl border border-line bg-card shadow-xl">
+      <div ref={dlg.ref} {...dlg.props} className="outline-none relative w-full max-w-lg rounded-2xl border border-line bg-card shadow-xl">
         <header className="border-b border-line px-6 py-4">
-          <h2 className="text-lg font-bold">{isEdit ? 'Редакция на задача' : 'Нова задача'}</h2>
+          <h2 id={dlg.titleId} className="text-lg font-bold">{isEdit ? 'Редакция на задача' : 'Нова задача'}</h2>
         </header>
 
         <form onSubmit={handleSubmit} className="space-y-5 px-6 py-5">

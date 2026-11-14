@@ -79,6 +79,26 @@ const fabInfo = (page) =>
   await page.click('.fab')
   await form.first().waitFor({ timeout: 8000 }).catch(() => {})
   ok('клик на бутона докато сме на /bookings също отваря формата', (await form.count()) > 0)
+  // формата за резервация е истински диалог: име, фокус вътре, Tab не излиза, Esc затваря и връща фокуса
+  await go(page, '/bookings')
+  await page.click('.fab')
+  await form.first().waitFor({ timeout: 8000 }).catch(() => {})
+  const dlgInfo = await page.evaluate(() => {
+    const d = document.querySelector('[role="dialog"]')
+    return d ? { modal: d.getAttribute('aria-modal'), name: document.getElementById(d.getAttribute('aria-labelledby'))?.textContent, inside: d.contains(document.activeElement) } : null
+  })
+  ok('формата за резервация е role=dialog, aria-modal и има име', dlgInfo?.modal === 'true' && dlgInfo.name === 'Нова резервация', JSON.stringify(dlgInfo))
+  ok('фокусът е вътре във формата', !!dlgInfo?.inside)
+  let leaked = 0
+  for (let i = 0; i < 25; i++) {
+    await page.keyboard.press(i % 5 === 4 ? 'Shift+Tab' : 'Tab')
+    if (!(await page.evaluate(() => document.querySelector('[role="dialog"]').contains(document.activeElement)))) leaked++
+  }
+  ok('Tab/Shift+Tab не изкарват фокуса извън формата (25 натискания)', leaked === 0, String(leaked))
+  await page.keyboard.press('Escape')
+  await page.waitForTimeout(300)
+  ok('Esc затваря формата', (await page.locator('[role="dialog"]').count()) === 0)
+  ok('страницата зад формата отново скролира', (await page.evaluate(() => document.body.style.overflow)) !== 'hidden')
   ok('няма JS грешки (телефон)', errors.length === 0, errors.join(' | '))
   await ctx.close()
 }

@@ -6,8 +6,10 @@ import { nightsBetween, formatDateBG, todayISO } from '../../lib/dates'
 import { nextInvoiceNumber } from '../../lib/invoices'
 import { generateInvoicePdf, downloadBlob } from '../../lib/invoicePdf'
 import { Field, Input, Select, Button, Alert } from '../../components/ui'
+import { useDialogA11y } from '../../lib/useDialogA11y'
 
 export default function InvoiceModal({ open, onClose, onSaved, bookings, properties, profile }) {
+  const dlg = useDialogA11y(open, onClose)
   const { user } = useAuth()
 
   const [bookingId, setBookingId] = useState('')
@@ -118,10 +120,10 @@ export default function InvoiceModal({ open, onClose, onSaved, bookings, propert
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-4 sm:p-8">
       <div className="fixed inset-0 bg-ink/40" onClick={onClose} />
 
-      <div className="relative w-full max-w-lg rounded-2xl border border-line bg-card shadow-xl">
+      <div ref={dlg.ref} {...dlg.props} className="outline-none relative w-full max-w-lg rounded-2xl border border-line bg-card shadow-xl">
         <header className="flex items-center gap-2 border-b border-line px-6 py-4">
           <FileText className="h-5 w-5 text-accent" />
-          <h2 className="text-lg font-bold">Издаване на фактура</h2>
+          <h2 id={dlg.titleId} className="text-lg font-bold">Издаване на фактура</h2>
         </header>
 
         <form onSubmit={handleSubmit} className="space-y-5 px-6 py-5">
