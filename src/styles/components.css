@@ -900,6 +900,38 @@
     }
   }
 
+  /* ------------------------------------- плаващ бутон „Нова резервация“ (телефон) */
+  /* Над лентата, вдясно: лентата е най-много 30rem и центрирана, затова бутонът не я закрива. */
+  .fab {
+    position: fixed;
+    right: 1rem;
+    bottom: calc(5.25rem + env(safe-area-inset-bottom));
+    z-index: var(--z-nav);
+    display: grid;
+    width: 3.25rem;
+    height: 3.25rem;
+    place-items: center;
+    border-radius: 9999px;
+    background: var(--color-accent);
+    color: var(--color-on-accent);
+    box-shadow: var(--shadow-bar);
+    transition: transform var(--duration-fast, 120ms) var(--ease-out), background-color var(--duration-fast, 120ms);
+  }
+  .fab:active {
+    transform: scale(0.94);
+    background: var(--color-accent-press);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .fab:hover {
+      background: var(--color-accent-hover);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .fab {
+      transition: none;
+    }
+  }
+
   /* ---------------------------------------------------- сегментиран избор */
   .segmented {
     display: inline-flex;

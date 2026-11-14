@@ -75,7 +75,7 @@ ok(/geolocation=\(self\)/.test(all['Permissions-Policy'] ?? ''), 'Permissions-Po
 ok(!/camera=\(self\)|microphone=\(self\)/.test(all['Permissions-Policy'] ?? ''), 'камера/микрофон забранени')
 // Личните/вътрешни адреси са noindex; публичните — не
 const noindexed = (p) => headerRules.some((h) => h.values['X-Robots-Tag'] === 'noindex' && matches(h.for, p))
-for (const p of ['/guest/abc', '/design', '/reset-password', '/update-password', '/bookings', '/calendar', '/properties/12', '/earnings/rules', '/login']) {
+for (const p of ['/guest/abc', '/design', '/reset-password', '/update-password', '/bookings', '/calendar', '/profile', '/properties/12', '/earnings/rules', '/login']) {
   ok(noindexed(p), `${p}: X-Robots-Tag noindex`)
 }
 for (const p of ['/', '/demo', '/signup', '/stay/tihi-bryag']) ok(!noindexed(p), `${p}: НЕ е noindex (публична)`)

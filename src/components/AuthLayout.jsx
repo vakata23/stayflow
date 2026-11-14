@@ -5,12 +5,14 @@ import AppLangSwitch from '../i18n/AppLangSwitch'
 export default function AuthLayout({ title, subtitle, children, demoLink = false }) {
   return (
     <main className="relative flex min-h-dvh items-center justify-center bg-surface p-4">
-      <div className="absolute right-4 top-4 w-48">
-        <AppLangSwitch />
-      </div>
       <div className="w-full max-w-md">
+        <div className="mb-5 flex justify-end">
+          <div className="w-44">
+            <AppLangSwitch />
+          </div>
+        </div>
         <div className="mb-8 flex flex-col items-center">
-          <img src="/brand/logo-full.png" alt="StayFlow — Property Management" width="640" height="474" className="h-auto w-48 sm:w-56" />
+          <img src="/brand/logo-horizontal.png" alt="StayFlow" width="1100" height="241" className="h-auto w-52 sm:w-60" />
         </div>
         <div className="card p-6 sm:p-8">
           <h1 className="type-title">{title}</h1>

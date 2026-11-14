@@ -16,6 +16,8 @@ import {
   Building2,
   ScrollText,
   LogOut,
+  UserRound,
+  Plus,
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
@@ -54,11 +56,15 @@ const settingsNav = [
   { to: '/properties', label: 'Имоти', icon: Building2 },
   { to: '/notifications', label: 'Известия', icon: Bell },
   { to: '/earnings/rules', label: 'Правила', icon: ScrollText },
+  { to: '/profile', label: 'Профил', icon: UserRound },
 ]
 /* Листът „Още“ на телефон: първо най-честото, после работните инструменти */
-const moreOften = [requests, settingsNav[0], settingsNav[1], settingsNav[2]]
+const moreOften = [requests, settingsNav[0], settingsNav[1], settingsNav[2], settingsNav[3]]
 
 const exactPaths = new Set(['/', '/earnings'])
+
+/** Къде плаващият бутон не се показва: дълги форми (имот, профил), където би закривал бутона „Запази“. */
+const hidesNewBooking = (path) => path === '/properties/new' || path === '/profile' || /^\/properties\/[^/]+\/(setup|preview)$/.test(path)
 
 function NavGroup({ title, items, onNavigate, badges }) {
   return (
@@ -146,6 +152,7 @@ export default function Layout() {
   const { lang } = useAppLang()
   const [moreOpen, setMoreOpen] = useState(false)
   const [pendingRequests, setPendingRequests] = useState(0)
+  const [propertyCount, setPropertyCount] = useState(null)
   const [navRef, navFade] = useScrollFade()
 
   // Презарежда се при всяка смяна на страница — лека заявка, пресен брой
@@ -156,6 +163,14 @@ export default function Layout() {
       .select('id', { count: 'exact', head: true })
       .eq('status', 'pending')
       .then(({ count }) => setPendingRequests(count ?? 0))
+  }, [location.pathname])
+
+  // Плаващият бутон „Нова резервация“ има смисъл само при поне един имот; броят се обновява и след добавяне на имот.
+  useEffect(() => {
+    supabase
+      .from('properties')
+      .select('id', { count: 'exact', head: true })
+      .then(({ count }) => setPropertyCount(count ?? 0))
   }, [location.pathname])
 
   // Листът се затваря при всяка смяна на страница
@@ -190,17 +205,20 @@ export default function Layout() {
         >
           <NavGroup title="Управление" items={manageNav} badges={badges} />
           <NavGroup title="Работа" items={workNav} />
-          <NavGroup title="Настройки" items={settingsNav} />
+          {/* На голям екран профилът е в блока с името най-долу — така менюто се побира на 900 px без превъртане */}
+          <NavGroup title="Настройки" items={settingsNav.slice(0, 3)} />
         </nav>
         <div className="mt-3 px-3">
           <AppLangSwitch />
         </div>
         <div className="mt-3 flex items-center gap-3 border-t border-line px-3 pt-4">
-          <Avatar initials={initials} className="h-10 w-10 text-[0.9375rem]" />
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-[0.9375rem] font-semibold leading-tight">{displayName}</p>
-            {user?.email && displayName !== user.email && <p className="truncate text-[0.8125rem] leading-tight text-ink-muted">{user.email}</p>}
-          </div>
+          <Link to="/profile" title="Профил и настройки" className="-m-1.5 flex min-w-0 flex-1 items-center gap-3 rounded-xl p-1.5 transition-colors hover:bg-sunken">
+            <Avatar initials={initials} className="h-10 w-10 text-[0.9375rem]" />
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-[0.9375rem] font-semibold leading-tight">{displayName}</span>
+              {user?.email && displayName !== user.email && <span className="block truncate text-[0.8125rem] leading-tight text-ink-muted">{user.email}</span>}
+            </span>
+          </Link>
           <button type="button" onClick={handleSignOut} className="icon-btn shrink-0" aria-label="Изход" title="Изход">
             <LogOut className="h-[1.125rem] w-[1.125rem]" aria-hidden="true" />
           </button>
@@ -213,13 +231,24 @@ export default function Layout() {
       </header>
 
       <main className="lg:pl-[17.25rem]">
-        <div className="mx-auto max-w-[72rem] px-4 pb-[calc(7.5rem+env(safe-area-inset-bottom))] pt-2 sm:px-6 lg:px-12 lg:pb-20 lg:pt-12">
+        <div className="mx-auto max-w-[72rem] px-4 pb-[calc(9rem+env(safe-area-inset-bottom))] pt-2 sm:px-6 lg:px-12 lg:pb-20 lg:pt-12">
           {/* При смяна на езика екранът се прерисува (дати и месеци по Intl на новия език) */}
           <div key={`${location.pathname}|${lang}`} className="page-in">
             <Outlet />
           </div>
         </div>
       </main>
+
+      {propertyCount > 0 && !hidesNewBooking(location.pathname) && (
+        <button
+          type="button"
+          className="fab lg:hidden"
+          aria-label="Нова резервация"
+          onClick={() => navigate('/bookings?new=1')}
+        >
+          <Plus className="h-6 w-6" aria-hidden="true" />
+        </button>
+      )}
 
       <div className="lg:hidden">
         <BottomNav tabs={tabs} activeKey={activeTabKey(location.pathname)} pending={pendingRequests} moreOpen={moreOpen} onMore={() => setMoreOpen(true)} />
@@ -235,11 +264,13 @@ export default function Layout() {
           <AppLangSwitch />
         </div>
         <div className="mt-4 flex items-center gap-3 border-t border-line pt-4">
-          <Avatar initials={initials} className="h-11 w-11 text-[0.9375rem]" />
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-[0.9375rem] font-semibold leading-tight">{displayName}</p>
-            {user?.email && displayName !== user.email && <p className="truncate text-[0.8125rem] leading-tight text-ink-muted">{user.email}</p>}
-          </div>
+          <Link to="/profile" className="-m-1.5 flex min-h-11 min-w-0 flex-1 items-center gap-3 rounded-xl p-1.5 active:bg-sunken">
+            <Avatar initials={initials} className="h-11 w-11 text-[0.9375rem]" />
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-[0.9375rem] font-semibold leading-tight">{displayName}</span>
+              {user?.email && displayName !== user.email && <span className="block truncate text-[0.8125rem] leading-tight text-ink-muted">{user.email}</span>}
+            </span>
+          </Link>
           <button type="button" onClick={handleSignOut} className="btn btn-secondary">
             <LogOut className="h-4 w-4" aria-hidden="true" />
             Изход
