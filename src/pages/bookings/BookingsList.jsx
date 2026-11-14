@@ -1,9 +1,10 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { BookMarked, Plus, ArrowUpDown, Filter, AlertTriangle } from 'lucide-react'
+import { BookMarked, Plus, ArrowUpDown, Filter, AlertTriangle, Search } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { formatDateBG, nightsBetween } from '../../lib/dates'
 import { formatMoney } from '../../lib/money'
+import { searchBookings } from '../../lib/bookingSearch'
 import {
   BOOKING_STATUSES,
   SOURCE_STYLES,
@@ -37,6 +38,7 @@ export default function BookingsList() {
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
   const [sortAsc, setSortAsc] = useState(true)
+  const [query, setQuery] = useState('')
   const [incompleteOnly, setIncompleteOnly] = useState(() => searchParams.get('incomplete') === '1')
   const [incompleteCount, setIncompleteCount] = useState(0)
 
@@ -90,7 +92,7 @@ export default function BookingsList() {
       { replace: true }
     )
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [properties])
+  }, [properties, searchParams])
 
   const refreshIncompleteCount = useCallback(async () => {
     const { count } = await incompleteBookingsFilter(
@@ -127,6 +129,9 @@ export default function BookingsList() {
 
   const propertyName = (id) => properties.find((p) => p.id === id)?.name ?? '—'
   const hasFilters = propertyId !== 'all' || status !== 'all' || from || to
+  // Търсенето по гост е върху вече заредения списък (по име, телефон, имейл) и важи заедно с филтрите.
+  const visible = searchBookings(bookings, query)
+  const searching = query.trim() !== ''
 
   const clearFilters = () => {
     setPropertyId('all')
@@ -134,6 +139,7 @@ export default function BookingsList() {
     setFrom('')
     setTo('')
     setIncompleteOnly(false)
+    setQuery('')
   }
 
   const toggleIncomplete = () => {
@@ -189,6 +195,28 @@ export default function BookingsList() {
         )}
 
         <Card className="p-4 sm:p-5">
+          <div className="mb-4">
+            <label className="block">
+              <span className="mb-1 block text-xs font-semibold text-ink-soft">Търсене на гост</span>
+              <span className="relative block">
+                <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted" aria-hidden="true" />
+                <Input
+                  type="search"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Име, телефон или имейл"
+                  autoComplete="off"
+                  enterKeyHint="search"
+                  className="pl-10"
+                />
+              </span>
+            </label>
+            {searching && !loading && (
+              <p className="mt-2 text-sm text-ink-soft" role="status">
+                {visible.length === 0 ? 'Няма съвпадения' : `Намерени: ${visible.length} от ${bookings.length}`}
+              </p>
+            )}
+          </div>
           <div className="flex flex-wrap items-end gap-x-3 gap-y-3">
             <div className="flex w-full items-center gap-1.5 text-sm font-semibold text-ink-soft sm:w-auto sm:pb-3">
               <Filter className="h-4 w-4" aria-hidden="true" />
@@ -251,20 +279,24 @@ export default function BookingsList() {
           <Card>
             <Spinner />
           </Card>
-        ) : bookings.length === 0 ? (
+        ) : visible.length === 0 ? (
           <EmptyState
-            icon={incompleteOnly ? AlertTriangle : hasFilters ? Filter : BookMarked}
+            icon={incompleteOnly ? AlertTriangle : hasFilters || searching ? Filter : BookMarked}
             title={
               incompleteOnly
                 ? 'Всичко е попълнено'
-                : hasFilters
+                : searching && !hasFilters
+                  ? 'Няма гост с такова име или телефон'
+                  : hasFilters || searching
                   ? 'Няма резервации по тези филтри'
                   : 'Още нямате резервации'
             }
             description={
               incompleteOnly
                 ? 'Няма резервации от платформи без цена или комисиона.'
-                : hasFilters
+                : searching && !hasFilters
+                  ? 'Проверете изписването или опитайте само с част от името или с последните цифри на телефона.'
+                  : hasFilters || searching
                   ? 'Опитайте с други филтри или ги изчистете.'
                   : properties.length === 0
                     ? 'Първо добавете имот, след което ще можете да въвеждате резервации.'
@@ -282,9 +314,9 @@ export default function BookingsList() {
                 <Button variant="secondary" onClick={toggleIncomplete}>
                   Покажи всички
                 </Button>
-              ) : hasFilters ? (
+              ) : hasFilters || searching ? (
                 <Button variant="secondary" onClick={clearFilters}>
-                  Изчисти филтрите
+                  {searching && !hasFilters ? 'Изчисти търсенето' : 'Изчисти филтрите'}
                 </Button>
               ) : (
                 <Button
@@ -303,7 +335,7 @@ export default function BookingsList() {
           <>
             {/* Телефон: карта на резервация (гост, дати, цена); цялата карта е бутон за редакция */}
             <ul className="space-y-3 md:hidden">
-              {bookings.map((b, i) => (
+              {visible.map((b, i) => (
                 <li key={b.id} {...rise(i, animate)}>
                   <button type="button" onClick={() => openEditor(b)} className="card card-interactive grid w-full grid-cols-2 gap-x-4 gap-y-3 p-4 text-left">
                     <span className="col-span-2 flex items-center gap-3">
@@ -374,7 +406,7 @@ export default function BookingsList() {
                   </tr>
                 </thead>
                 <tbody>
-                  {bookings.map((b) => (
+                  {visible.map((b) => (
                     <tr key={b.id} onClick={() => openEditor(b)} className="cursor-pointer">
                       <td>
                         <p className="font-semibold text-ink">{b.guest_name}</p>

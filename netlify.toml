@@ -150,6 +150,11 @@
   status = 200
 
 [[redirects]]
+  from = "/profile"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
   from = "/properties"
   to = "/index.html"
   status = 200
@@ -258,6 +263,11 @@
 
 [[headers]]
   for = "/notifications"
+  [headers.values]
+    X-Robots-Tag = "noindex"
+
+[[headers]]
+  for = "/profile"
   [headers.values]
     X-Robots-Tag = "noindex"
 

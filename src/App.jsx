@@ -14,6 +14,7 @@ import UpdatePassword from './pages/auth/UpdatePassword'
 
 // Останалите модули се зареждат при нужда (route-based code splitting).
 const Dashboard = lazy(() => import('./pages/Dashboard'))
+const Profile = lazy(() => import('./pages/Profile'))
 const PropertiesList = lazy(() => import('./pages/properties/PropertiesList'))
 const PropertyNew = lazy(() => import('./pages/properties/PropertyNew'))
 const PropertyDetail = lazy(() => import('./pages/properties/PropertyDetail'))
@@ -101,6 +102,7 @@ export default function App() {
               <Route path="/earnings/rules" element={<Rules />} />
               <Route path="/booking-requests" element={<BookingRequests />} />
               <Route path="/notifications" element={<Notifications />} />
+              <Route path="/profile" element={<Profile />} />
               <Route path="/properties" element={<PropertiesList />} />
               <Route path="/properties/new" element={<PropertyNew />} />
               <Route path="/properties/:id" element={<PropertyDetail />} />

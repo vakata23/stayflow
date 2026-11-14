@@ -50,6 +50,15 @@ export function AuthProvider({ children }) {
     }
   }, [session?.user?.id])
 
+  /** Записва името/фирмата/телефона на собственика и обновява профила в паметта. Връща { error }. */
+  const updateProfile = async (values) => {
+    if (!profile?.id) return { error: new Error('Профилът не е зареден.') }
+    const { data, error } = await supabase.from('profiles').update(values).eq('id', profile.id).select().maybeSingle()
+    if (error) return { error }
+    setProfile(data ?? { ...profile, ...values })
+    return { error: null }
+  }
+
   const signOut = async () => {
     await supabase.auth.signOut()
   }
@@ -63,6 +72,7 @@ export function AuthProvider({ children }) {
         loading,
         profileLoading,
         signOut,
+        updateProfile,
       }}
     >
       {children}

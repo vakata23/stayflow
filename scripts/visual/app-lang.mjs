@@ -115,7 +115,7 @@ const axeRun = async (page) => {
 
 const ROUTES = [
   '/', '/calendar', '/bookings', '/booking-requests', '/earnings', '/earnings/rules', '/cleaning-tasks', '/cleaning-notes', '/pricing',
-  '/guest-cards', '/access-codes', '/invoicing', '/notifications', '/properties', `/properties/${P1}`, '/properties/new', `/properties/${P1}/setup`,
+  '/guest-cards', '/access-codes', '/invoicing', '/notifications', '/profile', '/properties', `/properties/${P1}`, '/properties/new', `/properties/${P1}/setup`,
 ]
 const AUTH_ROUTES = ['/login', '/signup', '/reset-password']
 
