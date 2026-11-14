@@ -55,6 +55,13 @@
   text-transform: uppercase;
   color: var(--stay-accent-text);
 }
+.demo-hero .demo-eyebrow {
+  margin: 0 0 16px;
+}
+.demo-hero .demo-hero__note {
+  margin-top: 14px;
+  font-size: 0.875rem;
+}
 .demo-hero h1 {
   margin: 0;
   max-width: 16em;

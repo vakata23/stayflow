@@ -70,7 +70,7 @@ for (const [w, h] of [[1440, 900], [375, 812]]) {
     robots: document.querySelector('meta[name="robots"]')?.content ?? null,
     brand: document.querySelector('.demo-brand')?.getAttribute('href'),
   }))
-  ok(`/ @${w}: невлезлият остава на „/“ и вижда демото`, m.path === '/' && /Вижте какво има вътре/.test(m.h1) && m.h1n === 1 && m.mains === 1, `${m.path} | ${m.h1}`)
+  ok(`/ @${w}: невлезлият остава на „/“ и вижда демото`, m.path === '/' && /Резервациите от Airbnb и Booking/.test(m.h1) && m.h1n === 1 && m.mains === 1, `${m.path} | ${m.h1}`)
   ok(`/ @${w}: заглавие и описание на продукта (не „демо“)`, m.title === 'StayFlow — Управление на краткосрочни наеми' && /^Управление на краткосрочни наеми/.test(m.desc), m.title)
   ok(`/ @${w}: има „Вход“ и „Създай профил“, 3 примера, 9 таба с екрани`, m.login && m.signup && m.cards === 3 && m.tabs === 9, JSON.stringify({ l: m.login, s: m.signup, c: m.cards, t: m.tabs }))
   ok(`/ @${w}: връзката на логото води към „/“, страницата не е noindex`, m.brand === '/' && m.robots === null, `${m.brand} ${m.robots}`)
