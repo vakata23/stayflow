@@ -48,6 +48,8 @@ import PhotoMosaic from './PhotoMosaic'
 import Lightbox from './Lightbox'
 import AvailabilityCalendar from './AvailabilityCalendar'
 import LocationMap from '../../components/LocationMap'
+import LegalLinks from '../../components/LegalLinks'
+import { withLinks } from '../../lib/legalI18n'
 import { prefersReducedMotion, shortPrice, useInView } from './useStayEffects'
 import './stay.css'
 
@@ -169,6 +171,7 @@ export default function ListingView({ property, reviews, seasons = [], packages 
   const [guestEmail, setGuestEmail] = useState('')
   const [message, setMessage] = useState('')
   const [company, setCompany] = useState('') // honeypot — трябва да остане празно
+  const [consent, setConsent] = useState(false) // съгласие данните да отидат при собственика (отметката във формата)
   const [sending, setSending] = useState(false)
   const [sendError, setSendError] = useState(null)
   const [sent, setSent] = useState(false)
@@ -227,6 +230,8 @@ export default function ListingView({ property, reviews, seasons = [], packages 
     if (guestEmail.trim() && !isValidEmail(guestEmail.trim())) {
       return setSendError(t('errEmail'))
     }
+
+    if (!consent) return setSendError(t('errConsent'))
 
     // Демо: показваме потвърждението, но нищо не се изпраща никъде
     if (demo) return setSent(true)
@@ -731,6 +736,25 @@ export default function ListingView({ property, reviews, seasons = [], packages 
                     <Field label={t('fieldMessage')}>
                       <textarea className="stay-input" rows={3} value={message} onChange={(e) => setMessage(e.target.value)} style={{ resize: 'vertical' }} />
                     </Field>
+                    <label className="stay-consent">
+                      <input
+                        type="checkbox"
+                        checked={consent}
+                        onChange={(e) => {
+                          setConsent(e.target.checked)
+                          setSendError(null)
+                        }}
+                      />
+                      <span>
+                        {withLinks(t('consentRequest', { privacy: '{privacy}' }), {
+                          privacy: (
+                            <a href="/privacy" target="_blank" rel="noopener noreferrer">
+                              {t('legalPrivacy')}
+                            </a>
+                          ),
+                        })}
+                      </span>
+                    </label>
                     {/* Honeypot — скрито поле, невидимо за хора, но ботовете го попълват. */}
                     <input
                       type="text"
@@ -803,7 +827,10 @@ export default function ListingView({ property, reviews, seasons = [], packages 
         </section>
       )}
 
-      <footer className="stay-foot">{t('footer')}</footer>
+      <footer className="stay-foot">
+        <p style={{ margin: 0 }}>{t('footer')}</p>
+        <LegalLinks />
+      </footer>
 
       {/* Залепена лента на телефона — показва се, когато заглавието и картата за резервация са извън екрана */}
       {fromPrice > 0 && (

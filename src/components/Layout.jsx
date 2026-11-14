@@ -24,6 +24,7 @@ import { useAuth } from '../context/AuthContext'
 import { Modal } from './ui'
 import BottomNav from './BottomNav'
 import AppLangSwitch from '../i18n/AppLangSwitch'
+import LegalLinks from './LegalLinks'
 import { useAppLang } from '../i18n/appLang'
 
 /* Пет места в долната лента на телефон; всичко останало е в листа „Още“. */
@@ -236,6 +237,9 @@ export default function Layout() {
           <div key={`${location.pathname}|${lang}`} className="page-in">
             <Outlet />
           </div>
+          <footer className="mt-14 border-t border-line pt-4 text-ink-muted">
+            <LegalLinks />
+          </footer>
         </div>
       </main>
 

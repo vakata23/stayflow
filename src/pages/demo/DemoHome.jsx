@@ -5,6 +5,7 @@ import { MORE } from '../../lib/demoTour'
 import { shortPrice } from '../stay/useStayEffects'
 import { useDocumentLang } from '../stay/i18n'
 import DemoTour from './DemoTour'
+import LegalLinks from '../../components/LegalLinks'
 import useWide from './useWide'
 import '../stay/stay.css'
 import './demo.css'
@@ -169,7 +170,10 @@ export default function DemoHome({ home = false }) {
         </section>
       </main>
 
-      <footer className="stay-foot">StayFlow — управление на имоти за краткосрочно настаняване. Екраните и обявите в демото са с примерни данни.</footer>
+      <footer className="stay-foot">
+        <p style={{ margin: 0 }}>StayFlow — управление на имоти за краткосрочно настаняване. Екраните и обявите в демото са с примерни данни.</p>
+        <LegalLinks />
+      </footer>
     </div>
   )
 }

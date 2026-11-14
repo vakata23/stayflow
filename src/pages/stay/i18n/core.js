@@ -9,7 +9,11 @@ import mk from './mk.js'
 import sr from './sr.js'
 import el from './el.js'
 import ro from './ro.js'
+import { LEGAL } from './legalStrings.js'
+import { toLatin, normalize, fromBrowserTag } from './langTools.js'
 import { monthName, weekdayShort } from '../../../lib/localeDates.js'
+
+export { toLatin, fromBrowserTag }
 
 export const DEFAULT_LANG = 'bg'
 
@@ -25,30 +29,6 @@ export const LANGUAGES = [
 ]
 export const LANG_BY_CODE = Object.fromEntries(LANGUAGES.map((l) => [l.code, l]))
 
-/* ------------------------------------------------------------------ сръбска латиница */
-
-const CYR_TO_LAT = {
-  а: 'a', б: 'b', в: 'v', г: 'g', д: 'd', ђ: 'đ', е: 'e', ж: 'ž', з: 'z', и: 'i', ј: 'j', к: 'k', л: 'l', љ: 'lj', м: 'm',
-  н: 'n', њ: 'nj', о: 'o', п: 'p', р: 'r', с: 's', т: 't', ћ: 'ć', у: 'u', ф: 'f', х: 'h', ц: 'c', ч: 'č', џ: 'dž', ш: 'š',
-}
-
-/** Сръбска кирилица → латиница (едно към едно). Латинските букви, цифрите и {заместителите} не се пипат. */
-export function toLatin(text) {
-  let out = ''
-  for (const ch of text) {
-    const lower = ch.toLowerCase()
-    const lat = CYR_TO_LAT[lower]
-    if (!lat) {
-      out += ch
-    } else if (lower === ch) {
-      out += lat
-    } else {
-      out += lat.charAt(0).toUpperCase() + lat.slice(1) // Љ → Lj, Њ → Nj, Џ → Dž
-    }
-  }
-  return out
-}
-
 function latinize(dict) {
   const out = {}
   for (const [key, value] of Object.entries(dict)) {
@@ -58,22 +38,20 @@ function latinize(dict) {
   return out
 }
 
-export const DICTS = { bg, en, mk, sr, 'sr-latn': latinize(sr), el, ro }
+// Правните ключове (банер за бисквитки, съгласия…) са в legalStrings.js — така основният пакет не дърпа речниците.
+export const DICTS = {
+  bg: { ...bg, ...LEGAL.bg },
+  en: { ...en, ...LEGAL.en },
+  mk: { ...mk, ...LEGAL.mk },
+  sr: { ...sr, ...LEGAL.sr },
+  'sr-latn': latinize({ ...sr, ...LEGAL.sr }),
+  el: { ...el, ...LEGAL.el },
+  ro: { ...ro, ...LEGAL.ro },
+}
 
 /* ------------------------------------------------------------------ избор на език */
 
 export const isLang = (code) => typeof code === 'string' && Object.prototype.hasOwnProperty.call(LANG_BY_CODE, code)
-
-const normalize = (value) => (typeof value === 'string' ? value.trim().toLowerCase().replace(/_/g, '-') : '')
-
-/** Езиков етикет на браузъра (напр. „ro-RO“, „sr-Latn-RS“) → наш код или null. */
-export function fromBrowserTag(tag) {
-  const t = normalize(tag)
-  if (!t) return null
-  const base = t.split('-')[0]
-  if (base === 'sr') return t.includes('cyrl') ? 'sr' : 'sr-latn' // без указан шрифт — латиница, по-често в интернет
-  return ['bg', 'en', 'mk', 'el', 'ro'].includes(base) ? base : null
-}
 
 /**
  * Редът: ?lang= в адреса (връзка, която собственикът е изпратил на гост) → последният избор на госта →

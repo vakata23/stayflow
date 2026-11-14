@@ -181,6 +181,7 @@ for (const [w, h] of [[1440, 900], [375, 812]]) {
   const req = page.locator('form:has(input[type="tel"])')
   await req.locator('input.stay-input').first().fill('Мария Демо')
   await req.locator('input[type="email"]').fill('maria@example.com')
+  await req.locator('.stay-consent input').check() // съгласие за предаване на данните (задължително)
   await req.locator('button[type="submit"]').click()
   await page.waitForSelector('.stay-card[role="status"]')
   const sent = await page.locator('.stay-card[role="status"]').innerText()
