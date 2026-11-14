@@ -10,10 +10,12 @@ import {
   signedReceiptUrl,
 } from '../lib/moneyEntries'
 import { Field, Input, Textarea, Select, Button, Alert } from './ui'
+import { useDialogA11y } from '../lib/useDialogA11y'
 
 const empty = { amount: '', entry_date: todayISO(), category: '', property_id: '', note: '' }
 
 export default function MoneyEntryModal({ open, onClose, onSaved, kind, properties, profileId, userId, initial }) {
+  const dlg = useDialogA11y(open, onClose)
   const [values, setValues] = useState(empty)
   const [receiptFile, setReceiptFile] = useState(null)
   const [existingReceiptPath, setExistingReceiptPath] = useState(null)
@@ -114,9 +116,9 @@ export default function MoneyEntryModal({ open, onClose, onSaved, kind, properti
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-4 sm:p-8">
       <div className="fixed inset-0 bg-ink/40" onClick={onClose} />
 
-      <div className="relative w-full max-w-lg rounded-2xl border border-line bg-card shadow-xl">
+      <div ref={dlg.ref} {...dlg.props} className="outline-none relative w-full max-w-lg rounded-2xl border border-line bg-card shadow-xl">
         <header className="border-b border-line px-6 py-4">
-          <h2 className="text-lg font-bold">{title}</h2>
+          <h2 id={dlg.titleId} className="text-lg font-bold">{title}</h2>
         </header>
 
         <form onSubmit={handleSubmit} className="space-y-5 px-6 py-5">

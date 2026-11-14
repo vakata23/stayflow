@@ -13,6 +13,7 @@ import {
 } from '../../lib/bookings'
 import { Field, Input, Textarea, Select, Button, Alert } from '../../components/ui'
 import PaymentsSection from './PaymentsSection'
+import { useDialogA11y } from '../../lib/useDialogA11y'
 
 const empty = {
   property_id: '',
@@ -31,6 +32,7 @@ const empty = {
 }
 
 export default function BookingFormModal({ open, onClose, onSaved, properties, initial, defaults }) {
+  const dlg = useDialogA11y(open, onClose)
   const [values, setValues] = useState(empty)
   const [settings, setSettings] = useState(DEFAULT_SETTINGS)
   const [error, setError] = useState(null)
@@ -201,9 +203,9 @@ export default function BookingFormModal({ open, onClose, onSaved, properties, i
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-4 sm:p-8">
       <div className="fixed inset-0 bg-ink/40" onClick={onClose} />
 
-      <div className="relative w-full max-w-2xl rounded-2xl border border-line bg-card shadow-xl">
+      <div ref={dlg.ref} {...dlg.props} className="outline-none relative w-full max-w-2xl rounded-2xl border border-line bg-card shadow-xl">
         <header className="border-b border-line px-6 py-4">
-          <h2 className="text-lg font-bold">
+          <h2 id={dlg.titleId} className="text-lg font-bold">
             {isEdit ? 'Редакция на резервация' : 'Нова резервация'}
           </h2>
         </header>
