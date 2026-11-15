@@ -21,6 +21,7 @@ export const EXCLUDE = [
   `lib${sep}accessLogic.js`, `lib${sep}landingContent.js`, `lib${sep}contact.js`, // платените пакети, текстовете на началната страница и формата „Заяви достъп“ — публични/админ, на български
   `pages${sep}admin${sep}`, // „Клиенти“ — вътрешен инструмент само за администратора на StayFlow, на български
   `pages${sep}guest${sep}`, // картата за госта — публична, за гостите на собственика
+  `lib${sep}guestConfirm.js`, `lib${sep}confirmationPdf.js`, // съобщението и PDF „Потвърждение“ са документи на български към госта (като фактурата); заглавията на CSV също
   `lib${sep}invoicePdf.js`, `lib${sep}localeDates.js`, // македонските имена на месеци (изход, не изходен текст) // фактурата е документ на български (за гост/счетоводство)
   `lib${sep}icalServer.js`, `lib${sep}bookingRequestServer.js`, `lib${sep}outboxProcessor.js`, `lib${sep}notificationAdapters.js`,
   `lib${sep}autoEntriesServer.js`, `lib${sep}photoAnalysisServer.js`, // само на сървъра

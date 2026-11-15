@@ -65,14 +65,15 @@ for (const [w, h] of [[1440, 900], [375, 812]]) {
     desc: document.querySelector('meta[name="description"]')?.content ?? '',
     login: !!document.querySelector('a[href="/login"]'),
     signup: !!document.querySelector('a[href="/signup"]'),
+    access: !!document.querySelector('a[href="/access"]'),
     cards: document.querySelectorAll('.demo-card').length,
     tabs: document.querySelectorAll('[role=tab]').length,
     robots: document.querySelector('meta[name="robots"]')?.content ?? null,
     brand: document.querySelector('.demo-brand')?.getAttribute('href'),
   }))
   ok(`/ @${w}: невлезлият остава на „/“ и вижда демото`, m.path === '/' && /Резервациите от Airbnb и Booking/.test(m.h1) && m.h1n === 1 && m.mains === 1, `${m.path} | ${m.h1}`)
-  ok(`/ @${w}: заглавие и описание на продукта (не „демо“)`, m.title === 'StayFlow — Управление на краткосрочни наеми' && /^Управление на краткосрочни наеми/.test(m.desc), m.title)
-  ok(`/ @${w}: има „Вход“ и „Създай профил“, 3 примера, 9 таба с екрани`, m.login && m.signup && m.cards === 3 && m.tabs === 9, JSON.stringify({ l: m.login, s: m.signup, c: m.cards, t: m.tabs }))
+  ok(`/ @${w}: заглавие и описание на продукта (не „демо“)`, m.title === 'StayFlow — Управление на краткосрочни наеми' && /^Резервациите от Airbnb и Booking на едно място/.test(m.desc), m.title)
+  ok(`/ @${w}: има „Вход“, „Опитай безплатно“ (към /access), 9 таба с екрани; примерните обяви са на /demo`, m.login && m.access && !m.signup && m.cards === 0 && m.tabs === 9, JSON.stringify({ l: m.login, a: m.access, s: m.signup, c: m.cards, t: m.tabs }))
   ok(`/ @${w}: връзката на логото води към „/“, страницата не е noindex`, m.brand === '/' && m.robots === null, `${m.brand} ${m.robots}`)
   ok(`/ @${w}: без препълване и без грешки`, !(await overflow(page)) && errors.length === 0, errors.join(' | '))
   const v = await axe(page)
@@ -84,9 +85,9 @@ for (const [w, h] of [[1440, 900], [375, 812]]) {
     ok('„Вход“ от началната страница отвежда към /login', new URL(page.url()).pathname === '/login')
     await page.goBack()
     await page.waitForSelector('.demo-hero h1')
-    await page.getByRole('link', { name: 'Създай профил' }).first().click()
-    await page.waitForURL('**/signup')
-    ok('„Създай профил“ отвежда към /signup', new URL(page.url()).pathname === '/signup')
+    await page.getByRole('link', { name: 'Опитай безплатно' }).first().click()
+    await page.waitForURL('**/access')
+    ok('„Опитай безплатно“ отвежда към /access (форма за заявка), не към свободна регистрация', new URL(page.url()).pathname === '/access')
   }
   await ctx.close()
 }

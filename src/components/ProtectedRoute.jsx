@@ -37,7 +37,7 @@ export default function ProtectedRoute({ children, guest = null }) {
   }
 
   // Платен достъп: без активен достъп собственикът вижда спокоен екран вместо приложението (администраторът — винаги влиза).
-  if (access && !access.isAdmin && access.state !== 'active') return <AccessPaused state={access.state} />
+  if (access && !access.isAdmin && access.state !== 'active') return <AccessPaused state={access.state} trial={access.trial} />
 
   return children
 }

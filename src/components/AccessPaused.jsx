@@ -13,6 +13,10 @@ const TEXT = {
     title: 'Достъпът ви е на пауза',
     body: 'Срокът на достъпа е изтекъл. Данните и резервациите ви са запазени — щом го подновим, всичко е на мястото си.',
   },
+  trialEnded: {
+    title: 'Пробата ви приключи',
+    body: 'Надяваме се да ви е била полезна. Изберете пакет (от 9 € на месец) — данните и резервациите ви са запазени и всичко е на мястото си.',
+  },
   suspended: {
     title: 'Достъпът ви е спрян',
     body: 'Данните и резервациите ви са запазени. Свържете се с нас и ще го възстановим.',
@@ -20,9 +24,9 @@ const TEXT = {
 }
 
 /** Екранът, който вижда собственик без активен достъп: спокойно обяснение + как да се свърже с нас. */
-export default function AccessPaused({ state }) {
+export default function AccessPaused({ state, trial = false }) {
   const { signOut, user } = useAuth()
-  const t = TEXT[state] ?? TEXT.pending
+  const t = TEXT[state === 'expired' && trial ? 'trialEnded' : state] ?? TEXT.pending
   return (
     <AuthLayout title={t.title} subtitle={user?.email}>
       <p className="text-ink-soft">{t.body}</p>

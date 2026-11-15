@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { CheckCircle2, MessageCircle } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
-import { BANDS, PLANS, PLAN_KEYS, planForBand, validateAccessRequest, requestErrorMessage } from '../../lib/accessLogic'
+import { BANDS, PLANS, PLAN_KEYS, TRIAL_DAYS, planForBand, validateAccessRequest, requestErrorMessage } from '../../lib/accessLogic'
 import { viberUrl, mailtoUrl, contactPhone } from '../../lib/contact'
 
 /**
@@ -11,7 +11,7 @@ import { viberUrl, mailtoUrl, contactPhone } from '../../lib/contact'
  * Ако базата още няма функцията (016 непусната), показваме честно съобщение и връзките за директна връзка.
  */
 export default function RequestForm({ defaultPlan = '', idPrefix = 'rf' }) {
-  const [v, setV] = useState({ name: '', phone: '', email: '', band: '', plan: defaultPlan, note: '', consent: false, website: '' })
+  const [v, setV] = useState({ name: '', phone: '', email: '', band: '', plan: defaultPlan, note: '', consent: false, trial: true, website: '' })
   const [errors, setErrors] = useState({})
   const [sending, setSending] = useState(false)
   const [done, setDone] = useState(false)
@@ -40,6 +40,7 @@ export default function RequestForm({ defaultPlan = '', idPrefix = 'rf' }) {
       p_note: values.note,
       p_consent: true,
       p_hp: v.website,
+      p_trial: !!v.trial,
     })
     setSending(false)
     if (error) return setServerError(requestErrorMessage(error.message))
@@ -51,7 +52,9 @@ export default function RequestForm({ defaultPlan = '', idPrefix = 'rf' }) {
       <div className="lp-done" role="status">
         <CheckCircle2 aria-hidden="true" />
         <h3>Получихме заявката ви</h3>
-        <p>Ще се свържем с вас лично и ще ви отворим достъпа. Ако бързате, пишете ни директно:</p>
+        <p>
+          Ще се свържем с вас лично и ще ви отворим достъпа{v.trial ? ` — първо за ${TRIAL_DAYS} дни безплатна проба` : ''}. Ако бързате, пишете ни директно:
+        </p>
         <div className="lp-row">
           {viberUrl && (
             <a className="stay-btn" href={viberUrl}>
@@ -151,6 +154,11 @@ export default function RequestForm({ defaultPlan = '', idPrefix = 'rf' }) {
       </div>
 
       <div className="lp-check">
+        <input id={id('trial')} type="checkbox" checked={v.trial} onChange={set('trial')} />
+        <label htmlFor={id('trial')}>Искам първо да опитам {TRIAL_DAYS} дни безплатно, без карта.</label>
+      </div>
+
+      <div className="lp-check">
         <input id={id('consent')} type="checkbox" checked={v.consent} onChange={set('consent')} aria-invalid={!!errors.consent} aria-describedby={errors.consent ? id('consent-err') : undefined} />
         <label htmlFor={id('consent')}>
           Съгласен съм да се свържете с мен по телефона или имейла, който оставих. Запознат съм с{' '}
@@ -163,9 +171,9 @@ export default function RequestForm({ defaultPlan = '', idPrefix = 'rf' }) {
       {err('consent')}
 
       <button type="submit" className="stay-btn stay-btn--block" disabled={sending}>
-        {sending ? 'Изпращане…' : 'Изпрати заявката'}
+        {sending ? 'Изпращане…' : v.trial ? `Искам ${TRIAL_DAYS} дни безплатно` : 'Изпрати заявката'}
       </button>
-      <p className="stay-fine">Без плащане и без задължение. Свързваме се лично.</p>
+      <p className="stay-fine">Без карта и без задължение. Свързваме се лично.</p>
     </form>
   )
 }

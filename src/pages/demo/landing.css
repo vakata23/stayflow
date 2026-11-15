@@ -649,3 +649,44 @@
     transition: none !important;
   }
 }
+
+/* „Не сте сами“ */
+.lp-person {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  padding: 18px;
+  border: 1px solid var(--s-line);
+  border-radius: 18px;
+  background: #fffaf1;
+}
+.lp-person__av {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #f3d7cd;
+  color: var(--stay-accent);
+  font: 700 1.5rem var(--s-display);
+}
+.lp-person p {
+  margin: 0 0 6px;
+  color: var(--s-muted);
+}
+.lp-person b {
+  color: var(--s-ink);
+}
+.lp-promises {
+  display: grid;
+  gap: 8px;
+  margin: 18px 0;
+  padding: 0;
+  list-style: none;
+}
+.lp-promises li::before {
+  content: '✓ ';
+  color: var(--s-ok);
+  font-weight: 800;
+}

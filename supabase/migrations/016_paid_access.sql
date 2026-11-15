@@ -6,6 +6,7 @@
 --   • access_grants   — достъпът на всеки профил: пакет (start/plus/pro), статус (pending/active/suspended) и „активен до“.
 --   • access_requests — заявките „Заяви достъп“ от публичната страница (пише се само през request_access()).
 --   • my_access()     — какво е състоянието на достъпа на влезлия потребител (за екрана „Достъпът е на пауза“).
+--   • пробен период   — is_trial в access_grants: администраторът дава 7 дни проба (active_until = днес + 7); след срока достъпът минава на пауза.
 --   • admin_clients() — списък на всички акаунти с имейл, имоти и достъп (само за администратор).
 --
 -- Правила:
@@ -42,6 +43,7 @@ create table if not exists public.access_grants (
   plan         text not null default 'start' check (plan in ('start', 'plus', 'pro')),
   status       text not null default 'pending' check (status in ('pending', 'active', 'suspended')),
   active_until date,                                    -- празно = без срок
+  is_trial     boolean not null default false,          -- пробен период (показва се лента „остават N дни“)
   note         text check (note is null or char_length(note) <= 500),
   created_at   timestamptz not null default now(),
   updated_at   timestamptz not null default now()
@@ -96,14 +98,15 @@ from public.profiles p
 where not exists (select 1 from public.access_grants g where g.profile_id = p.id);
 
 -- 3. Състоянието на достъпа за влезлия потребител --------------------
+drop function if exists public.my_access();
 create or replace function public.my_access()
-returns table (status text, plan text, active_until date, is_admin boolean)
+returns table (status text, plan text, active_until date, is_admin boolean, is_trial boolean)
 language sql
 stable
 security definer
 set search_path = public
 as $$
-  select g.status, g.plan, g.active_until, public.is_app_admin()
+  select g.status, g.plan, g.active_until, public.is_app_admin(), coalesce(g.is_trial, false)
   from public.profiles p
   left join public.access_grants g on g.profile_id = p.id
   where p.user_id = auth.uid()
@@ -122,6 +125,7 @@ create table if not exists public.access_requests (
   plan_interest text check (plan_interest is null or plan_interest in ('start', 'plus', 'pro')),
   note          text check (note is null or char_length(note) <= 500),
   consent_at    timestamptz not null,
+  wants_trial   boolean not null default false,       -- натиснал „Опитай 7 дни безплатно“
   status        text not null default 'new' check (status in ('new', 'contacted', 'approved', 'rejected')),
   admin_note    text check (admin_note is null or char_length(admin_note) <= 500)
 );
@@ -135,6 +139,7 @@ create policy "access_requests_admin_all" on public.access_requests
   with check (public.is_app_admin());
 -- Без политика за anon: заявка се подава САМО през request_access() по-долу.
 
+drop function if exists public.request_access(text, text, text, text, text, text, boolean, text);
 create or replace function public.request_access(
   p_name text,
   p_phone text,
@@ -143,7 +148,8 @@ create or replace function public.request_access(
   p_plan text,
   p_note text,
   p_consent boolean,
-  p_hp text default null
+  p_hp text default null,
+  p_trial boolean default false
 )
 returns void
 language plpgsql
@@ -192,13 +198,14 @@ begin
     raise exception 'too_many';
   end if;
 
-  insert into public.access_requests (name, phone, email, property_band, plan_interest, note, consent_at)
-  values (v_name, v_phone, v_email, p_band, p_plan, nullif(left(btrim(coalesce(p_note, '')), 500), ''), now());
+  insert into public.access_requests (name, phone, email, property_band, plan_interest, note, consent_at, wants_trial)
+  values (v_name, v_phone, v_email, p_band, p_plan, nullif(left(btrim(coalesce(p_note, '')), 500), ''), now(), coalesce(p_trial, false));
 end;
 $$;
-grant execute on function public.request_access(text, text, text, text, text, text, boolean, text) to anon, authenticated;
+grant execute on function public.request_access(text, text, text, text, text, text, boolean, text, boolean) to anon, authenticated;
 
 -- 5. Списък „Клиенти“ (само за администратор) ----------------------------
+drop function if exists public.admin_clients();
 create or replace function public.admin_clients()
 returns table (
   profile_id uuid,
@@ -211,6 +218,7 @@ returns table (
   plan text,
   status text,
   active_until date,
+  is_trial boolean,
   note text
 )
 language plpgsql
@@ -225,7 +233,7 @@ begin
   return query
     select p.id, p.full_name, p.company_name, p.phone, u.email::text, p.created_at,
            (select count(*) from public.properties pr where pr.owner_id = p.id),
-           g.plan, g.status, g.active_until, g.note
+           g.plan, g.status, g.active_until, coalesce(g.is_trial, false), g.note
     from public.profiles p
     join auth.users u on u.id = p.user_id
     left join public.access_grants g on g.profile_id = p.id

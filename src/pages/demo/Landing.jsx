@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { Check, MessageCircle } from 'lucide-react'
-import { PLANS, PLAN_KEYS, yearlyPrice, FREE_MONTHS_YEARLY } from '../../lib/accessLogic'
+import { PLANS, PLAN_KEYS, yearlyPrice, FREE_MONTHS_YEARLY, TRIAL_DAYS } from '../../lib/accessLogic'
 import { PAINS, FEATURES, STEPS, PLAN_FEATURES, FAQ, TESTIMONIALS } from '../../lib/landingContent'
 import { viberUrl, telUrl, mailtoUrl, contactPhone, contactEmail } from '../../lib/contact'
 import { COMPANY } from '../../lib/legal'
@@ -48,7 +48,7 @@ export default function Landing({ title, description }) {
               Вход
             </Link>
             <Link to="/access" className="stay-btn">
-              Заяви достъп
+              Опитай безплатно
             </Link>
           </nav>
         </div>
@@ -66,16 +66,16 @@ export default function Landing({ title, description }) {
             </p>
             <div className="demo-hero__row">
               <Link to="/access" className="stay-btn">
-                Заяви достъп
+                Опитай {TRIAL_DAYS} дни безплатно
               </Link>
               <a href="#tour" className="stay-btn-outline">
                 Разгледай приложението
               </a>
             </div>
             <ul className="lp-trust">
+              <li>{TRIAL_DAYS} дни безплатно, без карта</li>
               <li>Airbnb и Booking.com през iCal</li>
               <li>Български, гръцки, македонски</li>
-              <li>Работи от телефона</li>
             </ul>
           </div>
           {wide ? (
@@ -171,12 +171,14 @@ export default function Landing({ title, description }) {
                     ))}
                   </ul>
                   <Link to={`/access?plan=${k}`} className={k === 'plus' ? 'stay-btn stay-btn--block' : 'stay-btn-outline stay-btn--block'}>
-                    Заяви {PLANS[k].name}
+                    Опитай {PLANS[k].name} безплатно
                   </Link>
                 </li>
               ))}
             </ul>
-            <p className="lp-fine">StayFlow е в пилотна версия — пакетите се включват ръчно. Над 30 имота: пишете ни за оферта.</p>
+            <p className="lp-fine">
+              Всеки пакет започва с {TRIAL_DAYS} дни безплатна проба, без карта. StayFlow е в пилотна версия — пакетите се включват ръчно. Над 30 имота: пишете ни за оферта.
+            </p>
           </div>
         </section>
 
@@ -217,6 +219,36 @@ export default function Landing({ title, description }) {
             </div>
           </section>
         )}
+
+        {/* Не сте сами: човекът зад продукта, обещания, които спазваме, и (само ако има) реален отзив */}
+        <section className="demo-sec" aria-labelledby="lp-trust">
+          <div className="stay-wrap lp-narrow">
+            <h2 id="lp-trust">Не сте сами</h2>
+            <div className="lp-person">
+              <span className="lp-person__av" aria-hidden="true">
+                И
+              </span>
+              <div>
+                <p>
+                  <b>Иван</b> — прави и поддържа StayFlow.
+                </p>
+                <p>Настройвам ви лично, отговарям лично във Viber и приемам вашите идеи за приложението.</p>
+              </div>
+            </div>
+            <ul className="lp-promises">
+              <li>Настройваме ви лично, а не с видео и документация</li>
+              <li>Отговарям във Viber, не на безличен имейл</li>
+              <li>Данните ви са ваши и остават запазени, дори да спрете</li>
+            </ul>
+            {viberUrl && (
+              <p className="lp-row" style={{ justifyContent: 'flex-start' }}>
+                <a className="stay-btn" href={viberUrl}>
+                  <MessageCircle aria-hidden="true" width="18" height="18" /> Пишете ми във Viber
+                </a>
+              </p>
+            )}
+          </div>
+        </section>
 
         {/* 9. Въпроси */}
         <section className="demo-sec demo-sec--soft" aria-labelledby="lp-faq">

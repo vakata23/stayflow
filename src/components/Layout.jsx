@@ -242,9 +242,15 @@ export default function Layout() {
         <div className="mx-auto max-w-[72rem] px-4 pb-[calc(9rem+env(safe-area-inset-bottom))] pt-2 sm:px-6 lg:px-12 lg:pb-20 lg:pt-12">
           {access?.expiresSoon && !access.isAdmin && (
             <div role="status" className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-warning-soft px-4 py-3 text-warning-ink">
-              <p className="text-sm font-medium">
-                Достъпът ви изтича {access.daysLeft === 0 ? 'днес' : access.daysLeft === 1 ? 'утре' : `след ${access.daysLeft} дни`}. Пишете ни, за да го подновим.
-              </p>
+              {access.trial ? (
+                <p className="text-sm font-medium">
+                  Пробата ви: {access.daysLeft === 0 ? 'приключва днес' : access.daysLeft === 1 ? 'остава 1 ден' : `остават ${access.daysLeft} дни`}. Изберете пакет, за да продължите.
+                </p>
+              ) : (
+                <p className="text-sm font-medium">
+                  Достъпът ви изтича {access.daysLeft === 0 ? 'днес' : access.daysLeft === 1 ? 'утре' : `след ${access.daysLeft} дни`}. Пишете ни, за да го подновим.
+                </p>
+              )}
               {viberUrl && (
                 <a href={viberUrl} className="btn btn-secondary btn-sm">
                   <MessageCircle className="h-4 w-4" aria-hidden="true" />

@@ -50,6 +50,18 @@ export function addMonthsIso(iso, months) {
   return `${ny}-${pad(nm)}-${pad(Math.min(d, last))}`
 }
 
+/** Пробен период: колко дни се дава безплатно. */
+export const TRIAL_DAYS = 7
+
+export function addDaysIso(iso, days) {
+  const { y, m, d } = parse(iso)
+  const t = new Date(Date.UTC(y, m - 1, d + days))
+  return `${t.getUTCFullYear()}-${pad(t.getUTCMonth() + 1)}-${pad(t.getUTCDate())}`
+}
+
+/** Последният ден на пробата, ако започва днес (днес + 7 дни). */
+export const trialUntil = (today = todayIso()) => addDaysIso(today, TRIAL_DAYS)
+
 export function daysBetween(fromIso, toIso) {
   return Math.round((utc(toIso) - utc(fromIso)) / 86400000)
 }
@@ -65,17 +77,19 @@ export function extendUntil(until, today, months = 1) {
 export const WARN_DAYS = 7
 
 /**
- * grant: { status, plan, active_until } или null/undefined (няма запис → съществуващ акаунт, пълен достъп).
- * → { state: 'active' | 'pending' | 'suspended' | 'expired', daysLeft: число | null, expiresSoon: boolean }
+ * grant: { status, plan, active_until, is_trial } или null/undefined (няма запис → съществуващ акаунт, пълен достъп).
+ * → { state: 'active' | 'pending' | 'suspended' | 'expired', daysLeft: число | null, expiresSoon: boolean, trial: boolean }
+ * trial: пробен период — лентата „остават N дни“ се показва през цялата проба, а не само в последната седмица.
  */
 export function accessState(grant, today = todayIso()) {
-  if (!grant || !grant.status) return { state: 'active', daysLeft: null, expiresSoon: false }
-  if (grant.status === 'suspended') return { state: 'suspended', daysLeft: null, expiresSoon: false }
-  if (grant.status === 'pending') return { state: 'pending', daysLeft: null, expiresSoon: false }
-  if (!grant.active_until) return { state: 'active', daysLeft: null, expiresSoon: false }
+  const trial = !!grant?.is_trial
+  if (!grant || !grant.status) return { state: 'active', daysLeft: null, expiresSoon: false, trial: false }
+  if (grant.status === 'suspended') return { state: 'suspended', daysLeft: null, expiresSoon: false, trial }
+  if (grant.status === 'pending') return { state: 'pending', daysLeft: null, expiresSoon: false, trial }
+  if (!grant.active_until) return { state: 'active', daysLeft: null, expiresSoon: false, trial }
   const daysLeft = daysBetween(today, grant.active_until)
-  if (daysLeft < 0) return { state: 'expired', daysLeft, expiresSoon: false }
-  return { state: 'active', daysLeft, expiresSoon: daysLeft <= WARN_DAYS }
+  if (daysLeft < 0) return { state: 'expired', daysLeft, expiresSoon: false, trial }
+  return { state: 'active', daysLeft, expiresSoon: trial || daysLeft <= WARN_DAYS, trial }
 }
 
 export const STATE_LABEL = {

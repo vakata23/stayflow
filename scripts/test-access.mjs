@@ -2,7 +2,7 @@
 //   node scripts/test-access.mjs
 import {
   PLANS, yearlyPrice, planForBand, addMonthsIso, daysBetween, extendUntil, accessState, validateAccessRequest,
-  requestErrorMessage, commissionCost, todayIso, paysForItself, BANDS,
+  requestErrorMessage, commissionCost, todayIso, paysForItself, BANDS, TRIAL_DAYS, addDaysIso, trialUntil,
 } from '../src/lib/accessLogic.js'
 
 let pass = 0
@@ -49,16 +49,28 @@ eq(extendUntil('2026-11-15', '2026-11-15', 12), '2027-11-15', 'година')
 
 /* състояние */
 const T = '2026-11-15'
-eq(accessState(null, T), { state: 'active', daysLeft: null, expiresSoon: false }, 'без запис → активен (съществуващ акаунт)')
+eq(accessState(null, T), { state: 'active', daysLeft: null, expiresSoon: false, trial: false }, 'без запис → активен (съществуващ акаунт)')
 eq(accessState({ status: 'pending' }, T).state, 'pending', 'pending')
 eq(accessState({ status: 'suspended', active_until: '2099-01-01' }, T).state, 'suspended', 'спрян печели над датата')
-eq(accessState({ status: 'active', active_until: null }, T), { state: 'active', daysLeft: null, expiresSoon: false }, 'активен без срок')
-eq(accessState({ status: 'active', active_until: '2026-12-31' }, T), { state: 'active', daysLeft: 46, expiresSoon: false }, 'активен, 46 дни')
-eq(accessState({ status: 'active', active_until: '2026-11-20' }, T), { state: 'active', daysLeft: 5, expiresSoon: true }, 'изтича скоро (≤7 дни)')
+eq(accessState({ status: 'active', active_until: null }, T), { state: 'active', daysLeft: null, expiresSoon: false, trial: false }, 'активен без срок')
+eq(accessState({ status: 'active', active_until: '2026-12-31' }, T), { state: 'active', daysLeft: 46, expiresSoon: false, trial: false }, 'активен, 46 дни')
+eq(accessState({ status: 'active', active_until: '2026-11-20' }, T), { state: 'active', daysLeft: 5, expiresSoon: true, trial: false }, 'изтича скоро (≤7 дни)')
 eq(accessState({ status: 'active', active_until: '2026-11-22' }, T).expiresSoon, true, 'точно 7 дни е „скоро“')
 eq(accessState({ status: 'active', active_until: '2026-11-23' }, T).expiresSoon, false, '8 дни не е „скоро“')
 eq(accessState({ status: 'active', active_until: '2026-11-15' }, T).state, 'active', 'последният ден още е активен')
 eq(accessState({ status: 'active', active_until: '2026-11-14' }, T).state, 'expired', 'вчера = изтекъл')
+
+/* пробен период */
+eq(TRIAL_DAYS, 7, 'проба = 7 дни')
+eq(addDaysIso('2026-11-15', 7), '2026-11-22', '+7 дни')
+eq(addDaysIso('2026-12-28', 7), '2027-01-04', '+7 дни през Нова година')
+eq(addDaysIso('2026-02-25', 7), '2026-03-04', '+7 дни през февруари')
+eq(trialUntil('2026-11-15'), '2026-11-22', 'проба от днес до +7')
+eq(accessState({ status: 'active', active_until: '2026-11-22', is_trial: true }, T), { state: 'active', daysLeft: 7, expiresSoon: true, trial: true }, 'проба, 7 дни: лентата се показва от първия ден')
+eq(accessState({ status: 'active', active_until: '2026-11-22', is_trial: false }, T).expiresSoon, true, 'платен, 7 дни: лента (≤7)')
+eq(accessState({ status: 'active', active_until: '2026-11-30', is_trial: true }, T).expiresSoon, true, 'проба винаги показва лента')
+eq(accessState({ status: 'active', active_until: '2026-11-14', is_trial: true }, T), { state: 'expired', daysLeft: -1, expiresSoon: false, trial: true }, 'пробата изтече → expired + trial')
+eq(accessState({ status: 'pending', is_trial: false }, T).trial, false, 'pending не е проба')
 
 /* заявка */
 let r = validateAccessRequest({ name: '  Мария   Петрова ', phone: ' +359  888 123 456 ', email: '', band: '4-10', consent: true })

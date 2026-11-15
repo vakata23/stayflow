@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
-import { PLAN_KEYS } from '../../lib/accessLogic'
+import { PLAN_KEYS, TRIAL_DAYS } from '../../lib/accessLogic'
 import { useDocumentLang } from '../stay/i18n'
 import RequestForm from './RequestForm'
 import '../stay/stay.css'
@@ -46,8 +46,8 @@ export default function AccessRequest() {
         <Link to="/" className="lp-back">
           <ArrowLeft aria-hidden="true" width="16" height="16" /> Към началото
         </Link>
-        <h1>Заявете достъп до StayFlow</h1>
-        <p className="demo-lead">Оставете данните си и ще се свържем с вас лично. Без плащане и без задължение.</p>
+        <h1>Опитайте StayFlow {TRIAL_DAYS} дни безплатно</h1>
+        <p className="demo-lead">Оставете данните си и ще се свържем с вас лично, за да ви отворим достъпа. Без карта и без задължение.</p>
         <RequestForm defaultPlan={plan} idPrefix="req" />
       </main>
     </div>

@@ -4,7 +4,7 @@ import { Mail, MessageCircle, Phone, Search } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
 import { PageHeader, Card, Button, Select, Input, Alert, Badge, Segmented, Spinner, EmptyState } from '../../components/ui'
-import { PLANS, PLAN_KEYS, BANDS, STATE_LABEL, accessState, extendUntil, todayIso, planForBand } from '../../lib/accessLogic'
+import { PLANS, PLAN_KEYS, BANDS, STATE_LABEL, TRIAL_DAYS, accessState, extendUntil, todayIso, planForBand, trialUntil } from '../../lib/accessLogic'
 
 /**
  * „Клиенти“ — само за администратора на StayFlow (виж app_admins в миграция 016).
@@ -48,6 +48,15 @@ export default function Clients() {
   }, [access?.isAdmin, load])
 
   const newCount = useMemo(() => (requests ?? []).filter((r) => r.status === 'new').length, [requests])
+  const summary = useMemo(() => {
+    const list = (clients ?? []).map((c) => ({ c, st: accessState({ status: c.status, active_until: c.active_until }, todayIso()) }))
+    return {
+      trial: list.filter(({ c, st }) => c.is_trial && st.state === 'active').length,
+      paid: list.filter(({ c, st }) => !c.is_trial && st.state === 'active').length,
+      soon: list.filter(({ c, st }) => st.state === 'active' && st.daysLeft != null && st.daysLeft <= 7).length,
+      off: list.filter(({ st }) => st.state !== 'active').length,
+    }
+  }, [clients])
   const shown = useMemo(() => {
     const q = query.trim().toLowerCase()
     if (!q) return clients ?? []
@@ -61,7 +70,7 @@ export default function Clients() {
   const saveGrant = async (client, patch, key) => {
     setBusy(client.profile_id + key)
     setError(null)
-    const next = { plan: client.plan ?? 'start', status: client.status ?? 'pending', active_until: client.active_until ?? null, ...patch }
+    const next = { plan: client.plan ?? 'start', status: client.status ?? 'pending', active_until: client.active_until ?? null, is_trial: client.is_trial ?? false, ...patch }
     const { error: err } = await supabase.from('access_grants').upsert({ profile_id: client.profile_id, ...next }, { onConflict: 'profile_id' })
     setBusy(null)
     if (err) return setError('Не се записа: ' + err.message)
@@ -112,6 +121,7 @@ export default function Clients() {
                   <div className="min-w-0">
                     <p className="font-semibold">{r.name}</p>
                     <p className="text-sm text-ink-soft">
+                      {r.wants_trial && <Badge tone="info" className="mr-2">иска {TRIAL_DAYS} дни проба</Badge>}
                       {fmtDate(r.created_at)}
                       {bandLabel(r.property_band) && ` · ${bandLabel(r.property_band)}`}
                       {r.plan_interest && ` · иска ${PLANS[r.plan_interest]?.name}`}
@@ -159,6 +169,14 @@ export default function Clients() {
             <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted" aria-hidden="true" />
             <Input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Име, имейл или телефон" aria-label="Търсене на клиент" className="pl-10" />
           </div>
+          {clients && (
+            <p className="mt-4 flex flex-wrap gap-2 text-sm" aria-label="Обобщение">
+              <Badge tone="info">{summary.trial} на проба</Badge>
+              <Badge tone="success">{summary.paid} платени</Badge>
+              <Badge tone="warning">{summary.soon} изтичат до 7 дни</Badge>
+              <Badge tone="danger">{summary.off} на пауза</Badge>
+            </p>
+          )}
           <div className="mt-4 grid gap-3">
             {clients === null ? (
               <Spinner />
@@ -183,7 +201,9 @@ export default function Clients() {
                         </p>
                       </div>
                       <div className="text-right">
-                        <Badge tone={STATE_TONE[st.state]}>{STATE_LABEL[st.state]}</Badge>
+                        <Badge tone={c.is_trial && st.state === 'active' ? 'info' : STATE_TONE[st.state]}>
+                          {c.is_trial && st.state === 'active' ? 'Проба' : c.is_trial && st.state === 'expired' ? 'Пробата изтече' : STATE_LABEL[st.state]}
+                        </Badge>
                         <p className="mt-1 text-sm text-ink-soft">
                           {c.active_until ? `до ${fmtDate(c.active_until)}${st.state === 'active' && st.daysLeft != null ? ` (${st.daysLeft} дни)` : ''}` : 'без срок'}
                         </p>
@@ -201,16 +221,21 @@ export default function Clients() {
                           ))}
                         </Select>
                       </label>
-                      {st.state !== 'active' ? (
-                        <Button size="sm" loading={busy === c.profile_id + 'on'} disabled={!!base} onClick={() => saveGrant(c, { status: 'active', active_until: extendUntil(c.active_until, today, 1) }, 'on')}>
+                      {(st.state !== 'active' || c.is_trial) && (
+                        <Button size="sm" variant={st.state !== 'active' && !c.is_trial ? 'secondary' : 'primary'} loading={busy === c.profile_id + 'trial'} disabled={!!base} onClick={() => saveGrant(c, { status: 'active', is_trial: true, active_until: trialUntil(today) }, 'trial')}>
+                          {c.is_trial && st.state === 'active' ? `Нова проба ${TRIAL_DAYS} дни` : `Пробен ${TRIAL_DAYS} дни`}
+                        </Button>
+                      )}
+                      {st.state !== 'active' || c.is_trial ? (
+                        <Button size="sm" loading={busy === c.profile_id + 'on'} disabled={!!base} onClick={() => saveGrant(c, { status: 'active', is_trial: false, active_until: extendUntil(c.is_trial ? null : c.active_until, today, 1) }, 'on')}>
                           Активирай за 1 месец
                         </Button>
                       ) : (
                         <>
-                          <Button size="sm" variant="secondary" loading={busy === c.profile_id + 'm1'} disabled={!!base} onClick={() => saveGrant(c, { status: 'active', active_until: extendUntil(c.active_until, today, 1) }, 'm1')}>
+                          <Button size="sm" variant="secondary" loading={busy === c.profile_id + 'm1'} disabled={!!base} onClick={() => saveGrant(c, { status: 'active', is_trial: false, active_until: extendUntil(c.active_until, today, 1) }, 'm1')}>
                             + 1 месец
                           </Button>
-                          <Button size="sm" variant="secondary" loading={busy === c.profile_id + 'm12'} disabled={!!base} onClick={() => saveGrant(c, { status: 'active', active_until: extendUntil(c.active_until, today, 12) }, 'm12')}>
+                          <Button size="sm" variant="secondary" loading={busy === c.profile_id + 'm12'} disabled={!!base} onClick={() => saveGrant(c, { status: 'active', is_trial: false, active_until: extendUntil(c.active_until, today, 12) }, 'm12')}>
                             + 12 месеца
                           </Button>
                         </>

@@ -139,20 +139,23 @@ const ACCESS_STATES = {
   expired: { status: 'active', plan: 'plus', active_until: '2020-01-01', is_admin: false },
   soon: { status: 'active', plan: 'plus', active_until: sofiaPlus(3), is_admin: false },
   admin: { status: 'active', plan: 'pro', active_until: null, is_admin: true },
+  trial: { status: 'active', plan: 'start', active_until: sofiaPlus(3), is_admin: false, is_trial: true },
+  trialend: { status: 'active', plan: 'start', active_until: '2020-01-01', is_admin: false, is_trial: true },
 }
 let accessState = 'active'
 let accessMissing = false // true → функцията my_access „не съществува“ (миграция 016 непусната)
 const requestsSent = []
 const grantWrites = []
 const adminClients = () => [
-  { profile_id: 'p1', full_name: 'Мария Петрова', company_name: null, phone: '+359 888 100 200', email: 'maria@example.bg', created_at: '2026-11-01T10:00:00Z', property_count: 2, plan: 'start', status: 'active', active_until: sofiaPlus(40), note: null },
-  { profile_id: 'p2', full_name: 'Георги Димитров', company_name: 'Морски къщи ЕООД', phone: null, email: 'georgi@example.bg', created_at: '2026-11-10T10:00:00Z', property_count: 5, plan: 'plus', status: 'active', active_until: sofiaPlus(3), note: null },
-  { profile_id: 'p3', full_name: 'Елена Стоянова', company_name: null, phone: '+359 899 555 444', email: 'elena@example.bg', created_at: '2026-11-14T10:00:00Z', property_count: 0, plan: 'start', status: 'pending', active_until: null, note: null },
-  { profile_id: 'p4', full_name: 'Николай Иванов', company_name: null, phone: null, email: 'nikolay@example.bg', created_at: '2026-09-01T10:00:00Z', property_count: 1, plan: 'start', status: 'suspended', active_until: '2026-10-01', note: 'Не е платил' },
+  { profile_id: 'p1', full_name: 'Мария Петрова', company_name: null, phone: '+359 888 100 200', email: 'maria@example.bg', created_at: '2026-11-01T10:00:00Z', property_count: 2, plan: 'start', status: 'active', active_until: sofiaPlus(40), is_trial: false, note: null },
+  { profile_id: 'p2', full_name: 'Георги Димитров', company_name: 'Морски къщи ЕООД', phone: null, email: 'georgi@example.bg', created_at: '2026-11-10T10:00:00Z', property_count: 5, plan: 'plus', status: 'active', active_until: sofiaPlus(3), is_trial: false, note: null },
+  { profile_id: 'p3', full_name: 'Елена Стоянова', company_name: null, phone: '+359 899 555 444', email: 'elena@example.bg', created_at: '2026-11-14T10:00:00Z', property_count: 0, plan: 'start', status: 'pending', active_until: null, is_trial: false, note: null },
+  { profile_id: 'p4', full_name: 'Николай Иванов', company_name: null, phone: null, email: 'nikolay@example.bg', created_at: '2026-09-01T10:00:00Z', property_count: 1, plan: 'start', status: 'suspended', active_until: '2026-10-01', is_trial: false, note: 'Не е платил' },
+  { profile_id: 'p5', full_name: 'Петя Колева', company_name: null, phone: '+359 877 000 111', email: 'petya@example.bg', created_at: '2026-11-13T10:00:00Z', property_count: 1, plan: 'start', status: 'active', active_until: sofiaPlus(5), is_trial: true, note: null },
 ]
 const accessRequests = [
-  { id: 'r1', created_at: '2026-11-14T09:00:00Z', name: 'Стефан Маринов', phone: '+359 877 123 456', email: null, property_band: '4-10', plan_interest: 'plus', note: 'Имам 6 апартамента във Варна', consent_at: '2026-11-14T09:00:00Z', status: 'new', admin_note: null },
-  { id: 'r2', created_at: '2026-11-12T09:00:00Z', name: 'Anna Schmidt', phone: null, email: 'anna@example.de', property_band: '1-3', plan_interest: null, note: null, consent_at: '2026-11-12T09:00:00Z', status: 'contacted', admin_note: null },
+  { id: 'r1', created_at: '2026-11-14T09:00:00Z', name: 'Стефан Маринов', phone: '+359 877 123 456', email: null, property_band: '4-10', plan_interest: 'plus', note: 'Имам 6 апартамента във Варна', consent_at: '2026-11-14T09:00:00Z', wants_trial: true, status: 'new', admin_note: null },
+  { id: 'r2', created_at: '2026-11-12T09:00:00Z', name: 'Anna Schmidt', phone: null, email: 'anna@example.de', property_band: '1-3', plan_interest: null, note: null, consent_at: '2026-11-12T09:00:00Z', wants_trial: false, status: 'contacted', admin_note: null },
 ]
 
 const server = http.createServer(async (req, res) => {
@@ -166,7 +169,7 @@ const server = http.createServer(async (req, res) => {
       else if (ACCESS_STATES[st]) { accessState = st; accessMissing = false }
       return send(res, 200, { state: accessState, missing: accessMissing })
     }
-    if (p === '/__mock/requests') return send(res, 200, requestsSent)
+    if (p === '/__mock/requests') { if (url.searchParams.get('clear')) requestsSent.length = 0; return send(res, 200, requestsSent) }
     if (p === '/__mock/grants') return send(res, 200, grantWrites)
     if (p.startsWith('/auth/v1/')) {
       if (p.endsWith('/user')) return send(res, 200, USER)
