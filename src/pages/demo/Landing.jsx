@@ -312,7 +312,7 @@ export default function Landing({ title, description }) {
       <aside aria-label="Бърза връзка">
       <div className="lp-sticky">
         <Link to="/access" className="stay-btn">
-          Заяви достъп
+          Опитай {TRIAL_DAYS} дни безплатно
         </Link>
         {viberUrl && (
           <a href={viberUrl} className="stay-btn-outline" aria-label="Пишете ни във Viber">
