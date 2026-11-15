@@ -18,6 +18,8 @@ export const EXCLUDE = [
   `pages${sep}demo${sep}`, // демо витрината — публична, без превод на приложението
   `lib${sep}demoData.js`, `lib${sep}demoTour.js`, // примерните данни и текстовете на демото
   `pages${sep}legal${sep}`, `lib${sep}legal.js`, // Политика и Условия — документи на български; езиковите части са в речниците на /stay
+  `lib${sep}accessLogic.js`, `lib${sep}landingContent.js`, `lib${sep}contact.js`, // платените пакети, текстовете на началната страница и формата „Заяви достъп“ — публични/админ, на български
+  `pages${sep}admin${sep}`, // „Клиенти“ — вътрешен инструмент само за администратора на StayFlow, на български
   `pages${sep}guest${sep}`, // картата за госта — публична, за гостите на собственика
   `lib${sep}invoicePdf.js`, `lib${sep}localeDates.js`, // македонските имена на месеци (изход, не изходен текст) // фактурата е документ на български (за гост/счетоводство)
   `lib${sep}icalServer.js`, `lib${sep}bookingRequestServer.js`, `lib${sep}outboxProcessor.js`, `lib${sep}notificationAdapters.js`,

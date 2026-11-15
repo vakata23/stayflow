@@ -18,6 +18,8 @@ import {
   LogOut,
   UserRound,
   Plus,
+  Users,
+  MessageCircle,
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
@@ -26,6 +28,7 @@ import BottomNav from './BottomNav'
 import AppLangSwitch from '../i18n/AppLangSwitch'
 import LegalLinks from './LegalLinks'
 import { useAppLang } from '../i18n/appLang'
+import { viberUrl } from '../lib/contact'
 
 /* Пет места в долната лента на телефон; всичко останало е в листа „Още“. */
 const tabs = [
@@ -61,6 +64,9 @@ const settingsNav = [
 ]
 /* Листът „Още“ на телефон: първо най-честото, после работните инструменти */
 const moreOften = [requests, settingsNav[0], settingsNav[1], settingsNav[2], settingsNav[3]]
+
+/* Само за администратора на StayFlow (app_admins): заявки за достъп и клиенти. */
+const adminNav = [{ to: '/admin/clients', label: 'Клиенти', icon: Users }]
 
 const exactPaths = new Set(['/', '/earnings'])
 
@@ -147,7 +153,7 @@ function Avatar({ initials, className = '' }) {
 }
 
 export default function Layout() {
-  const { user, profile, signOut } = useAuth()
+  const { user, profile, signOut, access } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const { lang } = useAppLang()
@@ -208,6 +214,7 @@ export default function Layout() {
           <NavGroup title="Работа" items={workNav} />
           {/* На голям екран профилът е в блока с името най-долу — така менюто се побира на 900 px без превъртане */}
           <NavGroup title="Настройки" items={settingsNav.slice(0, 3)} />
+          {access?.isAdmin && <NavGroup title="Администрация" items={adminNav} />}
         </nav>
         <div className="mt-3 px-3">
           <AppLangSwitch />
@@ -233,6 +240,19 @@ export default function Layout() {
 
       <main className="lg:pl-[17.25rem]">
         <div className="mx-auto max-w-[72rem] px-4 pb-[calc(9rem+env(safe-area-inset-bottom))] pt-2 sm:px-6 lg:px-12 lg:pb-20 lg:pt-12">
+          {access?.expiresSoon && !access.isAdmin && (
+            <div role="status" className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-warning-soft px-4 py-3 text-warning-ink">
+              <p className="text-sm font-medium">
+                Достъпът ви изтича {access.daysLeft === 0 ? 'днес' : access.daysLeft === 1 ? 'утре' : `след ${access.daysLeft} дни`}. Пишете ни, за да го подновим.
+              </p>
+              {viberUrl && (
+                <a href={viberUrl} className="btn btn-secondary btn-sm">
+                  <MessageCircle className="h-4 w-4" aria-hidden="true" />
+                  Viber
+                </a>
+              )}
+            </div>
+          )}
           {/* При смяна на езика екранът се прерисува (дати и месеци по Intl на новия език) */}
           <div key={`${location.pathname}|${lang}`} className="page-in">
             <Outlet />
@@ -263,6 +283,12 @@ export default function Layout() {
           <MoreList items={moreOften} badges={badges} />
           <p className="px-2 pb-2 pt-4 font-display text-[0.9375rem] font-medium italic text-ink-muted">Работа</p>
           <MoreList items={workNav} grid />
+          {access?.isAdmin && (
+            <>
+              <p className="px-2 pb-2 pt-4 font-display text-[0.9375rem] font-medium italic text-ink-muted">Администрация</p>
+              <MoreList items={adminNav} grid />
+            </>
+          )}
         </nav>
         <div className="mt-4">
           <AppLangSwitch />

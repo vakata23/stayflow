@@ -55,6 +55,26 @@
   status = 200
 
 [[redirects]]
+  from = "/privacy"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/terms"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/access"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/admin/clients"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
   from = "/reset-password"
   to = "/index.html"
   status = 200
@@ -268,6 +288,11 @@
 
 [[headers]]
   for = "/profile"
+  [headers.values]
+    X-Robots-Tag = "noindex"
+
+[[headers]]
+  for = "/admin/*"
   [headers.values]
     X-Robots-Tag = "noindex"
 

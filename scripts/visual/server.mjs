@@ -126,11 +126,48 @@ async function rest(req, res, url, table) {
   return send(res, 200, rows, headers)
 }
 
+// ---- Платен достъп (миграция 016): състоянието на влезлия потребител се сменя от теста през /__mock/access?state=…
+const sofiaPlus = (n) => {
+  const d = new Date(new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Sofia' }).format(new Date()) + 'T00:00:00Z')
+  d.setUTCDate(d.getUTCDate() + n)
+  return d.toISOString().slice(0, 10)
+}
+const ACCESS_STATES = {
+  active: { status: 'active', plan: 'plus', active_until: null, is_admin: false },
+  pending: { status: 'pending', plan: 'start', active_until: null, is_admin: false },
+  suspended: { status: 'suspended', plan: 'plus', active_until: '2099-01-01', is_admin: false },
+  expired: { status: 'active', plan: 'plus', active_until: '2020-01-01', is_admin: false },
+  soon: { status: 'active', plan: 'plus', active_until: sofiaPlus(3), is_admin: false },
+  admin: { status: 'active', plan: 'pro', active_until: null, is_admin: true },
+}
+let accessState = 'active'
+let accessMissing = false // true → функцията my_access „не съществува“ (миграция 016 непусната)
+const requestsSent = []
+const grantWrites = []
+const adminClients = () => [
+  { profile_id: 'p1', full_name: 'Мария Петрова', company_name: null, phone: '+359 888 100 200', email: 'maria@example.bg', created_at: '2026-11-01T10:00:00Z', property_count: 2, plan: 'start', status: 'active', active_until: sofiaPlus(40), note: null },
+  { profile_id: 'p2', full_name: 'Георги Димитров', company_name: 'Морски къщи ЕООД', phone: null, email: 'georgi@example.bg', created_at: '2026-11-10T10:00:00Z', property_count: 5, plan: 'plus', status: 'active', active_until: sofiaPlus(3), note: null },
+  { profile_id: 'p3', full_name: 'Елена Стоянова', company_name: null, phone: '+359 899 555 444', email: 'elena@example.bg', created_at: '2026-11-14T10:00:00Z', property_count: 0, plan: 'start', status: 'pending', active_until: null, note: null },
+  { profile_id: 'p4', full_name: 'Николай Иванов', company_name: null, phone: null, email: 'nikolay@example.bg', created_at: '2026-09-01T10:00:00Z', property_count: 1, plan: 'start', status: 'suspended', active_until: '2026-10-01', note: 'Не е платил' },
+]
+const accessRequests = [
+  { id: 'r1', created_at: '2026-11-14T09:00:00Z', name: 'Стефан Маринов', phone: '+359 877 123 456', email: null, property_band: '4-10', plan_interest: 'plus', note: 'Имам 6 апартамента във Варна', consent_at: '2026-11-14T09:00:00Z', status: 'new', admin_note: null },
+  { id: 'r2', created_at: '2026-11-12T09:00:00Z', name: 'Anna Schmidt', phone: null, email: 'anna@example.de', property_band: '1-3', plan_interest: null, note: null, consent_at: '2026-11-12T09:00:00Z', status: 'contacted', admin_note: null },
+]
+
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, origin)
   const p = url.pathname
   try {
     if (p === '/__unmatched') return send(res, 200, [...unmatched])
+    if (p === '/__mock/access') {
+      const st = url.searchParams.get('state')
+      if (st === 'missing') accessMissing = true
+      else if (ACCESS_STATES[st]) { accessState = st; accessMissing = false }
+      return send(res, 200, { state: accessState, missing: accessMissing })
+    }
+    if (p === '/__mock/requests') return send(res, 200, requestsSent)
+    if (p === '/__mock/grants') return send(res, 200, grantWrites)
     if (p.startsWith('/auth/v1/')) {
       if (p.endsWith('/user')) return send(res, 200, USER)
       if (p.endsWith('/logout')) return send(res, 204, '')
@@ -139,9 +176,22 @@ const server = http.createServer(async (req, res) => {
     if (p.startsWith('/rest/v1/rpc/')) {
       const fn = p.split('/').pop()
       const body = req.method === 'POST' ? JSON.parse((await readBody(req)) || '{}') : {}
+      if (fn === 'my_access') {
+        if (accessMissing) return send(res, 404, { code: 'PGRST202', message: 'Could not find the function public.my_access' })
+        return send(res, 200, [ACCESS_STATES[accessState]])
+      }
+      if (fn === 'admin_clients') return send(res, ACCESS_STATES[accessState].is_admin ? 200 : 403, ACCESS_STATES[accessState].is_admin ? adminClients() : { message: 'forbidden' })
+      if (fn === 'request_access') {
+        if (body.p_name === 'Fail') return send(res, 400, { code: 'P0001', message: 'too_many' })
+        requestsSent.push(body)
+        return send(res, 200, null)
+      }
       if (!RPC[fn]) { unmatched.add('rpc:' + fn); return send(res, 200, null) }
       return send(res, 200, RPC[fn](body))
     }
+    if (p === '/rest/v1/access_requests' && req.method === 'GET') return send(res, 200, accessRequests)
+    if (p === '/rest/v1/access_grants' && req.method !== 'GET') { grantWrites.push({ method: req.method, body: JSON.parse((await readBody(req)) || 'null') }); return send(res, 201, '') }
+    if (p === '/rest/v1/access_requests' && req.method === 'PATCH') { grantWrites.push({ method: 'PATCH-request', url: req.url, body: JSON.parse((await readBody(req)) || 'null') }); return send(res, 204, '') }
     if (p.startsWith('/rest/v1/')) return await rest(req, res, url, p.slice('/rest/v1/'.length))
     if (p.startsWith('/storage/v1/')) return send(res, 200, { signedURL: '/photos/full-116.webp' })
     if (p.startsWith('/photos/')) {

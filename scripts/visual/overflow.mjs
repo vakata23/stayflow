@@ -7,7 +7,7 @@ const base = process.argv[2] || 'http://localhost:4174'
 const routes = [
   '/', '/calendar', '/bookings', '/earnings', '/earnings/rules', '/booking-requests', '/cleaning-tasks', '/cleaning-notes', '/pricing',
   '/guest-cards', '/access-codes', '/invoicing', '/notifications', '/profile', '/properties', '/properties/new', '/design',
-  '/demo', '/demo/morski-apartament-dve-terasi', '/demo/svetal-apartament-sofia', '/demo/loft-s-tuhlena-stena-plovdiv',
+  '/access', '/privacy', '/terms', '/demo', '/demo/morski-apartament-dve-terasi', '/demo/svetal-apartament-sofia', '/demo/loft-s-tuhlena-stena-plovdiv',
 ]
 const widths = [360, 375, 768, 1440]
 const jwt = () => {

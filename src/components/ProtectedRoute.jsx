@@ -1,5 +1,6 @@
 import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import AccessPaused from './AccessPaused'
 
 /** Инсталирано приложение (PWA на телефона, Capacitor): там е собственикът, а не нов посетител. */
 function isInstalledApp() {
@@ -20,9 +21,9 @@ function isInstalledApp() {
  */
 export default function ProtectedRoute({ children, guest = null }) {
   const location = useLocation()
-  const { session, loading } = useAuth()
+  const { session, loading, access, accessLoading } = useAuth()
 
-  if (loading) {
+  if (loading || (session && accessLoading)) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-surface">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent" />
@@ -34,6 +35,9 @@ export default function ProtectedRoute({ children, guest = null }) {
     if (guest && location.pathname === '/' && !isInstalledApp()) return guest
     return <Navigate to="/login" replace />
   }
+
+  // Платен достъп: без активен достъп собственикът вижда спокоен екран вместо приложението (администраторът — винаги влиза).
+  if (access && !access.isAdmin && access.state !== 'active') return <AccessPaused state={access.state} />
 
   return children
 }

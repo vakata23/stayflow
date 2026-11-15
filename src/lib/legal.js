@@ -6,23 +6,31 @@
  * текстът показва видим знак „[да се попълни]“, а scripts/check-legal-ready.mjs отказва да се качва на живо.
  */
 export const COMPANY = {
-  name: null, // напр. „Име на фирмата ЕООД“ (или трите имена на ЕТ)
-  address: null, // седалище и адрес на управление
-  eik: null, // ЕИК / БУЛСТАТ
-  email: null, // имейл за въпроси за личните данни и за права по GDPR
-  phone: null, // по желание
+  // Взето от публикуваното на vkcompany.site (страници „Контакт“ и „Политика за поверителност“, 2026-11-15).
+  name: 'VK Company',
+  address: null, // не е публикуван на vkcompany.site — да се попълни, щом е наличен (седалище и адрес на управление)
+  eik: null, // не е публикуван на vkcompany.site — да се попълни, щом е наличен (ЕИК / БУЛСТАТ)
+  email: 'ivan2002momchilov@gmail.com', // за въпроси за личните данни и права по GDPR
+  phone: '+359 899 140 113', // Viber / телефон
 }
 
 /** Дата на последната промяна на двата документа (показва се в тях). Сменя се при всяка смислена редакция. */
 export const LEGAL_UPDATED = '2026-11-12'
 
 /** Задължителните полета за администратор по GDPR (чл. 13): кой е и как се свързваме с него. */
-export const REQUIRED_COMPANY_FIELDS = ['name', 'address', 'eik', 'email']
+export const REQUIRED_COMPANY_FIELDS = ['name', 'email']
+
+/** Желателни (законът за търговците ги изисква да са посочени): показват се само ако са попълнени; проверката ги отбелязва като предупреждение. */
+export const RECOMMENDED_COMPANY_FIELDS = ['address', 'eik']
 
 const filled = (v) => typeof v === 'string' && v.trim() !== ''
 
 export function missingCompanyFields(company = COMPANY) {
   return REQUIRED_COMPANY_FIELDS.filter((k) => !filled(company[k]))
+}
+
+export function missingRecommendedFields(company = COMPANY) {
+  return RECOMMENDED_COMPANY_FIELDS.filter((k) => !filled(company[k]))
 }
 
 export const legalReady = (company = COMPANY) => missingCompanyFields(company).length === 0

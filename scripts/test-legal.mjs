@@ -6,7 +6,7 @@ import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
-  COMPANY, REQUIRED_COMPANY_FIELDS, missingCompanyFields, legalReady, companyLines, companyShort,
+  COMPANY, REQUIRED_COMPANY_FIELDS, RECOMMENDED_COMPANY_FIELDS, missingRecommendedFields, missingCompanyFields, legalReady, companyLines, companyShort,
   CONSENT_KEY, CONSENT_VERSION, parseConsent, serializeConsent, formatLegalDate, LEGAL_UPDATED,
 } from '../src/lib/legal.js'
 import { LEGAL } from '../src/pages/stay/i18n/legalStrings.js'
@@ -34,11 +34,11 @@ const walk = (dir, out = []) => {
 
 /* ---------- данни на администратора ---------- */
 const full = { name: ' Тест ЕООД ', address: 'ул. Пример 1', eik: '123456789', email: 'a@b.bg', phone: '' }
-ok('задължителни са 4 полета: име, адрес, ЕИК, имейл', REQUIRED_COMPANY_FIELDS.join() === 'name,address,eik,email')
-ok('празна фирма: липсват и четирите', missingCompanyFields({ name: null, address: null, eik: null, email: null }).length === 4)
-ok('празни интервали се броят за липсващи', missingCompanyFields({ ...full, eik: '   ' }).join() === 'eik')
+ok('задължителни са 2 полета: име и имейл (адрес и ЕИК са желателни — предупреждение)', REQUIRED_COMPANY_FIELDS.join() === 'name,email' && RECOMMENDED_COMPANY_FIELDS.join() === 'address,eik')
+ok('празна фирма: липсват задължителните (име, имейл)', missingCompanyFields({ name: null, address: null, eik: null, email: null }).join() === 'name,email')
+ok('празни интервали се броят за липсващи', missingCompanyFields({ ...full, name: '   ' }).join() === 'name' && missingRecommendedFields({ ...full, eik: '   ' }).join() === 'eik')
 ok('телефонът не е задължителен', missingCompanyFields(full).length === 0 && legalReady(full))
-ok('непопълнена фирма не е готова за качване', legalReady({ name: 'X', address: null, eik: '1', email: 'e@e.bg' }) === false)
+ok('без имейл не е готова за качване; без адрес/ЕИК е готова (предупреждение)', legalReady({ name: 'X', address: 'a', eik: '1', email: '' }) === false && legalReady({ name: 'X', address: null, eik: null, email: 'e@e.bg' }) === true)
 ok('редовете за показване: само попълнените, в ред Фирма, ЕИК, Адрес, Имейл', companyLines(full).map((l) => l.key).join() === 'name,eik,address,email')
 ok('стойностите се подрязват', companyLines(full)[0].value === 'Тест ЕООД')
 ok('кратък ред: „Име · ЕИК …“', companyShort(full) === 'Тест ЕООД · ЕИК 123456789')

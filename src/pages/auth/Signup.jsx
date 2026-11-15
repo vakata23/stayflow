@@ -47,7 +47,8 @@ export default function Signup() {
       <AuthLayout title="Проверете пощата си">
         <Alert kind="success">
           Изпратихме линк за потвърждение на <strong>{email}</strong>. Отворете го, за да
-          активирате акаунта си, след което влезте.
+          потвърдите имейла си, след което влезте. Достъпът до приложението го активираме ръчно — ако още не сте
+          го заявили, пишете ни във Viber.
         </Alert>
         <p className="mt-6 text-center text-sm text-ink-soft">
           <Link to="/login" className="font-semibold text-accent hover:text-accent-ink">
@@ -59,7 +60,14 @@ export default function Signup() {
   }
 
   return (
-    <AuthLayout title="Регистрация" subtitle="Създайте акаунт и добавете първия си имот за минути." demoLink>
+    <AuthLayout title="Регистрация" subtitle="Достъпът до StayFlow се отваря от нас. Създайте акаунта си и го активираме." demoLink>
+      <p className="mb-5 rounded-xl bg-sunken px-4 py-3 text-sm text-ink-soft">
+        Още не сте заявили достъп?{' '}
+        <Link to="/access" className="font-semibold text-accent-ink underline">
+          Заявете го тук
+        </Link>
+        .
+      </p>
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && <Alert>{error}</Alert>}
         <Field label="Име и фамилия">

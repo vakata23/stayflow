@@ -5,6 +5,7 @@ import { MORE } from '../../lib/demoTour'
 import { shortPrice } from '../stay/useStayEffects'
 import { useDocumentLang } from '../stay/i18n'
 import DemoTour from './DemoTour'
+import Landing from './Landing'
 import LegalLinks from '../../components/LegalLinks'
 import useWide from './useWide'
 import '../stay/stay.css'
@@ -13,13 +14,18 @@ import './demo.css'
 // На „/“ (началната страница за невлезли) заглавието е на продукта; на /demo — на демото. Същите текстове са в
 // netlify/edge-functions/page-meta.js (scripts/test-site-meta.mjs ги сверява).
 const HOME_TITLE = 'StayFlow — Управление на краткосрочни наеми'
-const HOME_DESC = 'Управление на краткосрочни наеми — резервации, календар, почистване, фактури.'
+const HOME_DESC = 'Резервациите от Airbnb и Booking на едно място: календар, приходи и директни резервации. От 9 € на месец, достъпът се отваря ръчно.'
 const PAGE_TITLE = 'Вижте какво има вътре — демо на StayFlow, без регистрация'
 const PAGE_DESC =
   'Разгледайте StayFlow преди да се регистрирате: истинските екрани — табло, календар, резервации, приходи — и примерни страници за гости със сезонни цени и оферти.'
 
-/** /demo — достъпна без регистрация: какво има в приложението на собственика и как изглежда страницата за гостите. */
+/** „/“ за невлезли е продажбената страница (Landing); /demo е пълната витрина. */
 export default function DemoHome({ home = false }) {
+  return home ? <Landing title={HOME_TITLE} description={HOME_DESC} /> : <DemoPage />
+}
+
+/** /demo — достъпна без регистрация: какво има в приложението на собственика и как изглежда страницата за гостите. */
+function DemoPage({ home = false }) {
   useDocumentLang()
   const wide = useWide('(min-width: 1000px)')
   useEffect(() => {
