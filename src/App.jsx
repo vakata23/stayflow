@@ -5,6 +5,7 @@ import { AuthProvider } from './context/AuthContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import ConfigNotice from './components/ConfigNotice'
 import Layout from './components/Layout'
+import CookieBanner from './components/CookieBanner'
 
 // Auth страниците остават eager — малки са и трябват веднага при първо зареждане.
 import Login from './pages/auth/Login'
@@ -37,6 +38,10 @@ const PublicStay = lazy(() => import('./pages/stay/PublicStay'))
 const DemoHome = lazy(() => import('./pages/demo/DemoHome'))
 const DemoStay = lazy(() => import('./pages/demo/DemoStay'))
 const DesignSystem = lazy(() => import('./pages/DesignSystem'))
+const Privacy = lazy(() => import('./pages/legal/Privacy'))
+const Terms = lazy(() => import('./pages/legal/Terms'))
+const Clients = lazy(() => import('./pages/admin/Clients'))
+const AccessRequest = lazy(() => import('./pages/demo/AccessRequest'))
 
 function PageFallback() {
   return (
@@ -67,6 +72,11 @@ export default function App() {
             {/* Демо без регистрация: примерни страници на имоти (без база данни) */}
             <Route path="/demo" element={<DemoHome />} />
             <Route path="/demo/:slug" element={<DemoStay />} />
+
+            {/* Правна информация — публична, без login */}
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/terms" element={<Terms />} />
+            <Route path="/access" element={<AccessRequest />} />
 
             {/* Витрина на дизайн системата — без данни, noindex */}
             <Route path="/design" element={<DesignSystem />} />
@@ -103,6 +113,7 @@ export default function App() {
               <Route path="/booking-requests" element={<BookingRequests />} />
               <Route path="/notifications" element={<Notifications />} />
               <Route path="/profile" element={<Profile />} />
+              <Route path="/admin/clients" element={<Clients />} />
               <Route path="/properties" element={<PropertiesList />} />
               <Route path="/properties/new" element={<PropertyNew />} />
               <Route path="/properties/:id" element={<PropertyDetail />} />
@@ -111,6 +122,7 @@ export default function App() {
             </Route>
           </Routes>
         </Suspense>
+        <CookieBanner />
       </BrowserRouter>
     </AuthProvider>
   )

@@ -13,6 +13,7 @@ import {
 } from '../../lib/bookings'
 import { Field, Input, Textarea, Select, Button, Alert } from '../../components/ui'
 import PaymentsSection from './PaymentsSection'
+import GuestShare from './GuestShare'
 import { useDialogA11y } from '../../lib/useDialogA11y'
 
 const empty = {
@@ -309,6 +310,7 @@ export default function BookingFormModal({ open, onClose, onSaved, properties, i
           </Field>
 
           {isEdit && <PaymentsSection bookingId={initial.id} />}
+          {isEdit && initial.status !== 'cancelled' && <GuestShare booking={initial} />}
 
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line pt-5">
             <div>

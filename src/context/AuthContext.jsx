@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { accessState } from '../lib/accessLogic'
 
 const AuthContext = createContext(null)
 
@@ -8,6 +9,12 @@ export function AuthProvider({ children }) {
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
   const [profileLoading, setProfileLoading] = useState(true)
+  // Платен достъп (миграция 016). `accessFor` е потребителят, за когото е известно състоянието: докато не съвпада със
+  // сесията, достъпът се смята за „още се зарежда“ (иначе за миг се показва приложението и на клиент на пауза).
+  // При липсваща функция/грешка — „активен“: по-добре отворено, отколкото заключен платен клиент, докато миграцията не е пусната.
+  const [access, setAccess] = useState(null)
+  const [accessFor, setAccessFor] = useState(null)
+  const accessLoading = !!session?.user && accessFor !== session.user.id
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -50,6 +57,24 @@ export function AuthProvider({ children }) {
     }
   }, [session?.user?.id])
 
+  const loadAccess = async (userId = session?.user?.id) => {
+    if (!userId) return
+    const { data, error } = await supabase.rpc('my_access')
+    const row = !error && Array.isArray(data) ? data[0] : null
+    setAccess({ ...accessState(row), plan: row?.plan ?? null, activeUntil: row?.active_until ?? null, isAdmin: !!row?.is_admin, known: !!row })
+    setAccessFor(userId)
+  }
+
+  useEffect(() => {
+    if (!session?.user) {
+      setAccess(null)
+      setAccessFor(null)
+      return
+    }
+    loadAccess(session.user.id)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.user?.id])
+
   /** Записва името/фирмата/телефона на собственика и обновява профила в паметта. Връща { error }. */
   const updateProfile = async (values) => {
     if (!profile?.id) return { error: new Error('Профилът не е зареден.') }
@@ -71,6 +96,9 @@ export function AuthProvider({ children }) {
         profile,
         loading,
         profileLoading,
+        access,
+        accessLoading,
+        refreshAccess: loadAccess,
         signOut,
         updateProfile,
       }}

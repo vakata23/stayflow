@@ -1,10 +1,12 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { BookMarked, Plus, ArrowUpDown, Filter, AlertTriangle, Search } from 'lucide-react'
+import { BookMarked, Plus, ArrowUpDown, Filter, AlertTriangle, Search, Download } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { formatDateBG, nightsBetween } from '../../lib/dates'
 import { formatMoney } from '../../lib/money'
 import { searchBookings } from '../../lib/bookingSearch'
+import { downloadCsv } from '../../lib/earnings'
+import { BOOKINGS_CSV_HEADERS, bookingsCsvRows, bookingsCsvFilename } from '../../lib/guestConfirm'
 import {
   BOOKING_STATUSES,
   SOURCE_STYLES,
@@ -131,6 +133,14 @@ export default function BookingsList() {
   const hasFilters = propertyId !== 'all' || status !== 'all' || from || to
   // Търсенето по гост е върху вече заредения списък (по име, телефон, имейл) и важи заедно с филтрите.
   const visible = searchBookings(bookings, query)
+
+  // Експорт на това, което се вижда (с филтрите и търсенето): CSV с BOM, отваря се в Excel с кирилица.
+  const exportCsv = () =>
+    downloadCsv(
+      bookingsCsvFilename(),
+      BOOKINGS_CSV_HEADERS,
+      bookingsCsvRows(visible, { property: (id) => properties.find((p) => p.id === id)?.name, source: sourceLabel, status: statusLabel })
+    )
   const searching = query.trim() !== ''
 
   const clearFilters = () => {
@@ -159,16 +169,22 @@ export default function BookingsList() {
         title="Резервации"
         description="Филтри, сортиране и бързо редактиране."
         action={
-          <Button
-            onClick={() => {
-              setEditing(null)
-              setModalOpen(true)
-            }}
-            disabled={properties.length === 0}
-          >
-            <Plus className="h-4 w-4" />
-            Нова резервация
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="secondary" onClick={exportCsv} disabled={visible.length === 0}>
+              <Download className="h-4 w-4" aria-hidden="true" />
+              Експорт CSV
+            </Button>
+            <Button
+              onClick={() => {
+                setEditing(null)
+                setModalOpen(true)
+              }}
+              disabled={properties.length === 0}
+            >
+              <Plus className="h-4 w-4" />
+              Нова резервация
+            </Button>
+          </div>
         }
       />
 

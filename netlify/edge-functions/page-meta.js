@@ -11,7 +11,7 @@ export const OG_IMAGE_PATH = '/og-default.png'
 export const PAGES = {
   '/': {
     title: 'StayFlow — Управление на краткосрочни наеми',
-    description: 'Управление на краткосрочни наеми — резервации, календар, почистване, фактури.',
+    description: 'Резервациите от Airbnb и Booking на едно място: календар, приходи и директни резервации. От 9 € на месец, достъпът се отваря ръчно.',
   },
   '/login': {
     title: 'Вход | StayFlow',
@@ -20,7 +20,20 @@ export const PAGES = {
   },
   '/signup': {
     title: 'Регистрация | StayFlow',
-    description: 'Създайте акаунт в StayFlow и добавете първия си имот: резервации, календар, почистване и фактури на едно място.',
+    description: 'Регистрация за одобрени клиенти на StayFlow. Още нямате достъп? Заявете го — отваряме го ръчно.',
+    noindex: true,
+  },
+  '/access': {
+    title: 'Заявка за достъп до StayFlow',
+    description: 'Заявете достъп до StayFlow: резервации от Airbnb и Booking на едно място, приходи и директни резервации. Отговаряме лично.',
+  },
+  '/privacy': {
+    title: 'Политика за поверителност | StayFlow',
+    description: 'Какви лични данни събира StayFlow, защо, колко дълго ги пази и какви са правата ви.',
+  },
+  '/terms': {
+    title: 'Условия за ползване | StayFlow',
+    description: 'Условия за ползване на StayFlow: достъп, плащане, отговорности и прекратяване.',
   },
   '/demo': {
     title: 'Вижте какво има вътре — демо на StayFlow, без регистрация',
@@ -92,4 +105,4 @@ export default async (request, context) => {
   }
 }
 
-export const config = { path: ['/', '/login', '/signup', '/demo'] }
+export const config = { path: ['/', '/login', '/signup', '/demo', '/access', '/privacy', '/terms'] }

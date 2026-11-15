@@ -11,7 +11,7 @@ import { formatMoney } from './money'
 
 let fontBase64Cache = null
 
-async function loadFontBase64() {
+export async function loadFontBase64() {
   if (fontBase64Cache) return fontBase64Cache
 
   const res = await fetch('/fonts/Roboto-Regular.ttf')

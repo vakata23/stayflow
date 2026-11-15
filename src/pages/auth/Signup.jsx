@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import AuthLayout from '../../components/AuthLayout'
-import { Field, Input, Button, Alert } from '../../components/ui'
+import { Field, Input, Button, Alert, Checkbox } from '../../components/ui'
+import { useLegalT, withLinks } from '../../lib/legalI18n'
 
 export default function Signup() {
   const [fullName, setFullName] = useState('')
@@ -11,6 +12,8 @@ export default function Signup() {
   const [error, setError] = useState(null)
   const [success, setSuccess] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [consent, setConsent] = useState(false)
+  const { t } = useLegalT()
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -18,6 +21,10 @@ export default function Signup() {
 
     if (password.length < 8) {
       setError('Паролата трябва да е поне 8 символа.')
+      return
+    }
+    if (!consent) {
+      setError(t('errConsent'))
       return
     }
 
@@ -40,7 +47,8 @@ export default function Signup() {
       <AuthLayout title="Проверете пощата си">
         <Alert kind="success">
           Изпратихме линк за потвърждение на <strong>{email}</strong>. Отворете го, за да
-          активирате акаунта си, след което влезте.
+          потвърдите имейла си, след което влезте. Достъпът до приложението го активираме ръчно — ако още не сте
+          го заявили, пишете ни във Viber.
         </Alert>
         <p className="mt-6 text-center text-sm text-ink-soft">
           <Link to="/login" className="font-semibold text-accent hover:text-accent-ink">
@@ -52,7 +60,14 @@ export default function Signup() {
   }
 
   return (
-    <AuthLayout title="Регистрация" subtitle="Създайте акаунт и добавете първия си имот за минути." demoLink>
+    <AuthLayout title="Регистрация" subtitle="Достъпът до StayFlow се отваря от нас. Създайте акаунта си и го активираме." demoLink>
+      <p className="mb-5 rounded-xl bg-sunken px-4 py-3 text-sm text-ink-soft">
+        Още не сте заявили достъп?{' '}
+        <Link to="/access" className="font-semibold text-accent-ink underline">
+          Заявете го тук
+        </Link>
+        .
+      </p>
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && <Alert>{error}</Alert>}
         <Field label="Име и фамилия">
@@ -86,6 +101,25 @@ export default function Signup() {
             onChange={(e) => setPassword(e.target.value)}
           />
         </Field>
+        <Checkbox
+          checked={consent}
+          onChange={(e) => {
+            setConsent(e.target.checked)
+            setError(null)
+          }}
+          label={withLinks(t('consentSignup', { terms: '{terms}', privacy: '{privacy}' }), {
+            terms: (
+              <a href="/terms" target="_blank" rel="noopener noreferrer" className="font-semibold text-accent underline underline-offset-2">
+                {t('legalTerms')}
+              </a>
+            ),
+            privacy: (
+              <a href="/privacy" target="_blank" rel="noopener noreferrer" className="font-semibold text-accent underline underline-offset-2">
+                {t('legalPrivacy')}
+              </a>
+            ),
+          })}
+        />
         <Button type="submit" loading={loading} className="w-full">Създай акаунт</Button>
       </form>
       <p className="mt-6 text-center text-sm text-ink-soft">

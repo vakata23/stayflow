@@ -1,0 +1,692 @@
+/* Началната страница „/“ и /access — в топлата гама на приложението. Стои върху .stay/.demo (stay.css, demo.css):
+   тук само се сменя палитрата през --s-* променливите и се добавят секциите на продажбената страница. */
+.lp {
+  --s-ink: var(--color-ink, #241a11);
+  --s-muted: #5c4c3d;
+  --s-line: #e3d6c1;
+  --s-line-strong: #a08a6c;
+  --s-soft: #f1e5d1;
+  --s-paper: #f6efe3;
+  --s-ok: #2f6b3f;
+  --s-ok-soft: #e2efdc;
+  --s-r-field: 14px;
+  --s-r-card: 20px;
+  --stay-accent: #a63e1e;
+  --stay-accent-text: #8c3216;
+  background: var(--s-paper);
+  padding-bottom: 76px; /* място за залепената лента на телефон */
+}
+.lp .demo-top {
+  background: rgb(246 239 227 / 0.94);
+  backdrop-filter: blur(6px);
+}
+.lp .demo-hero .demo-eyebrow {
+  margin: 0 0 16px;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  color: var(--stay-accent-text);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  font-size: 12.5px;
+}
+.lp .demo-hero h1 {
+  font-size: clamp(2.05rem, 6.4vw, 3.1rem);
+}
+.lp-hide-s {
+  display: none;
+}
+@media (min-width: 700px) {
+  .lp-hide-s {
+    display: inline;
+  }
+}
+.lp .stay-btn,
+.lp .stay-btn-outline {
+  min-height: 48px;
+  box-shadow: none;
+}
+.lp .stay-btn {
+  box-shadow: 0 8px 18px -8px rgb(166 62 30 / 0.7);
+}
+.lp-trust {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  margin: 22px 0 0;
+  padding: 0;
+  list-style: none;
+  color: var(--s-muted);
+  font-size: 14.5px;
+  font-weight: 500;
+}
+.lp-trust li::before {
+  content: '✓ ';
+  color: var(--s-ok);
+  font-weight: 800;
+}
+
+/* болки */
+.lp-pains {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.lp-pains li {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 16px;
+  border: 1px solid var(--s-line);
+  border-radius: 16px;
+  background: #fffaf1;
+}
+.lp-pains li > span {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #f3d7cd;
+  color: var(--stay-accent);
+  font-weight: 800;
+}
+.lp-pains b {
+  display: block;
+  font-size: 1.04rem;
+}
+.lp-pains p {
+  margin: 4px 0 0;
+  color: var(--s-muted);
+}
+@media (min-width: 900px) {
+  .lp-pains {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* какво получавате */
+.lp-feat {
+  display: grid;
+  gap: 26px;
+  margin: 26px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.lp-feat li {
+  overflow: hidden;
+  border: 1px solid var(--s-line);
+  border-radius: 20px;
+  background: #fffaf1;
+}
+.lp-feat__img {
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-bottom: 1px solid var(--s-line);
+  background: #fff;
+}
+.lp-feat__img img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top left;
+}
+.lp-feat__txt {
+  padding: 18px;
+}
+.lp-feat h3 {
+  margin: 0;
+  font: 600 1.28rem/1.2 var(--s-display);
+}
+.lp-feat p {
+  margin: 8px 0 0;
+  color: var(--s-muted);
+}
+.lp-tag {
+  display: inline-block;
+  margin-left: 10px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: #f3d7cd;
+  color: var(--stay-accent-text);
+  font: 700 12px/1.5 var(--s-body);
+  vertical-align: middle;
+}
+@media (min-width: 900px) {
+  .lp-feat {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* полета */
+.lp-field {
+  display: grid;
+  gap: 6px;
+  margin: 0 0 14px;
+}
+.lp-field label {
+  font-weight: 700;
+  font-size: 14px;
+}
+.lp-opt {
+  font-weight: 500;
+  color: var(--s-muted);
+}
+.lp-field input,
+.lp-field select,
+.lp-field textarea {
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 14px;
+  border: 1.5px solid #cdb99a;
+  border-radius: 12px;
+  background: #fff;
+  color: var(--s-ink);
+  font: 400 16px/1.4 var(--s-body);
+}
+.lp-field textarea {
+  min-height: 92px;
+  resize: vertical;
+}
+.lp-field input:focus-visible,
+.lp-field select:focus-visible,
+.lp-field textarea:focus-visible,
+.lp-check input:focus-visible {
+  outline: 3px solid rgb(166 62 30 / 0.35);
+  outline-offset: 1px;
+  border-color: var(--stay-accent);
+}
+.lp-field [aria-invalid='true'] {
+  border-color: #b3261e;
+}
+.lp-hint,
+.lp-err,
+.lp-fine {
+  margin: 0;
+  font-size: 13.5px;
+}
+.lp-hint {
+  color: var(--s-muted);
+}
+.lp-err {
+  color: #9b241b;
+  font-weight: 600;
+}
+.lp-two {
+  display: grid;
+  gap: 0 14px;
+}
+@media (min-width: 560px) {
+  .lp-two {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+.lp-hp {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+.lp-check {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin: 4px 0 8px;
+  font-size: 14px;
+  color: var(--s-muted);
+}
+.lp-check input {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  margin-top: 1px;
+  accent-color: var(--stay-accent);
+}
+.lp-check a {
+  color: var(--stay-accent-text);
+  font-weight: 600;
+}
+.lp-alert {
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #fbe1dc;
+  color: #7c2016;
+  font-weight: 600;
+  font-size: 14.5px;
+}
+.lp-alert a {
+  color: inherit;
+  text-decoration: underline;
+}
+.lp-form .stay-fine {
+  margin-top: 10px;
+}
+.lp-done {
+  padding: 24px;
+  border: 1px solid var(--s-line);
+  border-radius: 20px;
+  background: #fffaf1;
+  text-align: center;
+}
+.lp-done svg {
+  width: 40px;
+  height: 40px;
+  color: var(--s-ok);
+}
+.lp-done h3 {
+  margin: 8px 0;
+  font: 600 1.4rem/1.2 var(--s-display);
+}
+.lp-done p {
+  margin: 0 0 16px;
+  color: var(--s-muted);
+}
+.lp-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+}
+.lp-row a {
+  margin-top: 0;
+  text-decoration: none;
+}
+
+/* калкулатор */
+.lp-calc {
+  display: grid;
+  gap: 18px;
+  padding: 22px;
+  border: 1px solid var(--s-line);
+  border-radius: 22px;
+  background: #fffaf1;
+}
+.lp-calc__out {
+  align-self: stretch;
+  padding: 18px;
+  border-radius: 16px;
+  background: var(--s-ok-soft);
+  color: #1c4d29;
+}
+.lp-calc__out p {
+  margin: 0;
+}
+.lp-calc__big {
+  font: 700 clamp(1.8rem, 5vw, 2.5rem) / 1.15 var(--s-display);
+  color: #1c4d29;
+}
+.lp-calc__year {
+  font-weight: 600;
+  margin-top: 4px !important;
+}
+.lp-calc__note {
+  margin-top: 12px !important;
+  font-size: 14px;
+  color: #2c5a37;
+}
+@media (min-width: 900px) {
+  .lp-calc {
+    grid-template-columns: 1.1fr 1fr;
+    align-items: center;
+  }
+}
+
+/* цени */
+.lp-plans {
+  display: grid;
+  gap: 18px;
+  margin: 26px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.lp-plan {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 24px 22px;
+  border: 1px solid var(--s-line);
+  border-radius: 22px;
+  background: #fffaf1;
+}
+.lp-plan--hot {
+  border: 2px solid var(--stay-accent);
+  background: #fff;
+}
+.lp-plan__badge {
+  position: absolute;
+  top: -13px;
+  left: 22px;
+  padding: 3px 12px;
+  border-radius: 999px;
+  background: var(--stay-accent);
+  color: #fff;
+  font: 700 12.5px/1.5 var(--s-body);
+}
+.lp-plan h3 {
+  margin: 0;
+  font: 600 1.5rem/1.15 var(--s-display);
+}
+.lp-plan__for {
+  margin: 2px 0 12px;
+  color: var(--s-muted);
+}
+.lp-plan__price {
+  margin: 0;
+  color: var(--s-muted);
+}
+.lp-plan__price b {
+  font: 700 2.4rem/1 var(--s-display);
+  color: var(--s-ink);
+}
+.lp-plan__year {
+  margin: 4px 0 14px;
+  color: var(--s-muted);
+  font-size: 14px;
+}
+.lp-plan ul {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 20px;
+  padding: 0;
+  list-style: none;
+  flex: 1;
+}
+.lp-plan li {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  font-size: 15px;
+}
+.lp-plan li svg {
+  flex: none;
+  margin-top: 3px;
+  color: var(--s-ok);
+}
+.lp-plan > a {
+  margin-top: 0;
+  text-decoration: none;
+}
+.lp-fine {
+  margin-top: 18px;
+  color: var(--s-muted);
+}
+@media (min-width: 900px) {
+  .lp-plans {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* стъпки */
+.lp-steps {
+  display: grid;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: st;
+}
+.lp-steps li {
+  position: relative;
+  padding: 18px 18px 18px 72px;
+  border: 1px solid var(--s-line);
+  border-radius: 18px;
+  background: #fffaf1;
+  counter-increment: st;
+}
+.lp-steps li::before {
+  content: counter(st);
+  position: absolute;
+  left: 16px;
+  top: 16px;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--stay-accent);
+  color: #fff;
+  font: 700 1.2rem var(--s-display);
+}
+.lp-steps b {
+  font-size: 1.08rem;
+}
+.lp-steps p {
+  margin: 4px 0 0;
+  color: var(--s-muted);
+}
+@media (min-width: 900px) {
+  .lp-steps {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* отзиви (показват се само ако има) */
+.lp-say {
+  display: grid;
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.lp-say blockquote {
+  margin: 0 0 8px;
+  font: 500 1.15rem/1.45 var(--s-display);
+}
+.lp-say p {
+  margin: 0;
+  color: var(--s-muted);
+}
+
+/* въпроси */
+.lp-narrow {
+  max-width: 52rem;
+}
+.lp-faq details {
+  margin-top: 10px;
+  padding: 0 18px;
+  border: 1px solid var(--s-line);
+  border-radius: 14px;
+  background: #fffaf1;
+}
+.lp-faq summary {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  list-style: none;
+  align-items: center;
+  min-height: 52px;
+}
+.lp-faq summary::-webkit-details-marker {
+  display: none;
+}
+.lp-faq summary::after {
+  content: '+';
+  color: var(--stay-accent);
+  font-size: 1.4rem;
+  line-height: 1;
+}
+.lp-faq details[open] summary::after {
+  content: '−';
+}
+.lp-faq summary:focus-visible {
+  outline: 3px solid rgb(166 62 30 / 0.35);
+  outline-offset: 4px;
+  border-radius: 6px;
+}
+.lp-faq p {
+  margin: 0;
+  padding-bottom: 16px;
+  color: var(--s-muted);
+}
+
+/* заявка */
+.lp-req {
+  display: grid;
+  gap: 28px;
+}
+.lp-req__form {
+  padding: 22px;
+  border: 1px solid var(--s-line);
+  border-radius: 22px;
+  background: #fffaf1;
+}
+.lp-contact {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.lp-contact a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  color: var(--stay-accent-text);
+  font-weight: 700;
+}
+@media (min-width: 900px) {
+  .lp-req {
+    grid-template-columns: 1fr 1.1fr;
+    align-items: start;
+    gap: 56px;
+  }
+}
+.lp-solo {
+  max-width: 40rem;
+  padding-block: 28px 80px;
+}
+.lp-solo h1 {
+  margin: 8px 0 10px;
+  font: 600 clamp(1.8rem, 5vw, 2.4rem) / 1.15 var(--s-display);
+}
+.lp-solo .demo-lead {
+  margin-bottom: 22px;
+}
+.lp-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  color: var(--s-muted);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+/* подвал */
+.lp-foot p {
+  margin: 4px 0;
+}
+.lp-foot a {
+  color: inherit;
+  text-decoration: underline;
+}
+
+/* залепена лента (телефон) и плаващ Viber (компютър) */
+.lp-sticky {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 55;
+  display: flex;
+  gap: 10px;
+  padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--s-line);
+  background: rgb(246 239 227 / 0.96);
+}
+.lp-sticky .stay-btn {
+  flex: 1;
+  margin: 0;
+  text-decoration: none;
+}
+.lp-sticky .stay-btn-outline {
+  margin: 0;
+  min-width: 52px;
+  padding: 0 14px;
+}
+.lp-fab {
+  display: none;
+}
+@media (min-width: 900px) {
+  .lp {
+    padding-bottom: 0;
+  }
+  .lp-sticky {
+    display: none;
+  }
+  .lp-fab {
+    position: fixed;
+    right: 22px;
+    bottom: 22px;
+    z-index: 55;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 52px;
+    padding: 0 20px;
+    border-radius: 999px;
+    background: #6a4fe6;
+    color: #fff;
+    font: 700 15px/1 var(--s-body);
+    text-decoration: none;
+    box-shadow: 0 14px 28px -10px rgb(60 40 160 / 0.6);
+  }
+  .lp-fab:hover {
+    filter: brightness(0.94);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lp * {
+    transition: none !important;
+  }
+}
+
+/* „Не сте сами“ */
+.lp-person {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  padding: 18px;
+  border: 1px solid var(--s-line);
+  border-radius: 18px;
+  background: #fffaf1;
+}
+.lp-person__av {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #f3d7cd;
+  color: var(--stay-accent);
+  font: 700 1.5rem var(--s-display);
+}
+.lp-person p {
+  margin: 0 0 6px;
+  color: var(--s-muted);
+}
+.lp-person b {
+  color: var(--s-ink);
+}
+.lp-promises {
+  display: grid;
+  gap: 8px;
+  margin: 18px 0;
+  padding: 0;
+  list-style: none;
+}
+.lp-promises li::before {
+  content: '✓ ';
+  color: var(--s-ok);
+  font-weight: 800;
+}
