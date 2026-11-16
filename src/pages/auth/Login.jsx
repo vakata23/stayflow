@@ -15,7 +15,12 @@ export default function Login() {
     e.preventDefault()
     setError(null)
     setLoading(true)
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    // „Tanq“ без @ → вътрешен имейл за вход (потребителско име); истинските имейли минават непроменени
+    const login = email.trim()
+    const { error } = await supabase.auth.signInWithPassword({
+      email: login.includes('@') ? login : `${login.toLowerCase()}@stayflow.test`,
+      password,
+    })
     setLoading(false)
     if (error) {
       setError(
@@ -32,11 +37,13 @@ export default function Login() {
     <AuthLayout title="Вход" subtitle="Влезте в акаунта си, за да управлявате имотите си." demoLink>
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && <Alert>{error}</Alert>}
-        <Field label="Имейл">
+        <Field label="Имейл или потребителско име">
           <Input
-            type="email"
+            type="text"
+            inputMode="email"
+            autoCapitalize="none"
             required
-            autoComplete="email"
+            autoComplete="username"
             placeholder="ime@primer.bg"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
