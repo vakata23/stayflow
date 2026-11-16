@@ -53,14 +53,14 @@ for (const [w, h] of [[1440, 900], [375, 812]]) {
   const m = await page.evaluate(() => ({
     h1: document.querySelector('h1')?.textContent, h1n: document.querySelectorAll('h1').length, mains: document.querySelectorAll('main').length,
     cards: [...document.querySelectorAll('.demo-card')].map((a) => ({ href: a.getAttribute('href'), h3: a.querySelector('h3')?.textContent, price: a.querySelector('.demo-card__price')?.textContent.replace(/\s+/g, ' '), tag: a.querySelector('.demo-card__tag')?.textContent })),
-    signup: !!document.querySelector('a[href="/signup"]'), login: !!document.querySelector('a[href="/login"]'),
+    signup: !!document.querySelector('a[href="/signup"]'), access: document.querySelectorAll('a[href="/access"]').length, login: !!document.querySelector('a[href="/login"]'),
     title: document.title, robots: document.querySelector('meta[name="robots"]')?.content ?? null,
     font: getComputedStyle(document.querySelector('h1')).fontFamily.slice(0, 10),
   }))
-  ok(`/demo @${w}: един h1, един main, заглавие „Вижте какво има вътре…“`, m.h1n === 1 && m.mains === 1 && /Вижте какво има вътре, преди да се регистрирате/.test(m.h1), m.h1)
+  ok(`/demo @${w}: един h1, един main, заглавие „Вижте какво има вътре…“`, m.h1n === 1 && m.mains === 1 && /Вижте какво има вътре, преди да заявите достъп/.test(m.h1), m.h1)
   ok(`/demo @${w}: три карти към /demo/<имот> с бадж „Демо“`, m.cards.length === 3 && m.cards.every((c, i) => c.href === `/demo/${SLUGS[i]}` && c.tag === 'Демо'), JSON.stringify(m.cards.map((c) => c.href)))
   ok(`/demo @${w}: „от“ цените са 50 €, 118 €, 74 €`, m.cards.map((c) => c.price).join('|').replace(/\s/g, '') === 'от50€/нощ|от118€/нощ|от74€/нощ', m.cards.map((c) => c.price).join(' | '))
-  ok(`/demo @${w}: връзки „Създай профил“ и „Вход“, h1 с Literata, без noindex`, m.signup && m.login && /Literata/.test(m.font) && m.robots === null, m.font)
+  ok(`/demo @${w}: бутоните „Опитай 7 дни безплатно“ водят към /access (не към свободна регистрация), има „Вход“, h1 с Literata, без noindex`, !m.signup && m.access >= 2 && m.login && /Literata/.test(m.font) && m.robots === null, m.font)
   ok(`/demo @${w}: заглавие на страницата е демо`, /Вижте какво има вътре — демо на StayFlow/.test(m.title), m.title)
   ok(`/demo @${w}: без заявки към базата и функциите`, calls.length === 0, calls.join(', '))
   ok(`/demo @${w}: без хоризонтално препълване и без грешки`, !(await overflow(page)) && errors.length === 0, errors.join(' | '))

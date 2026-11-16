@@ -60,9 +60,9 @@ export default function Login() {
         <Button type="submit" loading={loading} className="w-full">Вход</Button>
       </form>
       <p className="mt-6 text-center text-sm text-ink-soft">
-        Нямате акаунт?{' '}
-        <Link to="/signup" className="font-semibold text-accent hover:text-accent-ink">
-          Регистрирайте се
+        Нямате достъп?{' '}
+        <Link to="/access" className="font-semibold text-accent hover:text-accent-ink">
+          Заявете го тук
         </Link>
       </p>
     </AuthLayout>

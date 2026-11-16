@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Check, MessageCircle } from 'lucide-react'
 import { PLANS, PLAN_KEYS, yearlyPrice, FREE_MONTHS_YEARLY, TRIAL_DAYS } from '../../lib/accessLogic'
@@ -9,6 +9,7 @@ import { useDocumentLang } from '../stay/i18n'
 import DemoTour from './DemoTour'
 import Calculator from './Calculator'
 import RequestForm from './RequestForm'
+import LegalLinks from '../../components/LegalLinks'
 import useWide from './useWide'
 import '../stay/stay.css'
 import './demo.css'
@@ -18,6 +19,26 @@ import './landing.css'
 export default function Landing({ title, description }) {
   useDocumentLang()
   const wide = useWide('(min-width: 1000px)')
+  // Залепената лента на телефон се показва САМО след героя и докато формата не е на екрана — иначе са 3 еднакви бутона наведнъж.
+  const heroRef = useRef(null)
+  const formRef = useRef(null)
+  const [heroGone, setHeroGone] = useState(false)
+  const [formShown, setFormShown] = useState(false)
+  useEffect(() => {
+    if (typeof IntersectionObserver === 'undefined') {
+      setHeroGone(true)
+      return undefined
+    }
+    const a = new IntersectionObserver(([e]) => setHeroGone(!e.isIntersecting && e.boundingClientRect.top < 0))
+    const b = new IntersectionObserver(([e]) => setFormShown(e.isIntersecting))
+    if (heroRef.current) a.observe(heroRef.current)
+    if (formRef.current) b.observe(formRef.current)
+    return () => {
+      a.disconnect()
+      b.disconnect()
+    }
+  }, [])
+  const showBar = heroGone && !formShown
   useEffect(() => {
     const prevTitle = document.title
     const descEl = document.querySelector('meta[name="description"]')
@@ -56,7 +77,7 @@ export default function Landing({ title, description }) {
 
       <main id="lp-main">
         {/* 1. Полза */}
-        <section className="stay-wrap demo-hero lp-hero">
+        <section className="stay-wrap demo-hero lp-hero" ref={heroRef}>
           <div className="demo-hero__text">
             <p className="demo-eyebrow">За имоти под наем</p>
             <h1>Резервациите от Airbnb и Booking на едно място — без двойни резервации</h1>
@@ -266,7 +287,7 @@ export default function Landing({ title, description }) {
         </section>
 
         {/* 10. Заявка */}
-        <section id="dostap" className="demo-sec" aria-labelledby="lp-req">
+        <section id="dostap" className="demo-sec" aria-labelledby="lp-req" ref={formRef}>
           <div className="stay-wrap lp-req">
             <div>
               <h2 id="lp-req">Заявете достъп</h2>
@@ -303,14 +324,17 @@ export default function Landing({ title, description }) {
           StayFlow · {COMPANY.name}
           {contactEmail ? ` · ${contactEmail}` : ''}
         </p>
+        <LegalLinks company={false} />
         <p>
-          <Link to="/privacy">Поверителност</Link> · <Link to="/terms">Условия</Link> · <Link to="/demo">Демо</Link>
+          <Link to="/demo" className="lp-foot__demo">
+            Разгледайте демото без регистрация
+          </Link>
         </p>
       </footer>
 
       {/* залепена лента на телефон: „Заяви достъп“ винаги под палеца */}
       <aside aria-label="Бърза връзка">
-      <div className="lp-sticky">
+      <div className={showBar ? 'lp-sticky' : 'lp-sticky lp-sticky--off'}>
         <Link to="/access" className="stay-btn">
           Опитай {TRIAL_DAYS} дни безплатно
         </Link>

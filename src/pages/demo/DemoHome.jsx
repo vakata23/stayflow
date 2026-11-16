@@ -17,7 +17,7 @@ const HOME_TITLE = 'StayFlow — Управление на краткосроч�
 const HOME_DESC = 'Резервациите от Airbnb и Booking на едно място: календар, приходи и директни резервации. От 9 € на месец, достъпът се отваря ръчно.'
 const PAGE_TITLE = 'Вижте какво има вътре — демо на StayFlow, без регистрация'
 const PAGE_DESC =
-  'Разгледайте StayFlow преди да се регистрирате: истинските екрани — табло, календар, резервации, приходи — и примерни страници за гости със сезонни цени и оферти.'
+  'Разгледайте StayFlow преди да заявите достъп: истинските екрани — табло, календар, резервации, приходи — и примерни страници за гости със сезонни цени и оферти.'
 
 /** „/“ за невлезли е продажбената страница (Landing); /demo е пълната витрина. */
 export default function DemoHome({ home = false }) {
@@ -54,8 +54,8 @@ function DemoPage({ home = false }) {
             <Link to="/login" className="demo-link">
               Вход
             </Link>
-            <Link to="/signup" className="stay-btn">
-              Създай профил
+            <Link to="/access" className="stay-btn">
+              Опитай 7 дни безплатно
             </Link>
           </nav>
         </div>
@@ -65,7 +65,7 @@ function DemoPage({ home = false }) {
         <section className="stay-wrap demo-hero">
           <div className="demo-hero__text">
             <p className="demo-eyebrow">{home ? 'За имоти под наем' : 'Демо, без регистрация'}</p>
-            <h1>{home ? 'Резервациите от Airbnb и Booking на едно място — без двойни резервации' : 'Вижте какво има вътре, преди да се регистрирате'}</h1>
+            <h1>{home ? 'Резервациите от Airbnb и Booking на едно място — без двойни резервации' : 'Вижте какво има вътре, преди да заявите достъп'}</h1>
             <p>
               {home
                 ? 'StayFlow събира в един календар резервациите от Airbnb, Booking и директните от гостите, смята колко печелите след комисионите и подготвя страница, през която гостите ви резервират директно. Разгледайте приложението отдолу — без регистрация.'
@@ -163,10 +163,10 @@ function DemoPage({ home = false }) {
         <section className="demo-sec demo-sec--soft demo-cta" aria-labelledby="demo-cta">
           <div className="stay-wrap">
             <h2 id="demo-cta">Искате го за вашите имоти?</h2>
-            <p>Създайте профил, добавете имота си и публикувайте страницата — линкът можете да сложите в Instagram, Viber или в обявата си.</p>
+            <p>Заявете достъп и опитайте 7 дни безплатно, без карта. Свързваме се с вас лично, настройваме имота ви и публикувате страницата — линкът можете да сложите в Instagram, Viber или в обявата си.</p>
             <div className="demo-cta__row">
-              <Link to="/signup" className="stay-btn">
-                Създай профил
+              <Link to="/access" className="stay-btn">
+                Опитай 7 дни безплатно
               </Link>
               <Link to="/login" className="stay-btn-outline">
                 Вече имам профил

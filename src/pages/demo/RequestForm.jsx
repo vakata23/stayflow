@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { CheckCircle2, MessageCircle } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
@@ -16,6 +16,7 @@ export default function RequestForm({ defaultPlan = '', idPrefix = 'rf' }) {
   const [sending, setSending] = useState(false)
   const [done, setDone] = useState(false)
   const [serverError, setServerError] = useState(null)
+  const alertRef = useRef(null)
 
   const set = (key) => (e) => {
     const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value
@@ -28,7 +29,14 @@ export default function RequestForm({ defaultPlan = '', idPrefix = 'rf' }) {
     e.preventDefault()
     const { errors: errs, values } = validateAccessRequest(v)
     setErrors(errs)
-    if (Object.keys(errs).length) return
+    if (Object.keys(errs).length) {
+      // фокус и превъртане към ПЪРВОТО грешно поле — иначе на телефон грешката остава извън екрана
+      const first = ['name', 'phone', 'contact', 'email', 'note', 'consent'].find((k) => errs[k])
+      const target = document.getElementById(`${idPrefix}-${first === 'contact' ? 'phone' : first}`)
+      target?.focus()
+      target?.scrollIntoView?.({ block: 'center', behavior: 'smooth' })
+      return
+    }
     setSending(true)
     setServerError(null)
     const { error } = await supabase.rpc('request_access', {
@@ -43,7 +51,11 @@ export default function RequestForm({ defaultPlan = '', idPrefix = 'rf' }) {
       p_trial: !!v.trial,
     })
     setSending(false)
-    if (error) return setServerError(requestErrorMessage(error.message))
+    if (error) {
+      setServerError(requestErrorMessage(error.message))
+      setTimeout(() => alertRef.current?.scrollIntoView?.({ block: 'center', behavior: 'smooth' }), 50)
+      return
+    }
     setDone(true)
   }
 
@@ -79,7 +91,7 @@ export default function RequestForm({ defaultPlan = '', idPrefix = 'rf' }) {
   return (
     <form className="lp-form" onSubmit={submit} noValidate>
       {serverError && (
-        <p className="lp-alert" role="alert">
+        <p className="lp-alert" role="alert" ref={alertRef}>
           {serverError}
           {viberUrl && (
             <>

@@ -126,7 +126,19 @@
   aspect-ratio: 16 / 9;
   overflow: hidden;
   border-bottom: 1px solid var(--s-line);
-  background: #fff;
+  /* докато картинката се зареди — топъл фон с лек блясък, не бяла кутия */
+  background: linear-gradient(100deg, #efe4cf 30%, #f7efe0 50%, #efe4cf 70%) 0 0 / 200% 100%;
+  animation: lp-skel 1.6s linear infinite;
+}
+@keyframes lp-skel {
+  to {
+    background-position: -200% 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lp-feat__img {
+    animation: none;
+  }
 }
 .lp-feat__img img {
   display: block;
@@ -585,9 +597,21 @@
 .lp-foot p {
   margin: 4px 0;
 }
-.lp-foot a {
+.lp-foot a,
+.lp-foot button {
   color: inherit;
   text-decoration: underline;
+}
+.lp-foot__demo {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+/* на телефон основният бутон е в героя и в залепената лента — в горната лента е излишен */
+@media (max-width: 899px) {
+  .lp .demo-nav .stay-btn {
+    display: none;
+  }
 }
 
 /* залепена лента (телефон) и плаващ Viber (компютър) */
@@ -602,6 +626,11 @@
   padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
   border-top: 1px solid var(--s-line);
   background: rgb(246 239 227 / 0.96);
+  transition: transform 0.2s ease, visibility 0.2s;
+}
+.lp-sticky--off {
+  transform: translateY(110%);
+  visibility: hidden;
 }
 .lp-sticky .stay-btn {
   flex: 1;

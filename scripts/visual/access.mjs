@@ -62,9 +62,27 @@ for (const width of [360, 390, 768, 1440]) {
   ok(`/ @${width}: няма „Създай профил“ и няма „безплатен профил“`, !/Създай профил/i.test(txt) && !/безплатен профил/i.test(txt))
   ok(`/ @${width}: бутоните „Заяви достъп“ водят към /access`, (await page.locator('a[href="/access"]').count()) >= 3)
   ok(`/ @${width}: пакетите водят към /access?plan=…`, (await page.locator('a[href="/access?plan=start"], a[href="/access?plan=plus"], a[href="/access?plan=pro"]').count()) === 3)
-  const sticky = await page.locator('.lp-sticky').isVisible()
   const fab = await page.locator('.lp-fab').isVisible()
-  ok(`/ @${width}: ${width < 900 ? 'залепена лента на телефон, без плаващ Viber' : 'плаващ Viber на компютър, без лента'}`, width < 900 ? sticky && !fab : !sticky && fab, `лента ${sticky}, viber ${fab}`)
+  if (width < 900) {
+    // залепената лента: скрита в героя (там е главният бутон), видима по средата на страницата, скрита до формата
+    const top = await page.locator('.lp-sticky').isVisible()
+    const ctasTop = await page.evaluate(() => [...document.querySelectorAll('a')].filter((a) => /Опитай/.test(a.textContent) && a.getBoundingClientRect().width > 0 && a.getBoundingClientRect().top < innerHeight && a.getBoundingClientRect().bottom > 0).length)
+    ok(`/ @${width}: на първия екран на телефон има САМО един бутон „Опитай…“ (не три еднакви)`, !top && ctasTop === 1, `лента ${top}, бутони ${ctasTop}`)
+    await page.evaluate(() => document.getElementById('ceni').scrollIntoView())
+    await page.waitForTimeout(500)
+    ok(`/ @${width}: след героя се показва залепената лента, без плаващ Viber`, (await page.locator('.lp-sticky').isVisible()) && !fab)
+    await page.evaluate(() => document.getElementById('dostap').scrollIntoView())
+    await page.waitForTimeout(500)
+    ok(`/ @${width}: до формата лентата се скрива (там е собственият ѝ бутон)`, !(await page.locator('.lp-sticky').isVisible()))
+    await page.evaluate(() => window.scrollTo(0, 0))
+  } else {
+    ok(`/ @${width}: плаващ Viber на компютър, без лента`, !(await page.locator('.lp-sticky').isVisible()) && fab)
+  }
+  const foot = await page.evaluate(() => [...document.querySelectorAll('footer a, footer button')].map((e) => ({ t: e.textContent.trim().slice(0, 30), h: Math.round(e.getBoundingClientRect().height) })))
+  ok(`/ @${width}: линковете в долния край (поверителност, условия, бисквитки, демо) са поне 40 px високи`, foot.length >= 4 && foot.every((f) => f.h >= 40), JSON.stringify(foot))
+  ok(`/ @${width}: в долния край има „Настройки за бисквитки“`, foot.some((f) => /бисквитки/i.test(f.t)), JSON.stringify(foot))
+  const imgBg = await page.evaluate(() => getComputedStyle(document.querySelector('.lp-feat__img')).backgroundColor + '|' + getComputedStyle(document.querySelector('.lp-feat__img')).backgroundImage.slice(0, 20))
+  ok(`/ @${width}: докато картинките се зареждат фонът не е бял`, /gradient/.test(imgBg), imgBg)
   if (width === 390) {
     const hero = await page.evaluate(() => {
       const b = [...document.querySelectorAll('.demo-hero__row a')][0].getBoundingClientRect()
@@ -161,6 +179,27 @@ for (const width of [360, 390, 768, 1440]) {
   const t = await page.innerText('main')
   ok('сървърна грешка (too_many) → разбираемо съобщение + Viber', /Вече получихме заявка от вас/.test(t) && (await page.locator('.lp-alert a[href^="viber://"]').count()) === 1)
   ok('формата остава попълнена след грешка', (await page.inputValue('#req-name')) === 'Fail')
+  await ctx.close()
+}
+{
+  const { ctx, page } = await open(390)
+  await go(page, '/access')
+  await page.getByRole('button', { name: /Искам/ }).click()
+  await page.waitForTimeout(700)
+  const f = await page.evaluate(() => ({ id: document.activeElement?.id, top: Math.round(document.activeElement.getBoundingClientRect().top) }))
+  ok('формата: след грешка фокусът отива на ПЪРВОТО грешно поле (името) и то е на екрана', f.id === 'req-name' && f.top > 0 && f.top < 700, JSON.stringify(f))
+  await page.locator('#req-name').fill('Тест Тестов')
+  await page.locator('#req-phone').fill('12')
+  await page.getByRole('button', { name: /Искам/ }).click()
+  await page.waitForTimeout(700)
+  ok('формата: втората грешка (телефон) получава фокус', (await page.evaluate(() => document.activeElement?.id)) === 'req-phone')
+  await ctx.close()
+}
+{
+  const { ctx, page } = await open(390)
+  await go(page, '/login')
+  const t = await page.innerText('main')
+  ok('/login: „Нямате достъп? Заявете го тук“ води към /access, не към свободна регистрация', /Нямате достъп/.test(t) && (await page.locator('a[href="/access"]').count()) === 1 && (await page.locator('a[href="/signup"]').count()) === 0)
   await ctx.close()
 }
 {
