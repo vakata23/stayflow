@@ -9,7 +9,7 @@ export default function AuthLayout({ title, subtitle, children, demoLink = false
       <div className="w-full max-w-md">
         <div className="mb-5 flex justify-end">
           <div className="w-44">
-            <AppLangSwitch />
+            <AppLangSwitch scope="auth" />
           </div>
         </div>
         <div className="mb-8 flex flex-col items-center">

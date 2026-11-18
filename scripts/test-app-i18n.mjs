@@ -100,5 +100,24 @@ for (const text of texts) {
 }
 ok('македонски: превеждачът не изпуска нито един текст, чийто превод е различен', notTranslatedMk === 0, `${notTranslatedMk} не се превеждат`)
 
+/* английски — само екраните за вход: вход, регистрация, забравена/нова парола, екрани „на пауза“ */
+{
+  const { default: en } = await import('../src/i18n/en.js')
+  const { extractFile } = await import('./i18n/extract-app-strings.mjs')
+  const root = new URL('..', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1')
+  const authFiles = ['pages/auth/Login.jsx', 'pages/auth/Signup.jsx', 'pages/auth/ResetPassword.jsx', 'pages/auth/UpdatePassword.jsx', 'components/AuthLayout.jsx', 'components/AccessPaused.jsx', 'i18n/AppLangSwitch.jsx']
+  const authTexts = [...new Set(authFiles.flatMap((f) => extractFile(root + 'src/' + f).map((e) => e.text)))]
+  const missingEn = authTexts.filter((t) => !en[t])
+  ok(`en: има превод за всеки български текст от екраните за вход (${authTexts.length})`, missingEn.length === 0, missingEn.join(' | '))
+  ok('en: {0}, {1}… са същите като в оригинала', Object.keys(en).every((k) => placeholders(k) === placeholders(en[k])))
+  ok('en: няма кирилица в преводите (освен примера с име)', Object.values(en).every((v) => !CYR.test(v)))
+  ok('en: няма празни преводи', Object.values(en).every((v) => v && v === v.trim()))
+  const tEn = createTranslator(en)
+  ok('en: „Вход“ → Sign in, „Парола“ → Password', tEn.translate('Вход') === 'Sign in' && tEn.translate('Парола') === 'Password')
+  ok('en: неизвестен текст остава на български (останалото приложение)', tEn.translate('Резервации') === 'Резервации')
+  ok('en: имена и бележки на потребителя не се пипат', tEn.translate('Студио „Морски бриз“') === 'Студио „Морски бриз“')
+  ok('en: езикът е authOnly — не се предлага в приложението', (await import('../src/i18n/appLang.js')).APP_LANGUAGES.find((l) => l.code === 'en')?.authOnly === true)
+}
+
 console.log(`test-app-i18n: ${pass} успешни, ${fail} провалени (текстове в кода: ${texts.length}; еднакви на български и македонски: ${sameInMk.length})`)
 process.exit(fail ? 1 : 0)

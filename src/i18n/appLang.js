@@ -10,6 +10,8 @@ export const APP_LANGUAGES = [
   { code: 'bg', name: 'Български', locale: 'bg-BG', html: 'bg' },
   { code: 'el', name: 'Ελληνικά', locale: 'el-GR', html: 'el' },
   { code: 'mk', name: 'Македонски', locale: 'mk-MK', html: 'mk' },
+  // английският е само за екраните за вход (authOnly): в самото приложение не се предлага, а останалият текст е на български
+  { code: 'en', name: 'English', locale: 'en-GB', html: 'en', authOnly: true },
 ]
 export const DEFAULT_APP_LANG = 'bg'
 
@@ -17,6 +19,7 @@ const STORE_KEY = 'stayflow.appLang'
 const loaders = {
   el: () => import('./el.js'),
   mk: () => import('./mk.js'),
+  en: () => import('./en.js'),
 }
 const dictionaries = {}
 const listeners = new Set()

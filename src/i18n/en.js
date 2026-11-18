@@ -1,0 +1,58 @@
+// Английски — САМО екраните за вход (вход, регистрация, забравена парола, нова парола, екрани „на пауза“).
+// Останалото приложение е на български/гръцки/македонски; на английски остава на български (липсващ превод → български).
+// Ключ — българският текст, стойност — преводът. Виж src/i18n/translator.js; покритието го пази scripts/test-app-i18n.mjs.
+export default {
+  // вход
+  "Вход": "Sign in",
+  "Влезте в акаунта си, за да управлявате имотите си.": "Sign in to your account to manage your properties.",
+  "Имейл или потребителско име": "Email or username",
+  "Парола": "Password",
+  "Забравена парола?": "Forgot your password?",
+  "Невалиден имейл или парола.": "Invalid email or password.",
+  "Нямате достъп?": "Don't have access?",
+  "Заявете го тук": "Request it here",
+  "Разгледайте демо без регистрация": "Explore the demo, no sign-up needed",
+  "Език": "Language",
+  // регистрация
+  "Регистрация": "Sign up",
+  "Достъпът до StayFlow се отваря от нас. Създайте акаунта си и го активираме.": "StayFlow access is opened by us. Create your account and we will activate it.",
+  "Още не сте заявили достъп?": "Haven't requested access yet?",
+  "Име и фамилия": "Full name",
+  "Иван Иванов": "John Smith",
+  "Имейл": "Email",
+  "Минимум 8 символа": "At least 8 characters",
+  "Създай акаунт": "Create account",
+  "Вече имате акаунт?": "Already have an account?",
+  "Паролата трябва да е поне 8 символа.": "The password must be at least 8 characters.",
+  "Проверете пощата си": "Check your inbox",
+  "Изпратихме линк за потвърждение на": "We sent a confirmation link to",
+  ". Отворете го, за да потвърдите имейла си, след което влезте. Достъпът до приложението го активираме ръчно — ако още не сте го заявили, пишете ни във Viber.": ". Open it to confirm your email, then sign in. We activate access to the app manually — if you haven't requested it yet, message us on Viber.",
+  "Към входа": "Go to sign in",
+  // забравена и нова парола
+  "Забравена парола": "Forgot password",
+  "Ще ви изпратим линк за задаване на нова парола.": "We will email you a link to set a new password.",
+  "Ако съществува акаунт с": "If an account exists for",
+  ", ще получите имейл с линк за възстановяване на паролата.": ", you will receive an email with a link to reset your password.",
+  "Изпрати линк": "Send link",
+  "Обратно към входа": "Back to sign in",
+  "Нова парола": "New password",
+  "Задайте новата си парола.": "Set your new password.",
+  "Повторете паролата": "Repeat the password",
+  "Паролите не съвпадат.": "The passwords do not match.",
+  "Запази паролата": "Save password",
+  // екрани „на пауза“
+  "Профилът ви чака активиране": "Your account is waiting for activation",
+  "Достъпът до StayFlow се отваря ръчно. Щом го активираме, приложението се отключва само — не е нужно да правите нищо повече.": "StayFlow access is opened manually. As soon as we activate it, the app unlocks by itself — there is nothing more for you to do.",
+  "Достъпът ви е на пауза": "Your access is paused",
+  "Срокът на достъпа е изтекъл. Данните и резервациите ви са запазени — щом го подновим, всичко е на мястото си.": "Your access period has ended. Your data and bookings are saved — once we renew it, everything will be right where you left it.",
+  "Пробата ви приключи": "Your trial has ended",
+  "Надяваме се да ви е била полезна. Изберете пакет (от 9 € на месец) — данните и резервациите ви са запазени и всичко е на мястото си.": "We hope it was useful. Choose a plan (from €9 per month) — your data and bookings are saved and everything is in place.",
+  "Достъпът ви е спрян": "Your access has been suspended",
+  "Данните и резервациите ви са запазени. Свържете се с нас и ще го възстановим.": "Your data and bookings are saved. Contact us and we will restore it.",
+  "Пишете ни във Viber": "Message us on Viber",
+  "Изход": "Sign out",
+  // общи
+  "Зареждане": "Loading",
+  "Таблица": "Table",
+  "Затвори": "Close",
+}
