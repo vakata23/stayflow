@@ -100,12 +100,12 @@ for (const text of texts) {
 }
 ok('македонски: превеждачът не изпуска нито един текст, чийто превод е различен', notTranslatedMk === 0, `${notTranslatedMk} не се превеждат`)
 
-/* английски — само екраните за вход: вход, регистрация, забравена/нова парола, екрани „на пауза“ */
+/* английски — вход, регистрация, пароли, екрани „на пауза“, меню и табло (останалите екрани още са на български) */
 {
   const { default: en } = await import('../src/i18n/en.js')
   const { extractFile } = await import('./i18n/extract-app-strings.mjs')
   const root = new URL('..', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1')
-  const authFiles = ['pages/auth/Login.jsx', 'pages/auth/Signup.jsx', 'pages/auth/ResetPassword.jsx', 'pages/auth/UpdatePassword.jsx', 'components/AuthLayout.jsx', 'components/AccessPaused.jsx', 'i18n/AppLangSwitch.jsx']
+  const authFiles = ['pages/auth/Login.jsx', 'pages/auth/Signup.jsx', 'pages/auth/ResetPassword.jsx', 'pages/auth/UpdatePassword.jsx', 'components/AuthLayout.jsx', 'components/AccessPaused.jsx', 'i18n/AppLangSwitch.jsx', 'pages/Dashboard.jsx', 'components/Layout.jsx', 'components/BottomNav.jsx', 'components/AttentionPanel.jsx', 'components/GettingStarted.jsx', 'components/InfoTooltip.jsx', 'components/ui.jsx', 'lib/attentionLogic.js', 'lib/checklistLogic.js', 'lib/bookings.js', 'lib/dates.js']
   const authTexts = [...new Set(authFiles.flatMap((f) => extractFile(root + 'src/' + f).map((e) => e.text)))]
   const missingEn = authTexts.filter((t) => !en[t])
   ok(`en: има превод за всеки български текст от екраните за вход (${authTexts.length})`, missingEn.length === 0, missingEn.join(' | '))
@@ -114,9 +114,12 @@ ok('македонски: превеждачът не изпуска нито е
   ok('en: няма празни преводи', Object.values(en).every((v) => v && v === v.trim()))
   const tEn = createTranslator(en)
   ok('en: „Вход“ → Sign in, „Парола“ → Password', tEn.translate('Вход') === 'Sign in' && tEn.translate('Парола') === 'Password')
-  ok('en: неизвестен текст остава на български (останалото приложение)', tEn.translate('Резервации') === 'Резервации')
+  ok('en: неизвестен текст остава на български (останалото приложение)', tEn.translate('Комисиона') === 'Комисиона' && tEn.translate('Нещо ново') === 'Нещо ново')
   ok('en: имена и бележки на потребителя не се пипат', tEn.translate('Студио „Морски бриз“') === 'Студио „Морски бриз“')
-  ok('en: езикът е authOnly — не се предлага в приложението', (await import('../src/i18n/appLang.js')).APP_LANGUAGES.find((l) => l.code === 'en')?.authOnly === true)
+  ok('en: езикът е в избора (4 езика)', (await import('../src/i18n/appLang.js')).APP_LANGUAGES.map((l) => l.code).join() === 'bg,el,mk,en')
+  ok('en: меню и табло — Dashboard, Bookings, Earnings, Calendar', ['Табло', 'Резервации', 'Приходи', 'Календар'].map((k) => en[k]).join('|') === 'Dashboard|Bookings|Earnings|Calendar')
+  ok('en: шаблон с брой — „Следващите 14 дни“ → Next 14 days', tEn.translate('Следващите 14 дни') === 'Next 14 days')
+  ok('en: „2 от 3 имота“ → 2 of 3 properties', tEn.translate('2 от 3 имота') === '2 of 3 properties')
 }
 
 console.log(`test-app-i18n: ${pass} успешни, ${fail} провалени (текстове в кода: ${texts.length}; еднакви на български и македонски: ${sameInMk.length})`)

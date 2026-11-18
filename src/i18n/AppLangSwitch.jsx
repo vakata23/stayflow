@@ -2,13 +2,11 @@ import { Globe } from 'lucide-react'
 import { APP_LANGUAGES, useAppLang } from './appLang'
 
 /**
- * Избор на език на приложението (български / гръцки / македонски). Имената на езиците са на самите езици
+ * Избор на език на приложението (български / гръцки / македонски / английски). Имената на езиците са на самите езици
  * и не се превеждат (translate="no"). Смяната е мигновена — речникът се зарежда веднъж и всичко се превежда на място.
  */
-export default function AppLangSwitch({ className = '', scope = 'app' }) {
+export default function AppLangSwitch({ className = '' }) {
   const { lang, setLang } = useAppLang()
-  // „authOnly“ езици (английски) се предлагат само на екраните за вход; в приложението се показват само ако вече са избрани
-  const languages = APP_LANGUAGES.filter((l) => !l.authOnly || scope === 'auth' || l.code === lang)
   return (
     <label className={`flex items-center gap-2.5 text-ink-muted ${className}`}>
       <Globe className="h-[1.125rem] w-[1.125rem] shrink-0" aria-hidden="true" />
@@ -18,7 +16,7 @@ export default function AppLangSwitch({ className = '', scope = 'app' }) {
         onChange={(e) => setLang(e.target.value)}
         className="control h-10 min-w-0 flex-1 py-0 text-[0.9375rem]"
       >
-        {languages.map((l) => (
+        {APP_LANGUAGES.map((l) => (
           <option key={l.code} value={l.code} lang={l.html} translate="no">
             {l.name}
           </option>

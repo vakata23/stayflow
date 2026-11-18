@@ -233,7 +233,7 @@ for (const lang of ['el', 'mk']) {
   const nav0 = await page.locator('aside nav').innerText()
   ok('по подразбиране (браузър на български) приложението е на български', /Календар/.test(nav0) && (await page.evaluate(() => document.documentElement.lang)) === 'bg')
   const sw = page.locator('aside select')
-  ok('в страничната лента има избор на език с три езика', (await sw.count()) === 1 && (await sw.locator('option').allTextContents()).join('|') === 'Български|Ελληνικά|Македонски')
+  ok('в страничната лента има избор на език с четири езика', (await sw.count()) === 1 && (await sw.locator('option').allTextContents()).join('|') === 'Български|Ελληνικά|Македонски|English')
   await sw.selectOption('el')
   await page.waitForFunction(() => /Ημερολόγιο/.test(document.querySelector('aside nav').innerText))
   const st = await page.evaluate(() => ({ marker: window.__marker, lang: document.documentElement.lang, stored: localStorage.getItem('stayflow.appLang'), nav: document.querySelector('aside nav').innerText, title: document.title, label: document.querySelector('aside select').getAttribute('aria-label') }))
