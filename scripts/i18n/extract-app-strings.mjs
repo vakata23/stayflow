@@ -26,7 +26,7 @@ export const EXCLUDE = [
   `lib${sep}icalServer.js`, `lib${sep}bookingRequestServer.js`, `lib${sep}outboxProcessor.js`, `lib${sep}notificationAdapters.js`,
   `lib${sep}autoEntriesServer.js`, `lib${sep}photoAnalysisServer.js`, // само на сървъра
   `pages${sep}DesignSystem.jsx`, // витрината на дизайна — вътрешна
-  `i18n${sep}el.js`, `i18n${sep}mk.js`, `i18n${sep}en.js`, `i18n${sep}translator.js`, `i18n${sep}appLang.js`, `i18n${sep}domTranslator.js`, // самият превод и речниците (AppLangSwitch.jsx се чете като екран)
+  `i18n${sep}el.js`, `i18n${sep}mk.js`, `i18n${sep}en.js`, `i18n${sep}en-properties.js`, `i18n${sep}translator.js`, `i18n${sep}appLang.js`, `i18n${sep}domTranslator.js`, // самият превод и речниците (AppLangSwitch.jsx се чете като екран)
 ]
 
 const CYR = /[Ѐ-ӿ]/
