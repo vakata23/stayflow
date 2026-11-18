@@ -100,13 +100,17 @@ for (const text of texts) {
 }
 ok('македонски: превеждачът не изпуска нито един текст, чийто превод е различен', notTranslatedMk === 0, `${notTranslatedMk} не се превеждат`)
 
-/* английски — вход, регистрация, пароли, екрани „на пауза“, меню и табло (останалите екрани още са на български) */
+/* английски — цялото приложение (вход, меню, табло, имоти, резервации, приходи, почистване, фактури, известия, профил) */
 {
   const { default: en } = await import('../src/i18n/en.js')
   const { extractFile } = await import('./i18n/extract-app-strings.mjs')
   const root = new URL('..', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1')
-  const authFiles = ['pages/auth/Login.jsx', 'pages/auth/Signup.jsx', 'pages/auth/ResetPassword.jsx', 'pages/auth/UpdatePassword.jsx', 'components/AuthLayout.jsx', 'components/AccessPaused.jsx', 'i18n/AppLangSwitch.jsx', 'pages/Dashboard.jsx', 'components/Layout.jsx', 'components/BottomNav.jsx', 'components/AttentionPanel.jsx', 'components/GettingStarted.jsx', 'components/InfoTooltip.jsx', 'components/ui.jsx', 'lib/attentionLogic.js', 'lib/checklistLogic.js', 'lib/bookings.js', 'lib/dates.js', 'pages/properties/ListingSetup.jsx', 'pages/properties/PropertiesList.jsx', 'pages/properties/PropertyDetail.jsx', 'pages/properties/PropertyForm.jsx', 'pages/properties/PropertyNew.jsx', 'components/PropertySettingsCard.jsx', 'components/PropertyListingDetailsCard.jsx', 'components/PropertyPhotosManager.jsx', 'components/PropertyReviewsManager.jsx', 'components/IcalSync.jsx', 'components/PackagesCard.jsx', 'components/PackagesEditor.jsx', 'components/SeasonEditor.jsx', 'components/SeasonPrices.jsx', 'components/PublicListingCard.jsx', 'components/LocationMap.jsx', 'lib/amenities.js', 'lib/constants.js', 'lib/propertySettings.js', 'lib/photoRooms.js', 'lib/seasonLogic.js', 'lib/packageLogic.js', 'lib/propertyPhotos.js', 'lib/imageCompression.js']
-  const authTexts = [...new Set(authFiles.flatMap((f) => extractFile(root + 'src/' + f).map((e) => e.text)))]
+  // английски покрива ВСИЧКИ екрани; извън него са само технически текстове за разработчика и текстът, който шаблонът за описание
+  // генерира за гостите на български (descriptionTemplate)
+  const EN_SKIP = ['components/ConfigNotice.jsx', 'context/AuthContext.jsx', 'lib/descriptionTemplate.js']
+  const authTexts = [...new Set([...extractAll(), ...['pages/auth/Login.jsx', 'pages/auth/Signup.jsx', 'pages/auth/ResetPassword.jsx', 'pages/auth/UpdatePassword.jsx'].flatMap((f) => extractFile(root + 'src/' + f).map((e) => ({ text: e.text, where: [f] })))]
+    .filter((e) => !e.where.every((w) => EN_SKIP.some((x) => w.startsWith('src/' + x) || w.startsWith(x))))
+    .map((e) => e.text))]
   const missingEn = authTexts.filter((t) => !en[t])
   ok(`en: има превод за всеки български текст от екраните за вход (${authTexts.length})`, missingEn.length === 0, missingEn.join(' | '))
   ok('en: {0}, {1}… са същите като в оригинала', Object.keys(en).every((k) => placeholders(k) === placeholders(en[k])))
@@ -114,7 +118,7 @@ ok('македонски: превеждачът не изпуска нито е
   ok('en: няма празни преводи', Object.values(en).every((v) => v && v === v.trim()))
   const tEn = createTranslator(en)
   ok('en: „Вход“ → Sign in, „Парола“ → Password', tEn.translate('Вход') === 'Sign in' && tEn.translate('Парола') === 'Password')
-  ok('en: неизвестен текст остава на български (останалото приложение)', tEn.translate('Комисиона') === 'Комисиона' && tEn.translate('Нещо ново') === 'Нещо ново')
+  ok('en: неизвестен текст остава на български (останалото приложение)', tEn.translate('Нещо, което го няма в речника') === 'Нещо, което го няма в речника' && tEn.translate('Нещо ново') === 'Нещо ново')
   ok('en: имена и бележки на потребителя не се пипат', tEn.translate('Студио „Морски бриз“') === 'Студио „Морски бриз“')
   ok('en: езикът е в избора (4 езика)', (await import('../src/i18n/appLang.js')).APP_LANGUAGES.map((l) => l.code).join() === 'bg,el,mk,en')
   ok('en: меню и табло — Dashboard, Bookings, Earnings, Calendar', ['Табло', 'Резервации', 'Приходи', 'Календар'].map((k) => en[k]).join('|') === 'Dashboard|Bookings|Earnings|Calendar')
