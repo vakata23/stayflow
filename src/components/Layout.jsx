@@ -13,6 +13,7 @@ import {
   MapPin,
   KeyRound,
   FileText,
+  FileCheck2,
   Building2,
   ScrollText,
   LogOut,
@@ -22,6 +23,7 @@ import {
   MessageCircle,
 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import { hasGreekProperty } from '../lib/registry'
 import { useAuth } from '../context/AuthContext'
 import { Modal } from './ui'
 import BottomNav from './BottomNav'
@@ -56,6 +58,8 @@ const workNav = [
   { to: '/access-codes', label: 'Кодове за достъп', icon: KeyRound },
   { to: '/invoicing', label: 'Фактури към гост', icon: FileText },
 ]
+/* Само когато поне един имот е в Гърция (миграция 017 + включено в „Регистрация в Гърция“). */
+const declarationsNav = { to: '/declarations', label: 'Декларации', icon: FileCheck2 }
 const settingsNav = [
   { to: '/properties', label: 'Имоти', icon: Building2 },
   { to: '/notifications', label: 'Известия', icon: Bell },
@@ -160,6 +164,7 @@ export default function Layout() {
   const [moreOpen, setMoreOpen] = useState(false)
   const [pendingRequests, setPendingRequests] = useState(0)
   const [propertyCount, setPropertyCount] = useState(null)
+  const [greek, setGreek] = useState(false)
   const [navRef, navFade] = useScrollFade()
 
   // Презарежда се при всяка смяна на страница — лека заявка, пресен брой
@@ -178,6 +183,11 @@ export default function Layout() {
       .from('properties')
       .select('id', { count: 'exact', head: true })
       .then(({ count }) => setPropertyCount(count ?? 0))
+  }, [location.pathname])
+
+  // Екранът „Декларации“ се показва само при имот в Гърция; проверява се при смяна на страница (след включване в имота).
+  useEffect(() => {
+    hasGreekProperty().then(setGreek).catch(() => setGreek(false))
   }, [location.pathname])
 
   // Листът се затваря при всяка смяна на страница
@@ -211,7 +221,7 @@ export default function Layout() {
           className={`-mx-1 min-h-0 flex-1 overflow-y-auto px-1 ${navFade ? '[mask-image:linear-gradient(to_bottom,black_calc(100%-2.5rem),transparent)]' : ''}`}
         >
           <NavGroup title="Управление" items={manageNav} badges={badges} />
-          <NavGroup title="Работа" items={workNav} />
+          <NavGroup title="Работа" items={greek ? [...workNav, declarationsNav] : workNav} />
           {/* На голям екран профилът е в блока с името най-долу — така менюто се побира на 900 px без превъртане */}
           <NavGroup title="Настройки" items={settingsNav.slice(0, 3)} />
           {access?.isAdmin && <NavGroup title="Администрация" items={adminNav} />}
@@ -288,7 +298,7 @@ export default function Layout() {
         <nav aria-label="Още" className="-mx-1">
           <MoreList items={moreOften} badges={badges} />
           <p className="px-2 pb-2 pt-4 font-display text-[0.9375rem] font-medium italic text-ink-muted">Работа</p>
-          <MoreList items={workNav} grid />
+          <MoreList items={greek ? [...workNav, declarationsNav] : workNav} grid />
           {access?.isAdmin && (
             <>
               <p className="px-2 pb-2 pt-4 font-display text-[0.9375rem] font-medium italic text-ink-muted">Администрация</p>

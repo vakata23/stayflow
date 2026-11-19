@@ -185,10 +185,41 @@ const stay_packages = [
   pkg(3, 'fixed_price', 'Уикенд', { fixed_nights: 2, fixed_total: 150, checkin_weekday: 5 }),
 ]
 
+// Гърция (миграция 017): включва се само от /__mock/greece?on=1, за да не променя другите проверки.
+// Спрямо „днес“: 60 — чака подаване (пълни данни), 61 — просрочена, 62 — подадена, 63 — предстои, 64 — чака и липсват данни, 65 — 70 нощи, 66 — отказана.
+const G1 = '24444444-0000-4000-8000-000000000004'
+const G2 = '25555555-0000-4000-8000-000000000005'
+export function greeceData() {
+  return {
+    properties: [
+      { ...properties[1], id: G1, name: 'Вила „Елия“', city: 'Халкидики', address: 'Κασσάνδρα', slug: 'vila-elia', is_listed: true, ical_token: 'c4444444-0000-4000-8000-000000000004' },
+      { ...properties[1], id: G2, name: 'Студио „Мора“', city: 'Солун', address: 'Τσιμισκή 10', slug: 'studio-mora', is_listed: false, ical_token: 'c5555555-0000-4000-8000-000000000005' },
+    ],
+    registry: [
+      { property_id: G1, country: 'GR', kind: 'ama', number: '00000123456', atak: '12345678', created_at: ts(-100), updated_at: ts(-100) },
+      { property_id: G2, country: 'GR', kind: 'ama', number: null, atak: null, created_at: ts(-100), updated_at: ts(-100) },
+    ],
+    bookings: [
+      b(60, G1, 'Nikos Papadopoulos', -9, -5, 'direct', 'confirmed', 540, 0, 2),
+      b(61, G1, 'Anna Schmidt', -66, -60, 'airbnb', 'confirmed', 380, 57, 2),
+      b(62, G2, 'Eleni Georgiou', -80, -75, 'direct', 'confirmed', 610, 0, 2),
+      b(63, G1, 'Marc Dubois', 3, 7, 'booking', 'confirmed', 450, 67.5, 2),
+      b(64, G2, 'Hans Müller', -4, -3, 'direct', 'confirmed', 120, 0, 2),
+      b(65, G2, 'Дългосрочен наемател', -50, 20, 'manual', 'confirmed', 2100, 0, 1),
+      b(66, G1, 'Отказан гост', -20, -17, 'direct', 'cancelled', 300, 0, 2),
+    ],
+    declarations: [
+      { booking_id: id(60), guest_country: 'GR', guest_tax_id: '123456783', guest_passport: null, guest_doc_name: null, pay_method: 'cash', status: 'pending', submitted_at: null },
+      { booking_id: id(61), guest_country: 'DE', guest_tax_id: null, guest_passport: 'C01X00T47', guest_doc_name: 'Anna Schmidt', pay_method: null, status: 'pending', submitted_at: null },
+      { booking_id: id(62), guest_country: 'GR', guest_tax_id: '123456783', guest_passport: null, guest_doc_name: null, pay_method: 'bank', status: 'submitted', submitted_at: ts(-70) },
+    ],
+  }
+}
+
 export const TABLES = {
   profiles: [{ id: PROFILE, user_id: U, full_name: 'Иван Петров', company_name: 'Морски имоти ЕООД', phone: '+359 88 712 4093', created_at: '2026-01-10T08:00:00Z' }],
   properties, bookings, payments, property_photos: photos, booking_requests: requests, cleaning_tasks, cleaning_notes, pricing_rules,
-  money_entries, recurring_rules, invoices, notification_targets, outbox, reviews, property_settings, booking_balances, ai_runs: [], price_seasons, stay_packages,
+  money_entries, recurring_rules, invoices, notification_targets, outbox, reviews, property_settings, booking_balances, ai_runs: [], price_seasons, stay_packages, property_registry: [], stay_declarations: [],
 }
 
 // ---------------------------------------------------------------- RPC
@@ -294,6 +325,11 @@ export const RPC = {
       base_price: 87, public_lat: p.lat, public_lng: p.lng, max_guests: 6,
       house_rules: 'Тишина след 22:00. Моля, оставяйте чисто.',
     }]
+  },
+  public_registration: (a) => {
+    const p = TABLES.properties.find((x) => x.slug === a.p_slug && x.is_listed)
+    const r = p && TABLES.property_registry.find((x) => x.property_id === p.id && x.country === 'GR' && x.number)
+    return r ? [{ kind: r.kind, number: r.number }] : []
   },
   public_seasons: (a) => (a.p_slug === 'tihi-bryag' ? price_seasons.map(({ id, property_id, created_at, ...rest }) => rest) : []),
   public_reviews: (a) => (a.p_slug === 'tihi-bryag'

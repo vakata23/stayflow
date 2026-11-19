@@ -2,11 +2,12 @@ import { supabase } from './supabase'
 import { incompleteBookingsFilter } from './bookings'
 import { addDays, toISODate } from './dates'
 import { pickUnpaid, sumOutstanding, UNPAID_LOOKBACK_DAYS } from './attentionLogic'
+import { fetchDeclarationFacts } from './registry'
 
 /** Колко неща чакат собственика — четири леки заявки (само броене), нищо не се пише. */
 export async function fetchAttentionFacts(today) {
   const lookbackFrom = toISODate(addDays(new Date(`${today}T12:00:00`), -UNPAID_LOOKBACK_DAYS))
-  const [requests, incomplete, balances, cleaning] = await Promise.all([
+  const [requests, incomplete, balances, cleaning, declarations] = await Promise.all([
     supabase.from('booking_requests').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
     incompleteBookingsFilter(supabase.from('bookings').select('id', { count: 'exact', head: true })),
     supabase
@@ -16,6 +17,8 @@ export async function fetchAttentionFacts(today) {
       .lte('check_in', today)
       .gte('check_in', lookbackFrom),
     supabase.from('cleaning_tasks').select('id', { count: 'exact', head: true }).neq('status', 'done').lt('due_date', today),
+    // Гърция: без включени имоти в Гърция (или преди миграция 017) връща нули, нищо не се показва
+    fetchDeclarationFacts(today).catch(() => ({})),
   ])
 
   const unpaid = pickUnpaid(balances.data, today, lookbackFrom)
@@ -25,6 +28,7 @@ export async function fetchAttentionFacts(today) {
     unpaidCount: unpaid.length,
     unpaidTotal: sumOutstanding(unpaid),
     overdueCleaning: cleaning.count ?? 0,
+    ...declarations,
   }
 }
 

@@ -8,6 +8,7 @@ import { PageHeader, Card, Spinner, Button, Alert, Modal, EmptyState } from '../
 import IcalSync from '../../components/IcalSync'
 import PropertySettingsCard from '../../components/PropertySettingsCard'
 import SeasonPrices from '../../components/SeasonPrices'
+import PropertyRegistryCard from '../../components/PropertyRegistryCard'
 import PackagesCard from '../../components/PackagesCard'
 import PublicListingCard from '../../components/PublicListingCard'
 import PropertyListingDetailsCard from '../../components/PropertyListingDetailsCard'
@@ -201,6 +202,8 @@ export default function PropertyDetail() {
           property={property}
           onSaved={(channels) => setProperty((p) => ({ ...p, channels }))}
         />
+
+        <PropertyRegistryCard property={property} />
 
         <SeasonPrices propertyId={property.id} />
 

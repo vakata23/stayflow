@@ -477,6 +477,9 @@
   padding: 0;
   list-style: none;
 }
+.stay-reg {
+  margin: 8px 0 0;
+}
 .stay-badge {
   display: inline-flex;
   align-items: center;

@@ -1,5 +1,6 @@
 import { OTA_SOURCES } from './sources.js'
 import { formatMoney } from './money.js'
+import { dmy } from './declarationLogic.js'
 
 /**
  * „Чака вас“ на таблото — какво изисква действие от собственика СЕГА.
@@ -30,7 +31,16 @@ export function sumOutstanding(rows) {
 }
 
 /** Подрежда ги по спешност: гост чака отговор → пари → грешни приходи → почистване. */
-export function buildAttentionItems({ pendingRequests = 0, unpaidCount = 0, unpaidTotal = 0, incompleteBookings = 0, overdueCleaning = 0 }) {
+export function buildAttentionItems({
+  pendingRequests = 0,
+  unpaidCount = 0,
+  unpaidTotal = 0,
+  incompleteBookings = 0,
+  overdueCleaning = 0,
+  declarationsOverdue = 0,
+  declarationsDue = 0,
+  declarationsNextDeadline = null,
+}) {
   const items = []
   if (pendingRequests > 0) {
     items.push({
@@ -42,6 +52,17 @@ export function buildAttentionItems({ pendingRequests = 0, unpaidCount = 0, unpa
       detail: 'Приемете или откажете — гостът чака отговор.',
     })
   }
+  // Гърция: срокът за декларация е законов — просрочената е пред парите, чакащата е след тях.
+  if (declarationsOverdue > 0) {
+    items.push({
+      key: 'declarations-overdue',
+      to: '/declarations',
+      tone: 'warning',
+      count: declarationsOverdue,
+      title: declarationsOverdue === 1 ? 'Просрочена декларация за престой' : `${declarationsOverdue} просрочени декларации за престой`,
+      detail: 'Срокът до 20-о число е минал. Подайте я в myAADE и я отбележете като подадена.',
+    })
+  }
   if (unpaidCount > 0) {
     items.push({
       key: 'unpaid',
@@ -50,6 +71,16 @@ export function buildAttentionItems({ pendingRequests = 0, unpaidCount = 0, unpa
       count: unpaidCount,
       title: unpaidCount === 1 ? 'Гост с неплатен остатък' : `${unpaidCount} гости с неплатен остатък`,
       detail: `Общо ${formatMoney(unpaidTotal)} — гостите вече са пристигнали.`,
+    })
+  }
+  if (declarationsDue > 0) {
+    items.push({
+      key: 'declarations-due',
+      to: '/declarations',
+      tone: 'warning',
+      count: declarationsDue,
+      title: declarationsDue === 1 ? 'Декларация за престой чака подаване' : `${declarationsDue} декларации за престой чакат подаване`,
+      detail: declarationsNextDeadline ? `Най-близкият срок е ${dmy(declarationsNextDeadline)}.` : 'Подават се в myAADE до 20-о число на следващия месец.',
     })
   }
   if (incompleteBookings > 0) {

@@ -42,6 +42,7 @@ const Privacy = lazy(() => import('./pages/legal/Privacy'))
 const Terms = lazy(() => import('./pages/legal/Terms'))
 const Clients = lazy(() => import('./pages/admin/Clients'))
 const AccessRequest = lazy(() => import('./pages/demo/AccessRequest'))
+const Declarations = lazy(() => import('./pages/Declarations'))
 
 function PageFallback() {
   return (
@@ -112,6 +113,7 @@ export default function App() {
               <Route path="/earnings/rules" element={<Rules />} />
               <Route path="/booking-requests" element={<BookingRequests />} />
               <Route path="/notifications" element={<Notifications />} />
+              <Route path="/declarations" element={<Declarations />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/admin/clients" element={<Clients />} />
               <Route path="/properties" element={<PropertiesList />} />

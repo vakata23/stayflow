@@ -13,6 +13,8 @@ import {
 } from '../../lib/bookings'
 import { Field, Input, Textarea, Select, Button, Alert } from '../../components/ui'
 import PaymentsSection from './PaymentsSection'
+import DeclarationSection, { emptyDeclaration, validateDeclaration } from './DeclarationSection'
+import { loadRegistry, loadDeclaration, saveDeclaration } from '../../lib/registry'
 import GuestShare from './GuestShare'
 import { useDialogA11y } from '../../lib/useDialogA11y'
 
@@ -39,6 +41,9 @@ export default function BookingFormModal({ open, onClose, onSaved, properties, i
   const [error, setError] = useState(null)
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  // Гърция: данни за декларацията (само за имот с включена Гърция)
+  const [greek, setGreek] = useState(false)
+  const [decl, setDecl] = useState(emptyDeclaration)
 
   // Докато собственикът не пипне ръчно комисионата/таксата, стойността им
   // следва автоматично цената, имота, датите и броя гости.
@@ -73,6 +78,40 @@ export default function BookingFormModal({ open, onClose, onSaved, properties, i
         : {}),
     })
   }, [open, initial?.id, defaults?.check_in, defaults?.property_id])
+
+  // Данните за декларацията на тази резервация (при редакция).
+  useEffect(() => {
+    if (!open) return
+    setDecl(emptyDeclaration)
+    if (!initial?.id) return
+    let cancelled = false
+    loadDeclaration(initial.id).then((d) => {
+      if (cancelled || !d) return
+      setDecl({
+        guest_country: d.guest_country ?? '',
+        guest_tax_id: d.guest_tax_id ?? '',
+        guest_passport: d.guest_passport ?? '',
+        guest_doc_name: d.guest_doc_name ?? '',
+        pay_method: d.pay_method ?? '',
+        status: d.status,
+      })
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [open, initial?.id])
+
+  // Има ли избраният имот включена Гърция (миграция 017) — тогава се показва секцията за декларация.
+  useEffect(() => {
+    if (!open || !values.property_id) return setGreek(false)
+    let cancelled = false
+    loadRegistry(values.property_id).then((r) => {
+      if (!cancelled) setGreek(r?.country === 'GR')
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [open, values.property_id])
 
   // Настройките на избрания имот (комисиона/такса) — за предложените стойности.
   useEffect(() => {
@@ -137,6 +176,11 @@ export default function BookingFormModal({ open, onClose, onSaved, properties, i
       )
     }
 
+    if (greek) {
+      const declError = validateDeclaration(decl)
+      if (declError) return setError(declError)
+    }
+
     setSaving(true)
     try {
       // Първа защита: проверка за застъпване преди запис.
@@ -176,11 +220,15 @@ export default function BookingFormModal({ open, onClose, onSaved, properties, i
 
       // Втора защита: ако базата отхвърли записа (състезателна заявка),
       // грешката се превежда в разбираемо съобщение.
-      const { error } = isEdit
-        ? await supabase.from('bookings').update(payload).eq('id', initial.id)
-        : await supabase.from('bookings').insert(payload)
+      const { data: saved, error } = isEdit
+        ? await supabase.from('bookings').update(payload).eq('id', initial.id).select('id').single()
+        : await supabase.from('bookings').insert(payload).select('id').single()
 
       if (error) throw error
+
+      // Гърция: данните за декларацията се пишат след резервацията (имат нейния номер).
+      // Ако този запис пропадне, резервацията вече е записана — екранът „Декларации“ ще покаже, че липсват данни.
+      if (greek && saved?.id) await saveDeclaration(saved.id, decl).catch((err) => console.error('Declaration:', err))
 
       onSaved()
       onClose()
@@ -308,6 +356,8 @@ export default function BookingFormModal({ open, onClose, onSaved, properties, i
           <Field label="Бележки">
             <Textarea rows={3} value={values.notes} onChange={set('notes')} placeholder="Късно настаняване, домашен любимец…" />
           </Field>
+
+          {greek && <DeclarationSection booking={values} decl={decl} onChange={setDecl} />}
 
           {isEdit && <PaymentsSection bookingId={initial.id} />}
           {isEdit && initial.status !== 'cancelled' && <GuestShare booking={initial} />}

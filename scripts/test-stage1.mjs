@@ -39,6 +39,7 @@ const sqlFiles = [
   join(projectDir, 'supabase/migrations/013_public_photo_thumbs.sql'),
   join(projectDir, 'supabase/migrations/014_price_seasons.sql'),
   join(projectDir, 'supabase/migrations/015_stay_packages.sql'),
+  join(projectDir, 'supabase/migrations/017_greece_compliance.sql'),
 ];
 
 const db = new PGlite({ extensions: { btree_gist } });
@@ -1145,6 +1146,87 @@ q4 = await qp(60, 5);
 ok('015: е идемпотентна — повторно пускане без грешка, цената е същата (500 − 75)', same(q4, { accommodation_total: 500, discount: 75, total: 445 }), show(q4, QP));
 ok('015: след повторното пускане политиките не са задвоени (по една на действие)', (await db.query("select count(*)::int n from pg_policies where tablename = 'stay_packages'")).rows[0].n === 4);
 ok('015: функцията quote_stay е една (без остатък от стария подпис)', (await db.query("select count(*)::int n from pg_proc where proname = 'quote_stay'")).rows[0].n === 1);
+
+// ---------------------------------------------------------------- Гърция (017): номер на имота и данни за декларацията
+const GR1 = 'e1e1e1e1-0000-0000-0000-000000000000'; // публикуван имот на A
+const GR2 = 'e2e2e2e2-0000-0000-0000-000000000000'; // непубликуван имот на A
+const GRB = 'e3e3e3e3-0000-0000-0000-000000000000'; // имот на B
+const GBK = 'f1f1f1f1-0000-0000-0000-000000000000'; // резервация на A
+const GBB = 'f2f2f2f2-0000-0000-0000-000000000000'; // резервация на B
+await db.exec(`
+  insert into properties (id, owner_id, name, max_guests, channels, slug, is_listed) values
+    ('${GR1}', '${profA}', 'Вила Елия', 4, '[]', 'vila-elia', true),
+    ('${GR2}', '${profA}', 'Студио Мора', 2, '[]', 'studio-mora', false),
+    ('${GRB}', '${profB}', 'Чужд имот', 2, '[]', 'chuzhd', true);
+  insert into bookings (id, property_id, guest_name, check_in, check_out, num_guests) values
+    ('${GBK}', '${GR1}', 'Nikos Papadopoulos', '2027-04-10', '2027-04-14', 2),
+    ('${GBB}', '${GRB}', 'Чужд гост', '2027-04-10', '2027-04-14', 2);
+`);
+
+// номер на имота
+r = await as('authenticated', A, `insert into property_registry (property_id, country, kind, number, atak) values ('${GR1}', 'GR', 'ama', '00000123456', '12345678') returning property_id`);
+ok('017: собственикът записва номер на свой имот', r.length === 1);
+await asErr('017: чужд собственик не може да пише номер на чужд имот', 'authenticated', B, `insert into property_registry (property_id, country, number) values ('${GR1}', 'GR', '99999999')`, /row-level security/);
+r = await as('authenticated', B, `select * from property_registry`);
+ok('017: чужд собственик не вижда номера', r.length === 0);
+r = await as('anon', null, `select * from property_registry`);
+ok('017: анонимен не чете таблицата директно', r.length === 0);
+await asErr('017: държава извън BG/GR се отхвърля', 'authenticated', A, `insert into property_registry (property_id, country) values ('${GR2}', 'DE')`, /check constraint/);
+await asErr('017: вид номер извън ama/esl/mag се отхвърля', 'authenticated', A, `insert into property_registry (property_id, country, kind) values ('${GR2}', 'GR', 'xyz')`, /check constraint/);
+await asErr('017: твърде къс номер се отхвърля', 'authenticated', A, `insert into property_registry (property_id, country, number) values ('${GR2}', 'GR', 'ab')`, /check constraint/);
+r = await as('authenticated', A, `update property_registry set number = '00000999999', kind = 'esl' where property_id = '${GR1}' returning number, kind`);
+ok('017: собственикът сменя номера и вида', r[0]?.number === '00000999999' && r[0]?.kind === 'esl');
+r = await as('authenticated', B, `update property_registry set number = 'hacked' where property_id = '${GR1}' returning property_id`);
+ok('017: чужд собственик не може да промени номера (0 реда)', r.length === 0);
+await as('authenticated', A, `update property_registry set kind = 'ama', number = '00000123456' where property_id = '${GR1}'`);
+
+// публично
+r = await as('anon', null, `select * from public_registration('vila-elia')`);
+ok('017: анонимен вижда вида и номера на публикуван имот в Гърция (само тези две колони)', r.length === 1 && r[0].kind === 'ama' && r[0].number === '00000123456' && Object.keys(r[0]).join() === 'kind,number', JSON.stringify(r));
+await db.exec(`insert into property_registry (property_id, country, kind, number, atak) values ('${GR2}', 'GR', 'ama', '00000777777', null)`);
+r = await as('anon', null, `select * from public_registration('studio-mora')`);
+ok('017: непубликуван имот — нищо', r.length === 0);
+await db.exec(`update properties set is_listed = true where id = '${GR2}'; update property_registry set country = 'BG' where property_id = '${GR2}'`);
+r = await as('anon', null, `select * from public_registration('studio-mora')`);
+ok('017: имот, който не е в Гърция — нищо', r.length === 0);
+await db.exec(`update property_registry set country = 'GR', number = null where property_id = '${GR2}'`);
+r = await as('anon', null, `select * from public_registration('studio-mora')`);
+ok('017: Гърция без попълнен номер — нищо', r.length === 0);
+r = await as('anon', null, `select * from public_registration('няма-такъв')`);
+ok('017: непознат адрес — нищо', r.length === 0);
+r = await as('anon', null, `select has_function_privilege('anon','public.public_registration(text)','execute') as a, has_function_privilege('public','public.public_registration(text)','execute') as p`);
+ok('017: правата — anon може public_registration, „public“ не може', r[0].a === true && r[0].p === false, JSON.stringify(r[0]));
+
+// данни за декларацията
+r = await as('authenticated', A, `insert into stay_declarations (booking_id, guest_country, guest_tax_id, pay_method) values ('${GBK}', 'GR', '123456783', 'cash') returning status, submitted_at`);
+ok('017: собственикът записва данни за декларация (по подразбиране „pending“, без дата на подаване)', r.length === 1 && r[0].status === 'pending' && r[0].submitted_at === null);
+await asErr('017: чужд собственик не може да пише декларация за чужда резервация', 'authenticated', B, `insert into stay_declarations (booking_id, guest_country) values ('${GBK}', 'DE')`, /row-level security|duplicate key/);
+r = await as('authenticated', B, `select * from stay_declarations`);
+ok('017: чужд собственик не вижда ΑΦΜ и паспорти', r.length === 0);
+r = await as('anon', null, `select * from stay_declarations`);
+ok('017: анонимен не вижда декларациите', r.length === 0);
+await asErr('017: „подадена“ без дата на подаване се отхвърля', 'authenticated', A, `update stay_declarations set status = 'submitted' where booking_id = '${GBK}'`, /check constraint/);
+await asErr('017: „чакаща“ с дата на подаване се отхвърля', 'authenticated', A, `update stay_declarations set submitted_at = now() where booking_id = '${GBK}'`, /check constraint/);
+r = await as('authenticated', A, `update stay_declarations set status = 'submitted', submitted_at = now() where booking_id = '${GBK}' returning status`);
+ok('017: отбелязване като подадена с дата минава', r[0]?.status === 'submitted');
+await asErr('017: държава с малки букви се отхвърля', 'authenticated', A, `update stay_declarations set guest_country = 'gr' where booking_id = '${GBK}'`, /check constraint/);
+await asErr('017: твърде къс ΑΦΜ се отхвърля', 'authenticated', A, `update stay_declarations set guest_tax_id = '123' where booking_id = '${GBK}'`, /check constraint/);
+await asErr('017: непознат начин на плащане се отхвърля', 'authenticated', A, `update stay_declarations set pay_method = 'bitcoin' where booking_id = '${GBK}'`, /check constraint/);
+await asErr('017: твърде кратък паспорт се отхвърля', 'authenticated', A, `update stay_declarations set guest_passport = 'AB' where booking_id = '${GBK}'`, /check constraint/);
+r = await as('authenticated', B, `update stay_declarations set guest_country = 'DE' where booking_id = '${GBK}' returning booking_id`);
+ok('017: чужд собственик не може да промени декларацията (0 реда)', r.length === 0);
+r = await as('authenticated', B, `delete from stay_declarations where booking_id = '${GBK}' returning booking_id`);
+ok('017: чужд собственик не може да изтрие декларацията (0 реда)', r.length === 0);
+
+// каскада и повторно пускане
+await db.exec(`delete from bookings where id = '${GBK}'`);
+ok('017: изтриването на резервация каскадно маха декларацията', (await db.query(`select count(*)::int n from stay_declarations where booking_id = '${GBK}'`)).rows[0].n === 0);
+await db.exec(`delete from properties where id = '${GR2}'`);
+ok('017: изтриването на имот каскадно маха номера му', (await db.query(`select count(*)::int n from property_registry where property_id = '${GR2}'`)).rows[0].n === 0);
+await db.exec(readFileSync(join(projectDir, 'supabase/migrations/017_greece_compliance.sql'), 'utf8'));
+ok('017: е идемпотентна — повторно пускане без грешка, данните са запазени', (await db.query(`select count(*)::int n from property_registry where property_id = '${GR1}'`)).rows[0].n === 1);
+ok('017: след повторното пускане политиките не са задвоени (по 4 на таблица)', (await db.query("select tablename, count(*)::int n from pg_policies where tablename in ('property_registry','stay_declarations') group by tablename order by tablename")).rows.every((x) => x.n === 4));
+ok('017: public_registration е една функция', (await db.query("select count(*)::int n from pg_proc where proname = 'public_registration'")).rows[0].n === 1);
 
 console.log(`\n${pass} успешни, ${fail} провалени\n`);
 process.exit(fail ? 1 : 0);

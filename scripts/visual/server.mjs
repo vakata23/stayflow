@@ -7,7 +7,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import zlib from 'node:zlib'
 import { fileURLToPath } from 'node:url'
-import { TABLES, RPC, USER } from './seed.mjs'
+import { TABLES, RPC, USER, greeceData } from './seed.mjs'
 
 const here = path.dirname(fileURLToPath(import.meta.url))
 const [, , distArg, port = '4174'] = process.argv
@@ -18,6 +18,7 @@ const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; cha
 const COMPRESSIBLE = new Set(['.html', '.js', '.css', '.json', '.webmanifest', '.svg'])
 const cache = new Map()
 const unmatched = new Set()
+const writes = []
 
 function send(res, status, body, headers = {}) {
   const buf = typeof body === 'string' || Buffer.isBuffer(body) ? body : JSON.stringify(body)
@@ -98,8 +99,15 @@ async function rest(req, res, url, table) {
   if (req.method === 'POST' || req.method === 'PATCH' || req.method === 'DELETE') {
     const body = await readBody(req)
     const echo = /return=representation/.test(req.headers.prefer || '')
-    if (req.method === 'DELETE') return send(res, 204, '')
+    if (req.method === 'DELETE') { writes.push({ method: 'DELETE', table, query: url.search, body: null }); return send(res, 204, '') }
     const data = body ? JSON.parse(body) : {}
+    writes.push({ method: req.method, table, query: url.search, body: data })
+    // .select().single() иска ЕДИН обект (с номер): при PATCH номерът е в адреса (id=eq.…), при POST се измисля
+    if (echo && /vnd.pgrst.object/.test(req.headers.accept || '')) {
+      const rec = Array.isArray(data) ? data[0] : data
+      const idFromQuery = url.searchParams.get('id')?.replace(/^eq./, '')
+      return send(res, 201, { id: idFromQuery ?? rec.id ?? 'mock-' + writes.length, ...rec })
+    }
     return echo ? send(res, 201, Array.isArray(data) ? data : [data]) : send(res, 201, '')
   }
   let rows = rows0.slice()
@@ -169,6 +177,17 @@ const server = http.createServer(async (req, res) => {
       else if (ACCESS_STATES[st]) { accessState = st; accessMissing = false }
       return send(res, 200, { state: accessState, missing: accessMissing })
     }
+    if (p === '/__mock/greece') {
+      // Гърция (миграция 017): ?on=1 добавя номера, резервации и декларации; ?on=0 ги маха; ?missing=1 — таблиците „не съществуват“
+      const g = greeceData()
+      const drop = (arr, keep) => { for (let i = arr.length - 1; i >= 0; i--) if (!keep(arr[i])) arr.splice(i, 1) }
+      const bookingIds = new Set(g.bookings.map((x) => x.id))
+      const propIds = new Set(g.properties.map((x) => x.id))
+      drop(TABLES.bookings, (x) => !bookingIds.has(x.id)); drop(TABLES.properties, (x) => !propIds.has(x.id)); TABLES.property_registry.length = 0; TABLES.stay_declarations.length = 0
+      if (url.searchParams.get('on') === '1') { TABLES.properties.push(...g.properties); TABLES.bookings.push(...g.bookings); TABLES.property_registry.push(...g.registry); TABLES.stay_declarations.push(...g.declarations) }
+      return send(res, 200, { registry: TABLES.property_registry.length, bookings: TABLES.bookings.length })
+    }
+    if (p === '/__mock/writes') { if (url.searchParams.get('clear')) writes.length = 0; return send(res, 200, writes) }
     if (p === '/__mock/requests') { if (url.searchParams.get('clear')) requestsSent.length = 0; return send(res, 200, requestsSent) }
     if (p === '/__mock/grants') return send(res, 200, grantWrites)
     if (p.startsWith('/auth/v1/')) {

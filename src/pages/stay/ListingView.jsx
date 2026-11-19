@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { registryLabel } from '../../lib/declarationLogic'
 import { Link } from 'react-router-dom'
 import {
   Eye,
@@ -152,7 +153,7 @@ function ShareButton({ title }) {
  * проверка на цена и заявка — те минават само през публикуван slug.
  * Показва се само онова, което собственикът е попълнил: празна секция няма.
  */
-export default function ListingView({ property, reviews, seasons = [], packages = [], slug, loadBusy, preview = false, demo = null }) {
+export default function ListingView({ property, reviews, seasons = [], packages = [], registration = null, slug, loadBusy, preview = false, demo = null }) {
   const { t, lang, locale } = useStayLang()
   const [descExpanded, setDescExpanded] = useState(false)
   const [amenitiesExpanded, setAmenitiesExpanded] = useState(false)
@@ -372,6 +373,12 @@ export default function ListingView({ property, reviews, seasons = [], packages 
           <div>
             <h1 className="stay-title">{property.name}</h1>
             {property.city && <p className="stay-loc">{property.city}</p>}
+            {/* Гърция: номерът на имота (AMA/ΕΣΛ/ΜΑΓ) трябва да се вижда в обявата */}
+            {registration?.number && (
+              <p className="stay-reg">
+                <span className="stay-badge">{registryLabel(registration.kind, registration.number)}</span>
+              </p>
+            )}
           </div>
           <div className="stay-actions">
             <ShareButton title={property.name} />

@@ -3,10 +3,12 @@
 // Ключ — българският текст, стойност — преводът. Виж src/i18n/translator.js; покритието го пази scripts/test-app-i18n.mjs.
 import properties from './en-properties.js'
 import screens from './en-screens.js'
+import greece from './greece.js'
 
 export default {
   ...properties,
   ...screens,
+  ...greece.en,
   // вход
   "Вход": "Sign in",
   "Влезте в акаунта си, за да управлявате имотите си.": "Sign in to your account to manage your properties.",

@@ -1,8 +1,15 @@
 import { Link } from 'react-router-dom'
-import { CheckCircle2, ChevronRight, Inbox, Wallet, AlertTriangle, ClipboardCheck } from 'lucide-react'
+import { CheckCircle2, ChevronRight, Inbox, Wallet, AlertTriangle, ClipboardCheck, FileText } from 'lucide-react'
 import { buildAttentionItems } from '../lib/attentionLogic'
 
-const ICONS = { requests: Inbox, unpaid: Wallet, incomplete: AlertTriangle, cleaning: ClipboardCheck }
+const ICONS = {
+  requests: Inbox,
+  unpaid: Wallet,
+  incomplete: AlertTriangle,
+  cleaning: ClipboardCheck,
+  'declarations-overdue': FileText,
+  'declarations-due': FileText,
+}
 const TONES = {
   accent: 'bg-accent-soft text-accent',
   warning: 'bg-warning-soft text-warning',
