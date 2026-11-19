@@ -1,6 +1,8 @@
 // Речник за Гърция (номер на имота, данни и екран „Декларации“): ключ — българският текст, стойност — преводът.
 // Част от речниците el.js, mk.js и en.js (те го разпъват). Преводите са на асистента, не от носител — да се прегледат.
 // scripts/test-app-i18n.mjs пази покритието: нов български текст в екран без запис тук проваля теста.
+import extra from './greece2.js'
+
 const el = {
   "Декларации": "Δηλώσεις",
   "Регистрация в Гърция": "Καταχώριση στην Ελλάδα",
@@ -268,4 +270,4 @@ const en = {
   "Подаването е в портала myAADE — StayFlow не го прави вместо вас. Отказана резервация, за която гостът е платил такса, също се декларира, но не се следи тук. Престой от 60 нощи нагоре е друг вид наем с друга декларация.": "Submission is in the myAADE portal — StayFlow does not do it for you. A cancelled booking for which the guest paid a fee is also declared, but it is not tracked here. A stay of 60 nights or more is a different kind of lease with a different declaration.",
 }
 
-export default { el, mk, en }
+export default { el: { ...el, ...extra.el }, mk: { ...mk, ...extra.mk }, en: { ...en, ...extra.en } }

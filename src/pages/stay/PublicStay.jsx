@@ -25,7 +25,7 @@ function StayLoading() {
   )
 }
 
-export default function PublicStay() {
+export default function PublicStay({ embed = false }) {
   const { slug } = useParams()
   const { t, lang } = useStayLang()
   useDocumentLang()
@@ -88,5 +88,5 @@ export default function PublicStay() {
     )
   }
 
-  return <ListingView property={property} reviews={reviews} seasons={seasons} packages={packages} registration={registration} slug={slug} loadBusy={loadBusy} />
+  return <ListingView property={property} reviews={reviews} seasons={seasons} packages={packages} registration={registration} slug={slug} loadBusy={loadBusy} embed={embed} />
 }

@@ -69,7 +69,7 @@ const axe = async (page) =>
   const panel = page.getByRole('region', { name: 'Чака вас' })
   ok('„Чака вас“ се показва', await panel.isVisible())
   const hrefs = await panel.getByRole('link').evaluateAll((els) => els.map((e) => e.getAttribute('href')))
-  ok('четири реда със верните връзки', hrefs.join() === '/booking-requests,/earnings,/bookings?incomplete=1,/cleaning-tasks', hrefs.join())
+  ok('пет реда със верните връзки (заявки, утрешно пристигане → съобщение, пари, цени, почистване)', hrefs.join() === '/booking-requests,/messages?kind=before_arrival&booking=b0000004-0000-4000-8000-000000000004,/earnings,/bookings?incomplete=1,/cleaning-tasks', hrefs.join())
   const txt = await panel.innerText()
   ok('2 нови заявки от гости (колкото е в заявките)', /2 нови заявки от гости/.test(txt))
   ok('просрочено почистване е 1 (от тестовите данни: една задача с минал срок)', /Просрочено почистване/.test(txt))

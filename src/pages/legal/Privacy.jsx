@@ -157,6 +157,10 @@ export default function Privacy() {
             <code>stayflow.autoSetupSeen</code>) — например свито ли е списъкът „Първи стъпки“.
           </li>
           <li>
+            <strong className="text-ink">Вашите шаблони за съобщения</strong> (<code>stayflow.msgTemplates</code>) — собствените ви редакции на
+            готовите съобщения към гостите. Остават само на това устройство.
+          </li>
+          <li>
             <strong className="text-ink">Вашият избор за бисквитки</strong> (<code>stayflow.consent</code>) — за да не ви питаме при
             всяко посещение.
           </li>

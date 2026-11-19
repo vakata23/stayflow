@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { CheckCircle2, ChevronRight, Inbox, Wallet, AlertTriangle, ClipboardCheck, FileText } from 'lucide-react'
+import { CheckCircle2, ChevronRight, Inbox, Wallet, AlertTriangle, ClipboardCheck, FileText, MessageCircle, ShieldAlert } from 'lucide-react'
 import { buildAttentionItems } from '../lib/attentionLogic'
 
 const ICONS = {
@@ -9,6 +9,9 @@ const ICONS = {
   cleaning: ClipboardCheck,
   'declarations-overdue': FileText,
   'declarations-due': FileText,
+  'declarations-data': FileText,
+  'arrivals-tomorrow': MessageCircle,
+  safety: ShieldAlert,
 }
 const TONES = {
   accent: 'bg-accent-soft text-accent',

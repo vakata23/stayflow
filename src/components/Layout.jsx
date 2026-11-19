@@ -14,6 +14,7 @@ import {
   KeyRound,
   FileText,
   FileCheck2,
+  MessageSquare,
   Building2,
   ScrollText,
   LogOut,
@@ -56,6 +57,7 @@ const workNav = [
   { to: '/pricing', label: 'Ценови планове', icon: BadgePercent },
   { to: '/guest-cards', label: 'Адресни карти', icon: MapPin },
   { to: '/access-codes', label: 'Кодове за достъп', icon: KeyRound },
+  { to: '/messages', label: 'Съобщения', icon: MessageSquare },
   { to: '/invoicing', label: 'Фактури към гост', icon: FileText },
 ]
 /* Само когато поне един имот е в Гърция (миграция 017 + включено в „Регистрация в Гърция“). */
@@ -80,7 +82,7 @@ const hidesNewBooking = (path) => path === '/properties/new' || path === '/profi
 function NavGroup({ title, items, onNavigate, badges }) {
   return (
     <div>
-      <p className="px-3.5 pb-1 pt-4 font-display text-[0.9375rem] font-medium italic text-ink-muted">{title}</p>
+      <p className="px-3.5 pb-1 pt-3.5 font-display text-[0.9375rem] font-medium italic text-ink-muted">{title}</p>
       <ul className="space-y-0.5">
         {items.map(({ to, label, icon: Icon }) => {
           const badge = badges?.[to]
@@ -91,7 +93,7 @@ function NavGroup({ title, items, onNavigate, badges }) {
                 end={exactPaths.has(to)}
                 onClick={onNavigate}
                 className={({ isActive }) =>
-                  `group flex min-h-11 items-center gap-3 rounded-[0.8125rem] px-3.5 text-[0.9375rem] transition-colors [@media(hover:hover)_and_(pointer:fine)]:min-h-9 ${
+                  `group flex min-h-11 items-center gap-3 rounded-[0.8125rem] px-3.5 text-[0.9375rem] transition-colors [@media(hover:hover)_and_(pointer:fine)]:min-h-[2.125rem] ${
                     isActive ? 'bg-accent-soft font-semibold text-accent-ink' : 'font-medium text-ink-soft hover:bg-sunken hover:text-ink'
                   }`
                 }

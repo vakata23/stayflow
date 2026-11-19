@@ -118,7 +118,7 @@ try {
   const stats = (await page.locator('main').innerText()).replace(/\s+/g, ' ')
   ok('екран: заглавие и пояснение', /Декларации за престой/.test(stats) && /до 20-о число на следващия месец/.test(stats))
   ok('екран: бройчета — 1 просрочена, 2 чакат, 1 подадена, 1 с липсващи данни', /Просрочени 1/.test(stats) && /Чакат подаване 2/.test(stats) && /Подадени 1/.test(stats) && /1 с липсващи данни/.test(stats), stats.slice(0, 400))
-  ok('екран: „За подаване“ показва 4 реда (просрочена, 2 чакащи, предстоящ)', (await rowsOf(page).count()) === 4)
+  ok('екран: „Чакат“ показва 6 реда (просрочена, 2 чакащи, 3 предстоящи)', (await rowsOf(page).count()) === 6)
   ok('екран: първа е просрочената (Anna Schmidt)', /Anna Schmidt/.test(await rowsOf(page).first().innerText()))
   ok('екран: отказаната, подадената и дългият престой не са в „За подаване“', (await page.getByText('Отказан гост').count()) === 0 && (await page.getByText('Eleni Georgiou').count()) === 0 && (await page.getByText('Дългосрочен наемател').count()) === 0)
   const anna = await rowText(page, 'Anna Schmidt')
@@ -134,7 +134,7 @@ try {
 
   // филтри
   await page.getByRole('button', { name: 'Всички' }).click()
-  ok('филтър „Всички“: 6 реда (без отказаната) — с подадената и 70-те нощи', (await rowsOf(page).count()) === 6)
+  ok('филтър „Всички“: 8 реда (без отказаната) — с подадената и 70-те нощи', (await rowsOf(page).count()) === 8)
   const long = await rowText(page, 'Дългосрочен наемател')
   ok('„Всички“: 70 нощи → „Над 59 нощи“ и „Друга декларация“, без бутон за подаване', /Над 59 нощи/.test(long) && /Друга декларация/.test(long) && !/Отбележи като подадена/.test(long), long)
   await page.getByRole('button', { name: 'Подадени' }).click()
@@ -143,9 +143,9 @@ try {
   ok('филтър „Просрочени“: само Anna', (await rowsOf(page).count()) === 1 && /Anna Schmidt/.test(await rowsOf(page).first().innerText()))
   await page.getByRole('button', { name: 'Чакат', exact: true }).click()
   await page.getByLabel('Имот').selectOption({ label: 'Студио „Мора“' })
-  ok('филтър по имот: само Hans (Мора), 1 ред', (await rowsOf(page).count()) === 1 && /Hans Müller/.test(await rowsOf(page).first().innerText()))
+  ok('филтър по имот: само Студио „Мора“ — Hans (чака) и Pierre (предстои), 2 реда', (await rowsOf(page).count()) === 2 && /Hans Müller/.test(await rowsOf(page).first().innerText()))
   await page.getByLabel('Имот').selectOption({ value: '' })
-  ok('филтър по имот: „Всички“ връща 4 реда', (await rowsOf(page).count()) === 4)
+  ok('филтър по имот: „Всички“ връща 6 реда', (await rowsOf(page).count()) === 6)
 
   // действия
   await writes(true)
@@ -172,7 +172,7 @@ try {
   ok('експорт: Anna → Airbnb, паспорт C01X00T47, име в паспорта, държава DE, платформа', !!annaLine && /;Airbnb;/.test(annaLine) && /;DE;;C01X00T47;Anna Schmidt;/.test(annaLine) && /;platform;/.test(annaLine), annaLine)
   ok('експорт: гръцки гост → ΑΦΜ без паспорт', lines.some((l) => /;540;cash;GR;123456783;;;/.test(l)), lines.join(' || ').slice(0, 300))
   ok('експорт: номерът AMA на имота е в първата колона; личните имена на гостите не се експортират като отделна колона', lines.slice(1).filter(Boolean).every((l) => l.startsWith('00000123456;') || l.startsWith(';')) && !nikosLine)
-  ok('експорт: само показаните реда (4 − 0 дълги = 4)', lines.filter(Boolean).length - 1 === 4, String(lines.filter(Boolean).length - 1))
+  ok('експорт: само показаните реда (6, без 70-те нощи)', lines.filter(Boolean).length - 1 === 6, String(lines.filter(Boolean).length - 1))
 
   await page.screenshot({ path: path.join(OUT, 'declarations-desktop.png') })
 
@@ -242,6 +242,7 @@ try {
   const rg = (await writes()).find((x) => x.table === 'property_registry')
   ok('имот: записва property_id, държава, вид, номер и ATAK', rg?.body.property_id === G2 && rg.body.country === 'GR' && rg.body.kind === 'ama' && rg.body.number === '00000555555' && rg.body.atak === '87654321', JSON.stringify(rg?.body))
   ok('имот: „Данните са записани“', (await page.getByText('Данните са записани.').count()) === 1)
+  await card.screenshot({ path: path.join(OUT, 'property-card-filled.png') })
   await card.getByLabel('Този имот е в Гърция').uncheck()
   await writes(true)
   await card.getByRole('button', { name: 'Запази', exact: true }).click()
@@ -254,6 +255,7 @@ try {
   await page.goto(`${base}/stay/vila-elia`)
   await settle(page)
   ok('публична страница: AMA 00000123456 под града', (await page.locator('.stay-reg').innerText()).trim() === 'AMA 00000123456')
+  await page.screenshot({ path: path.join(OUT, 'public-page-ama.png'), clip: { x: 0, y: 0, width: 1440, height: 480 } })
   await page.goto(`${base}/stay/vila-elia?lang=en`)
   await settle(page)
   ok('публична страница на английски: номерът е същият', (await page.locator('.stay-reg').innerText()).trim() === 'AMA 00000123456')

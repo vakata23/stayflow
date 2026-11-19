@@ -1277,3 +1277,41 @@
   margin-top: 0;
   text-decoration: none;
 }
+
+/* Вграден вид (/embed/:slug), за рамка в чужд сайт: само наличност, цена и заявка — без заглавие, снимки, описание и долен колонтитул. */
+.stay.stay--embed .stay-skip,
+.stay.stay--embed .stay-gallery-wrap,
+.stay.stay--embed .stay-actions,
+.stay.stay--embed .stay-foot,
+.stay.stay--embed .stay-bar,
+.stay.stay--embed .stay-demo-bar,
+.stay.stay--embed .stay-preview-bar {
+  display: none !important;
+}
+/* Заглавието, градът и номерът на имота (AMA) остават видими: номерът трябва да е и на собствения сайт */
+.stay.stay--embed .stay-head {
+  padding-top: 16px;
+}
+.stay.stay--embed .stay-title {
+  font-size: 1.5rem;
+}
+.stay.stay--embed .stay-main > .stay-sec:not(.stay-sec--keep) {
+  display: none;
+}
+.stay.stay--embed .stay-body {
+  display: flex;
+  flex-direction: column;
+  max-width: 44rem;
+  margin-inline: auto;
+  padding-top: 8px;
+  padding-bottom: 24px;
+}
+.stay.stay--embed .stay-main {
+  display: block;
+}
+.stay.stay--embed .stay-booking {
+  position: static;
+  margin-top: 0;
+  padding-block: 24px 0;
+  border-top: 1px solid var(--s-line);
+}

@@ -192,8 +192,8 @@ const G2 = '25555555-0000-4000-8000-000000000005'
 export function greeceData() {
   return {
     properties: [
-      { ...properties[1], id: G1, name: 'Вила „Елия“', city: 'Халкидики', address: 'Κασσάνδρα', slug: 'vila-elia', is_listed: true, ical_token: 'c4444444-0000-4000-8000-000000000004' },
-      { ...properties[1], id: G2, name: 'Студио „Мора“', city: 'Солун', address: 'Τσιμισκή 10', slug: 'studio-mora', is_listed: false, ical_token: 'c5555555-0000-4000-8000-000000000005' },
+      { ...properties[1], id: G1, name: 'Вила „Елия“', city: 'Халкидики', address: 'Κασσάνδρα', slug: 'vila-elia', is_listed: true, property_type: 'house', area_m2: 94, house_rules: null, ical_token: 'c4444444-0000-4000-8000-000000000004' },
+      { ...properties[1], id: G2, name: 'Студио „Мора“', city: 'Солун', address: 'Τσιμισκή 10', slug: 'studio-mora', is_listed: false, property_type: 'apartment', area_m2: 38, house_rules: null, ical_token: 'c5555555-0000-4000-8000-000000000005' },
     ],
     registry: [
       { property_id: G1, country: 'GR', kind: 'ama', number: '00000123456', atak: '12345678', created_at: ts(-100), updated_at: ts(-100) },
@@ -207,10 +207,27 @@ export function greeceData() {
       b(64, G2, 'Hans Müller', -4, -3, 'direct', 'confirmed', 120, 0, 2),
       b(65, G2, 'Дългосрочен наемател', -50, 20, 'manual', 'confirmed', 2100, 0, 1),
       b(66, G1, 'Отказан гост', -20, -17, 'direct', 'cancelled', 300, 0, 2),
+      b(67, G1, 'Elena Papadaki', 1, 4, 'direct', 'confirmed', 360, 0, 2), // пристига утре, данните са пълни
+      b(68, G2, 'Pierre Martin', 2, 5, 'direct', 'confirmed', 270, 0, 2), // пристига до 3 дни, без данни за декларацията
+    ],
+    settings: [
+      { property_id: G1, ota_commission_pct: 15, tourist_tax: 0, cleaning_fee: 30, deposit_pct: 30, base_price: 72, airbnb_markup_pct: 12, booking_markup_pct: 15, created_at: ts(-90) },
+      { property_id: G2, ota_commission_pct: 15, tourist_tax: 0, cleaning_fee: 20, deposit_pct: 30, base_price: 55, airbnb_markup_pct: 0, booking_markup_pct: 0, created_at: ts(-90) },
+    ],
+    seasons: [
+      { id: 'e4444444-0000-4000-8000-000000000001', property_id: G1, name: 'Лято', start_month: 6, start_day: 1, end_month: 9, end_day: 30, price_per_night: 120, min_nights: 2, created_at: '2026-02-01T08:00:00Z' },
+      { id: 'e4444444-0000-4000-8000-000000000002', property_id: G1, name: 'Зима', start_month: 11, start_day: 1, end_month: 3, end_day: 31, price_per_night: 60, min_nights: 3, created_at: '2026-02-01T08:01:00Z' },
+    ],
+    // документи за безопасност на G1: застраховка изтича след 12 дни, пожарогасителят е с изтекла проверка, аптечка има
+    safety: [
+      { property_id: G1, item_key: 'insurance', done: true, expires_on: iso(12), note: 'Полица 123', updated_at: ts(-3) },
+      { property_id: G1, item_key: 'fire', done: true, expires_on: iso(-5), note: null, updated_at: ts(-3) },
+      { property_id: G1, item_key: 'first_aid', done: true, expires_on: null, note: null, updated_at: ts(-3) },
     ],
     declarations: [
       { booking_id: id(60), guest_country: 'GR', guest_tax_id: '123456783', guest_passport: null, guest_doc_name: null, pay_method: 'cash', status: 'pending', submitted_at: null },
       { booking_id: id(61), guest_country: 'DE', guest_tax_id: null, guest_passport: 'C01X00T47', guest_doc_name: 'Anna Schmidt', pay_method: null, status: 'pending', submitted_at: null },
+      { booking_id: id(67), guest_country: 'GR', guest_tax_id: '123456783', guest_passport: null, guest_doc_name: null, pay_method: 'cash', status: 'pending', submitted_at: null },
       { booking_id: id(62), guest_country: 'GR', guest_tax_id: '123456783', guest_passport: null, guest_doc_name: null, pay_method: 'bank', status: 'submitted', submitted_at: ts(-70) },
     ],
   }
@@ -219,7 +236,7 @@ export function greeceData() {
 export const TABLES = {
   profiles: [{ id: PROFILE, user_id: U, full_name: 'Иван Петров', company_name: 'Морски имоти ЕООД', phone: '+359 88 712 4093', created_at: '2026-01-10T08:00:00Z' }],
   properties, bookings, payments, property_photos: photos, booking_requests: requests, cleaning_tasks, cleaning_notes, pricing_rules,
-  money_entries, recurring_rules, invoices, notification_targets, outbox, reviews, property_settings, booking_balances, ai_runs: [], price_seasons, stay_packages, property_registry: [], stay_declarations: [],
+  money_entries, recurring_rules, invoices, notification_targets, outbox, reviews, property_settings, booking_balances, ai_runs: [], price_seasons, stay_packages, property_registry: [], stay_declarations: [], property_safety_items: [],
 }
 
 // ---------------------------------------------------------------- RPC

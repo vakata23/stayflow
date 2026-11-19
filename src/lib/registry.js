@@ -142,5 +142,14 @@ export async function loadDeclarationItems(today) {
 export async function fetchDeclarationFacts(today) {
   const items = await loadDeclarationItems(today)
   const c = attentionCounts(items)
-  return { declarationsOverdue: c.overdue, declarationsDue: c.due, declarationsNextDeadline: c.nextDeadline }
+  // гости, които пристигат до 3 дни, а данните им за декларацията още липсват — за съобщението „Данни за декларацията“
+  const soonTo = new Date(Date.UTC(+today.slice(0, 4), +today.slice(5, 7) - 1, +today.slice(8, 10) + 3)).toISOString().slice(0, 10)
+  const soon = items.filter((it) => (it.state === 'upcoming' || it.state === 'due') && it.missing?.length && it.booking.check_in >= today && it.booking.check_in <= soonTo)
+  return {
+    declarationsOverdue: c.overdue,
+    declarationsDue: c.due,
+    declarationsNextDeadline: c.nextDeadline,
+    declarationsDataSoon: soon.length,
+    declarationsDataSoonId: soon[0]?.booking.id ?? null,
+  }
 }

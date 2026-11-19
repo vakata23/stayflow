@@ -15,6 +15,7 @@ import { Field, Input, Textarea, Select, Button, Alert } from '../../components/
 import PaymentsSection from './PaymentsSection'
 import DeclarationSection, { emptyDeclaration, validateDeclaration } from './DeclarationSection'
 import { loadRegistry, loadDeclaration, saveDeclaration } from '../../lib/registry'
+import { climateFee, dwellingType } from '../../lib/climateFee'
 import GuestShare from './GuestShare'
 import { useDialogA11y } from '../../lib/useDialogA11y'
 
@@ -44,6 +45,7 @@ export default function BookingFormModal({ open, onClose, onSaved, properties, i
   // Гърция: данни за декларацията (само за имот с включена Гърция)
   const [greek, setGreek] = useState(false)
   const [decl, setDecl] = useState(emptyDeclaration)
+  const [dwelling, setDwelling] = useState('standard')
 
   // Докато собственикът не пипне ръчно комисионата/таксата, стойността им
   // следва автоматично цената, имота, датите и броя гости.
@@ -113,6 +115,22 @@ export default function BookingFormModal({ open, onClose, onSaved, properties, i
     }
   }, [open, values.property_id])
 
+  useEffect(() => {
+    if (!open || !greek || !values.property_id) return
+    let cancelled = false
+    supabase
+      .from('properties')
+      .select('property_type, area_m2')
+      .eq('id', values.property_id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!cancelled) setDwelling(dwellingType(data))
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [open, greek, values.property_id])
+
   // Настройките на избрания имот (комисиона/такса) — за предложените стойности.
   useEffect(() => {
     if (!open || !values.property_id) return
@@ -138,13 +156,16 @@ export default function BookingFormModal({ open, onClose, onSaved, properties, i
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, values.total_price, values.source, settings.ota_commission_pct])
 
-  // Авто-предложен туристически данък при промяна на имот/дати/гости.
+  // В Гърция таксата „Климатична устойчивост“ е на жилище за нощ (по сезон), не на човек.
+  const climate = greek ? climateFee({ checkIn: values.check_in, checkOut: values.check_out, dwelling }) : null
+
+  // Авто-предложен туристически данък (или таксата за Гърция) при промяна на имот/дати/гости.
   useEffect(() => {
     if (!open || touristTaxTouched.current) return
-    const suggested = suggestTouristTax(values.num_guests, nights, settings.tourist_tax)
+    const suggested = greek ? climate.total : suggestTouristTax(values.num_guests, nights, settings.tourist_tax)
     setValues((v) => (v.tourist_tax === suggested ? v : { ...v, tourist_tax: suggested }))
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, values.num_guests, nights, settings.tourist_tax])
+  }, [open, values.num_guests, nights, settings.tourist_tax, greek, climate?.total])
 
   if (!open) return null
 
@@ -342,11 +363,15 @@ export default function BookingFormModal({ open, onClose, onSaved, properties, i
               </Field>
             )}
             <Field
-              label="Туристически данък (€)"
+              label={greek ? 'Такса „Климатична устойчивост“ (€)' : 'Туристически данък (€)'}
               hint={
-                settings.tourist_tax > 0
-                  ? `Предложен от ${settings.tourist_tax} €/гост/нощувка — може да редактирате.`
-                  : 'Задайте ставка в настройките на имота за автоматично предложение.'
+                greek
+                  ? climate.nights > 0
+                    ? `Предложена: ${climate.peakNights}×${climate.peakRate} € сезон + ${climate.offNights}×${climate.offRate} € извън сезон, на жилище, не на човек. Може да редактирате.`
+                    : 'Въведете датите за автоматично предложение.'
+                  : settings.tourist_tax > 0
+                    ? `Предложен от ${settings.tourist_tax} €/гост/нощувка — може да редактирате.`
+                    : 'Задайте ставка в настройките на имота за автоматично предложение.'
               }
             >
               <Input type="number" min={0} step="0.01" value={values.tourist_tax} onChange={setTouristTax} />

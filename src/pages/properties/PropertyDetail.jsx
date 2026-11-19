@@ -9,6 +9,9 @@ import IcalSync from '../../components/IcalSync'
 import PropertySettingsCard from '../../components/PropertySettingsCard'
 import SeasonPrices from '../../components/SeasonPrices'
 import PropertyRegistryCard from '../../components/PropertyRegistryCard'
+import PropertySafetyCard from '../../components/PropertySafetyCard'
+import ChannelPricesCard from '../../components/ChannelPricesCard'
+import EmbedCodeCard from '../../components/EmbedCodeCard'
 import PackagesCard from '../../components/PackagesCard'
 import PublicListingCard from '../../components/PublicListingCard'
 import PropertyListingDetailsCard from '../../components/PropertyListingDetailsCard'
@@ -205,7 +208,11 @@ export default function PropertyDetail() {
 
         <PropertyRegistryCard property={property} />
 
+        <PropertySafetyCard property={property} />
+
         <SeasonPrices propertyId={property.id} />
+
+        <ChannelPricesCard propertyId={property.id} />
 
         <PackagesCard propertyId={property.id} />
 
@@ -213,6 +220,8 @@ export default function PropertyDetail() {
           property={property}
           onSaved={(patch) => setProperty((p) => ({ ...p, ...patch }))}
         />
+
+        <EmbedCodeCard property={property} />
 
         <PropertyPhotosManager
           property={property}

@@ -3,11 +3,13 @@ import { incompleteBookingsFilter } from './bookings'
 import { addDays, toISODate } from './dates'
 import { pickUnpaid, sumOutstanding, UNPAID_LOOKBACK_DAYS } from './attentionLogic'
 import { fetchDeclarationFacts } from './registry'
+import { fetchSafetyFacts } from './safety'
 
 /** Колко неща чакат собственика — четири леки заявки (само броене), нищо не се пише. */
 export async function fetchAttentionFacts(today) {
   const lookbackFrom = toISODate(addDays(new Date(`${today}T12:00:00`), -UNPAID_LOOKBACK_DAYS))
-  const [requests, incomplete, balances, cleaning, declarations] = await Promise.all([
+  const tomorrow = toISODate(addDays(new Date(`${today}T12:00:00`), 1))
+  const [requests, incomplete, balances, cleaning, declarations, safety, arrivals] = await Promise.all([
     supabase.from('booking_requests').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
     incompleteBookingsFilter(supabase.from('bookings').select('id', { count: 'exact', head: true })),
     supabase
@@ -19,6 +21,10 @@ export async function fetchAttentionFacts(today) {
     supabase.from('cleaning_tasks').select('id', { count: 'exact', head: true }).neq('status', 'done').lt('due_date', today),
     // Гърция: без включени имоти в Гърция (или преди миграция 017) връща нули, нищо не се показва
     fetchDeclarationFacts(today).catch(() => ({})),
+    // документи за безопасност (миграция 018) — празно, ако няма имот в Гърция или няма миграция
+    fetchSafetyFacts(today).catch(() => ({})),
+    // гости, които пристигат утре — за съобщението „Преди пристигане“
+    supabase.from('bookings').select('id').eq('check_in', tomorrow).neq('status', 'cancelled').limit(20),
   ])
 
   const unpaid = pickUnpaid(balances.data, today, lookbackFrom)
@@ -29,6 +35,9 @@ export async function fetchAttentionFacts(today) {
     unpaidTotal: sumOutstanding(unpaid),
     overdueCleaning: cleaning.count ?? 0,
     ...declarations,
+    ...safety,
+    arrivalsTomorrow: arrivals.data?.length ?? 0,
+    arrivalsTomorrowId: arrivals.data?.[0]?.id ?? null,
   }
 }
 

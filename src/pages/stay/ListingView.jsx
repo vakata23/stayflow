@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { registryLabel } from '../../lib/declarationLogic'
 import { Link } from 'react-router-dom'
 import {
@@ -153,7 +153,7 @@ function ShareButton({ title }) {
  * проверка на цена и заявка — те минават само през публикуван slug.
  * Показва се само онова, което собственикът е попълнил: празна секция няма.
  */
-export default function ListingView({ property, reviews, seasons = [], packages = [], registration = null, slug, loadBusy, preview = false, demo = null }) {
+export default function ListingView({ property, reviews, seasons = [], packages = [], registration = null, slug, loadBusy, preview = false, demo = null, embed = false }) {
   const { t, lang, locale } = useStayLang()
   const [descExpanded, setDescExpanded] = useState(false)
   const [amenitiesExpanded, setAmenitiesExpanded] = useState(false)
@@ -341,8 +341,18 @@ export default function ListingView({ property, reviews, seasons = [], packages 
   // Лентата се показва само когато е сигурно, че заглавието/снимките и картата за резервация са извън екрана.
   const showBar = fromPrice > 0 && headVisible === false && quoteVisible === false
 
+  // В рамка на чужд сайт: казваме на сайта колко е висока страницата, за да нагласи рамката
+  useEffect(() => {
+    if (!embed || typeof window === 'undefined' || window.parent === window) return
+    const send = () => window.parent.postMessage({ type: 'stayflow-height', height: document.documentElement.scrollHeight }, '*')
+    send()
+    const ro = new ResizeObserver(send)
+    ro.observe(document.body)
+    return () => ro.disconnect()
+  }, [embed])
+
   return (
-    <div className="stay" style={themeVars}>
+    <div className={`stay${embed ? ' stay--embed' : ''}`} style={themeVars}>
       <a href="#stay-main" className="stay-skip">
         {t('skip')}
       </a>
@@ -480,7 +490,7 @@ export default function ListingView({ property, reviews, seasons = [], packages 
           )}
 
           {/* Наличност */}
-          <section className="stay-sec" style={{ order: 5 }}>
+          <section className="stay-sec stay-sec--keep" style={{ order: 5 }}>
             <h2 className="stay-h2">{t('availability')}</h2>
             <AvailabilityCalendar loadBusy={loadBusy} />
           </section>

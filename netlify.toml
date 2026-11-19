@@ -175,6 +175,16 @@
   status = 200
 
 [[redirects]]
+  from = "/messages"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/embed/*"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
   from = "/profile"
   to = "/index.html"
   status = 200
@@ -296,6 +306,19 @@
   for = "/declarations"
   [headers.values]
     X-Robots-Tag = "noindex"
+
+[[headers]]
+  for = "/messages"
+  [headers.values]
+    X-Robots-Tag = "noindex"
+
+# Рамката за вграждане се зарежда в чужди сайтове и не трябва да се индексира като отделна страница.
+[[headers]]
+  for = "/embed/*"
+  [headers.values]
+    X-Robots-Tag = "noindex"
+    X-Frame-Options = "ALLOWALL"
+    Content-Security-Policy = "frame-ancestors *"
 
 [[headers]]
   for = "/profile"

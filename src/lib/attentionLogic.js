@@ -40,6 +40,12 @@ export function buildAttentionItems({
   declarationsOverdue = 0,
   declarationsDue = 0,
   declarationsNextDeadline = null,
+  arrivalsTomorrow = 0,
+  arrivalsTomorrowId = null,
+  declarationsDataSoon = 0,
+  declarationsDataSoonId = null,
+  safetyExpired = 0,
+  safetyExpiring = 0,
 }) {
   const items = []
   if (pendingRequests > 0) {
@@ -61,6 +67,37 @@ export function buildAttentionItems({
       count: declarationsOverdue,
       title: declarationsOverdue === 1 ? 'Просрочена декларация за престой' : `${declarationsOverdue} просрочени декларации за престой`,
       detail: 'Срокът до 20-о число е минал. Подайте я в myAADE и я отбележете като подадена.',
+    })
+  }
+  if (arrivalsTomorrow > 0) {
+    items.push({
+      key: 'arrivals-tomorrow',
+      to: `/messages?kind=before_arrival${arrivalsTomorrowId ? `&booking=${arrivalsTomorrowId}` : ''}`,
+      tone: 'accent',
+      count: arrivalsTomorrow,
+      title: arrivalsTomorrow === 1 ? 'Утре пристига гост' : `${arrivalsTomorrow} гости пристигат утре`,
+      detail: 'Пратете „Преди пристигане“ с кода за входа.',
+    })
+  }
+  if (declarationsDataSoon > 0) {
+    items.push({
+      key: 'declarations-data',
+      to: `/messages?kind=declaration_data${declarationsDataSoonId ? `&booking=${declarationsDataSoonId}` : ''}`,
+      tone: 'warning',
+      count: declarationsDataSoon,
+      title: declarationsDataSoon === 1 ? 'Гост пристига скоро без данни за декларацията' : `${declarationsDataSoon} гости пристигат скоро без данни за декларацията`,
+      detail: 'Поискайте паспорт или ΑΦΜ, преди да пристигнат.',
+    })
+  }
+  if (safetyExpired + safetyExpiring > 0) {
+    const n = safetyExpired + safetyExpiring
+    items.push({
+      key: 'safety',
+      to: '/properties',
+      tone: 'warning',
+      count: n,
+      title: n === 1 ? 'Документ за безопасност изтича или е изтекъл' : `${n} документа за безопасност изтичат или са изтекли`,
+      detail: 'Подновете го и обновете срока в картата „Безопасност“ на имота.',
     })
   }
   if (unpaidCount > 0) {

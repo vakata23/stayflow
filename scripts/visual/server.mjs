@@ -19,6 +19,7 @@ const COMPRESSIBLE = new Set(['.html', '.js', '.css', '.json', '.webmanifest', '
 const cache = new Map()
 const unmatched = new Set()
 const writes = []
+let missing018 = false // true → таблицата за безопасност и колоните за надбавки „не съществуват“ (миграция 018 непусната)
 
 function send(res, status, body, headers = {}) {
   const buf = typeof body === 'string' || Buffer.isBuffer(body) ? body : JSON.stringify(body)
@@ -94,6 +95,8 @@ function embed(rows, select) {
 }
 
 async function rest(req, res, url, table) {
+  if (missing018 && table === 'property_safety_items') return send(res, 404, { code: 'PGRST205', message: "Could not find the table 'public.property_safety_items' in the schema cache" })
+  if (missing018 && table === 'property_settings' && /markup_pct/.test(url.searchParams.get('select') ?? '')) return send(res, 400, { code: '42703', message: 'column property_settings.airbnb_markup_pct does not exist' })
   const rows0 = TABLES[table]
   if (!rows0) { unmatched.add('table:' + table); return send(res, 200, []) }
   if (req.method === 'POST' || req.method === 'PATCH' || req.method === 'DELETE') {
@@ -181,10 +184,17 @@ const server = http.createServer(async (req, res) => {
       // Гърция (миграция 017): ?on=1 добавя номера, резервации и декларации; ?on=0 ги маха; ?missing=1 — таблиците „не съществуват“
       const g = greeceData()
       const drop = (arr, keep) => { for (let i = arr.length - 1; i >= 0; i--) if (!keep(arr[i])) arr.splice(i, 1) }
-      const bookingIds = new Set(g.bookings.map((x) => x.id))
-      const propIds = new Set(g.properties.map((x) => x.id))
-      drop(TABLES.bookings, (x) => !bookingIds.has(x.id)); drop(TABLES.properties, (x) => !propIds.has(x.id)); TABLES.property_registry.length = 0; TABLES.stay_declarations.length = 0
-      if (url.searchParams.get('on') === '1') { TABLES.properties.push(...g.properties); TABLES.bookings.push(...g.bookings); TABLES.property_registry.push(...g.registry); TABLES.stay_declarations.push(...g.declarations) }
+      const ids = (rows, key = 'id') => new Set(rows.map((x) => x[key]))
+      const bookingIds = ids(g.bookings), propIds = ids(g.properties), seasonIds = ids(g.seasons)
+      drop(TABLES.bookings, (x) => !bookingIds.has(x.id)); drop(TABLES.properties, (x) => !propIds.has(x.id))
+      drop(TABLES.property_settings, (x) => !propIds.has(x.property_id)); drop(TABLES.price_seasons, (x) => !seasonIds.has(x.id))
+      TABLES.property_registry.length = 0; TABLES.stay_declarations.length = 0; TABLES.property_safety_items.length = 0
+      missing018 = url.searchParams.get('m018') === '1'
+      if (url.searchParams.get('on') === '1') {
+        TABLES.properties.push(...g.properties); TABLES.bookings.push(...g.bookings); TABLES.property_registry.push(...g.registry)
+        TABLES.stay_declarations.push(...g.declarations); TABLES.property_settings.push(...g.settings); TABLES.price_seasons.push(...g.seasons)
+        TABLES.property_safety_items.push(...g.safety)
+      }
       return send(res, 200, { registry: TABLES.property_registry.length, bookings: TABLES.bookings.length })
     }
     if (p === '/__mock/writes') { if (url.searchParams.get('clear')) writes.length = 0; return send(res, 200, writes) }

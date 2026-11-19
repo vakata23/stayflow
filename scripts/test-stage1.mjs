@@ -40,6 +40,7 @@ const sqlFiles = [
   join(projectDir, 'supabase/migrations/014_price_seasons.sql'),
   join(projectDir, 'supabase/migrations/015_stay_packages.sql'),
   join(projectDir, 'supabase/migrations/017_greece_compliance.sql'),
+  join(projectDir, 'supabase/migrations/018_safety_and_channel_prices.sql'),
 ];
 
 const db = new PGlite({ extensions: { btree_gist } });
@@ -1227,6 +1228,54 @@ await db.exec(readFileSync(join(projectDir, 'supabase/migrations/017_greece_comp
 ok('017: е идемпотентна — повторно пускане без грешка, данните са запазени', (await db.query(`select count(*)::int n from property_registry where property_id = '${GR1}'`)).rows[0].n === 1);
 ok('017: след повторното пускане политиките не са задвоени (по 4 на таблица)', (await db.query("select tablename, count(*)::int n from pg_policies where tablename in ('property_registry','stay_declarations') group by tablename order by tablename")).rows.every((x) => x.n === 4));
 ok('017: public_registration е една функция', (await db.query("select count(*)::int n from pg_proc where proname = 'public_registration'")).rows[0].n === 1);
+
+// ---------------------------------------------------------------- Безопасност и цени по канал (018)
+await db.exec(`insert into property_settings (property_id, ota_commission_pct, base_price) values ('${GR1}', 15, 120) on conflict (property_id) do nothing`);
+
+// документи за безопасност
+r = await as('authenticated', A, `insert into property_safety_items (property_id, item_key, done, expires_on, note) values ('${GR1}', 'insurance', true, '2027-03-14', 'Полица 123') returning item_key, done`);
+ok('018: собственикът записва документ за безопасност', r.length === 1 && r[0].item_key === 'insurance' && r[0].done === true);
+r = await as('authenticated', A, `insert into property_safety_items (property_id, item_key) values ('${GR1}', 'first_aid') returning done, expires_on, note`);
+ok('018: по подразбиране „не е налично“, без срок и бележка', r[0].done === false && r[0].expires_on === null && r[0].note === null);
+await asErr('018: чужд собственик не може да пише документ за чужд имот', 'authenticated', B, `insert into property_safety_items (property_id, item_key) values ('${GR1}', 'fire')`, /row-level security/);
+r = await as('authenticated', B, `select * from property_safety_items`);
+ok('018: чужд собственик не вижда документите', r.length === 0);
+r = await as('anon', null, `select * from property_safety_items`);
+ok('018: анонимен не чете документите', r.length === 0);
+await asErr('018: непознат вид документ се отхвърля', 'authenticated', A, `insert into property_safety_items (property_id, item_key) values ('${GR1}', 'xyz')`, /check constraint/);
+await asErr('018: бележка над 200 знака се отхвърля', 'authenticated', A, `insert into property_safety_items (property_id, item_key, note) values ('${GR1}', 'pest', '${'я'.repeat(201)}')`, /check constraint/);
+await asErr('018: един вид документ по веднъж на имот (ключът е двойка)', 'authenticated', A, `insert into property_safety_items (property_id, item_key) values ('${GR1}', 'insurance')`, /duplicate key|unique/);
+r = await as('authenticated', A, `insert into property_safety_items (property_id, item_key, done, expires_on) values ('${GR1}', 'insurance', true, '2028-01-01') on conflict (property_id, item_key) do update set expires_on = excluded.expires_on, done = excluded.done returning expires_on`);
+ok('018: повторен запис (upsert по имот и вид) сменя срока', r.length === 1 && String(r[0].expires_on).includes('2028'), JSON.stringify(r));
+r = await as('authenticated', B, `update property_safety_items set done = false where property_id = '${GR1}' returning item_key`);
+ok('018: чужд собственик не може да промени документ (0 реда)', r.length === 0);
+r = await as('authenticated', B, `delete from property_safety_items where property_id = '${GR1}' returning item_key`);
+ok('018: чужд собственик не може да изтрие документ (0 реда)', r.length === 0);
+ok('018: шестте вида са позволени', (await db.query(`select pg_get_constraintdef(oid) d from pg_constraint where conname like 'property_safety_items_item_key_check'`)).rows[0].d.split("'").filter((x, i) => i % 2 === 1).join() === 'insurance,electrician,fire,pest,first_aid,emergency');
+
+// надбавки по канал
+r = await as('authenticated', A, `select airbnb_markup_pct, booking_markup_pct from property_settings where property_id = '${GR1}'`);
+ok('018: надбавките по канал са 0 по подразбиране (съществуващите настройки не се променят)', r.length === 1 && Number(r[0].airbnb_markup_pct) === 0 && Number(r[0].booking_markup_pct) === 0);
+r = await as('authenticated', A, `update property_settings set airbnb_markup_pct = 12.5, booking_markup_pct = 17.6 where property_id = '${GR1}' returning airbnb_markup_pct, booking_markup_pct`);
+ok('018: собственикът задава надбавки (12,5% и 17,6%)', Number(r[0]?.airbnb_markup_pct) === 12.5 && Number(r[0]?.booking_markup_pct) === 17.6);
+await asErr('018: надбавка над 100% се отхвърля', 'authenticated', A, `update property_settings set airbnb_markup_pct = 101 where property_id = '${GR1}'`, /check constraint/);
+await asErr('018: отрицателна надбавка се отхвърля', 'authenticated', A, `update property_settings set booking_markup_pct = -1 where property_id = '${GR1}'`, /check constraint/);
+r = await as('authenticated', B, `update property_settings set airbnb_markup_pct = 50 where property_id = '${GR1}' returning property_id`);
+ok('018: чужд собственик не може да смени надбавките (0 реда)', r.length === 0);
+r = await as('authenticated', A, `select ota_commission_pct, base_price from property_settings where property_id = '${GR1}'`);
+ok('018: комисионата и основната цена не са пипнати', Number(r[0].ota_commission_pct) === 15 && Number(r[0].base_price) === 120);
+
+// цената за гостите не се променя от 018
+r = await as('anon', null, "select * from quote_stay('vila-elia','2027-07-10','2027-07-13',2)");
+ok('018: quote_stay за публикуван имот работи както преди (3 нощувки × основна цена 120 = 360)', r.length === 1 && Number(r[0].accommodation_total) === 360, JSON.stringify(r[0]));
+
+// каскада и повторно пускане
+await db.exec(`delete from properties where id = '${GR1}'`);
+ok('018: изтриването на имот каскадно маха документите му', (await db.query(`select count(*)::int n from property_safety_items where property_id = '${GR1}'`)).rows[0].n === 0);
+await db.exec(readFileSync(join(projectDir, 'supabase/migrations/018_safety_and_channel_prices.sql'), 'utf8'));
+ok('018: е идемпотентна — повторно пускане без грешка', true);
+ok('018: след повторното пускане политиките не са задвоени (4)', (await db.query("select count(*)::int n from pg_policies where tablename = 'property_safety_items'")).rows[0].n === 4);
+ok('018: двете колони са по една', (await db.query("select count(*)::int n from information_schema.columns where table_name = 'property_settings' and column_name in ('airbnb_markup_pct','booking_markup_pct')")).rows[0].n === 2);
 
 console.log(`\n${pass} успешни, ${fail} провалени\n`);
 process.exit(fail ? 1 : 0);
