@@ -177,4 +177,13 @@ export default {
 
   notFoundTitle: 'Page not found',
   notFoundText: "This property isn't published or the address is wrong. Check the link you received from the host.",
+  // Хотел: избор на вид стая
+  'hotel.title': 'Rooms and prices',
+  'hotel.intro': 'Pick your dates to see which rooms are free.',
+  'hotel.search': 'Show free rooms',
+  'hotel.free': 'Rooms left: {n}',
+  'hotel.none': 'No room of this type is free for these dates.',
+  'hotel.noRooms': 'No rooms are free for these dates. Try other dates.',
+  'hotel.choose': 'Choose',
+  'hotel.chosen': 'Selected',
 }

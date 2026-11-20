@@ -4,11 +4,13 @@
 import properties from './en-properties.js'
 import screens from './en-screens.js'
 import greece from './greece.js'
+import hotel from './hotel.js'
 
 export default {
   ...properties,
   ...screens,
   ...greece.en,
+  ...hotel.en,
   // вход
   "Вход": "Sign in",
   "Влезте в акаунта си, за да управлявате имотите си.": "Sign in to your account to manage your properties.",

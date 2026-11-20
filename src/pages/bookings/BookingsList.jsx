@@ -18,6 +18,7 @@ import {
 } from '../../lib/bookings'
 import { PageHeader, Card, Select, Input, Button, Alert, Spinner, EmptyState } from '../../components/ui'
 import BookingFormModal from './BookingFormModal'
+import { loadHotelParentIds } from '../../lib/hotel'
 import { rise, useIntro } from '../../lib/motion'
 
 const initials = (name) =>
@@ -49,11 +50,10 @@ export default function BookingsList() {
   const animate = useIntro('screen-bookings', !loading)
 
   useEffect(() => {
-    supabase
-      .from('properties')
-      .select('id, name, max_guests')
-      .order('name')
-      .then(({ data }) => setProperties(data ?? []))
+    // хотел със стаи няма собствени резервации — те са по стаите
+    Promise.all([supabase.from('properties').select('id, name, max_guests').order('name'), loadHotelParentIds()]).then(([{ data }, parents]) =>
+      setProperties((data ?? []).filter((p) => !parents.has(p.id)))
+    )
   }, [])
 
   // Дълбок линк от таблото „Приходи“ — отваря директно конкретна

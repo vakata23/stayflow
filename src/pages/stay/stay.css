@@ -1315,3 +1315,39 @@
   padding-block: 24px 0;
   border-top: 1px solid var(--s-line);
 }
+
+/* Хотел: свободни стаи по вид */
+.stay-rooms {
+  display: grid;
+  gap: 12px;
+  margin: 20px 0 0;
+  padding: 20px 0 0;
+  border-top: 1px solid var(--s-line);
+  list-style: none;
+}
+.stay-room {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--s-line);
+  border-radius: 12px;
+  background: #fff;
+}
+.stay-room--on {
+  border-color: var(--stay-accent);
+  box-shadow: 0 0 0 1px var(--stay-accent);
+}
+.stay-room--off {
+  background: rgba(0, 0, 0, 0.025);
+}
+.stay-room-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 12px;
+}
+.stay-room-note {
+  margin: 0;
+  font-size: 13px;
+}

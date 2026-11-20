@@ -48,6 +48,7 @@ import { describeOffer } from './packagesText'
 import PhotoMosaic from './PhotoMosaic'
 import Lightbox from './Lightbox'
 import AvailabilityCalendar from './AvailabilityCalendar'
+import HotelRooms from './HotelRooms'
 import LocationMap from '../../components/LocationMap'
 import LegalLinks from '../../components/LegalLinks'
 import { withLinks } from '../../lib/legalI18n'
@@ -153,7 +154,7 @@ function ShareButton({ title }) {
  * проверка на цена и заявка — те минават само през публикуван slug.
  * Показва се само онова, което собственикът е попълнил: празна секция няма.
  */
-export default function ListingView({ property, reviews, seasons = [], packages = [], registration = null, slug, loadBusy, preview = false, demo = null, embed = false }) {
+export default function ListingView({ property, reviews, seasons = [], packages = [], registration = null, hotelTypes = [], slug, loadBusy, preview = false, demo = null, embed = false }) {
   const { t, lang, locale } = useStayLang()
   const [descExpanded, setDescExpanded] = useState(false)
   const [amenitiesExpanded, setAmenitiesExpanded] = useState(false)
@@ -404,12 +405,19 @@ export default function ListingView({ property, reviews, seasons = [], packages 
         <div className="stay-main">
           {/* Накратко за имота */}
           <section className="stay-sec" style={{ order: 1 }}>
-            <h2 className="stay-sub">{property.city ? t('entire', { city: property.city }) : t('entireNoCity')}</h2>
-            <p className="stay-facts">
-              {factsLine.map((f) => (
-                <span key={f}>{f}</span>
-              ))}
-            </p>
+            {hotelTypes.length > 0 ? (
+              // хотел: „цял имот“ и броят гости на имота нямат смисъл — стаите се избират отдясно
+              property.city && <h2 className="stay-sub">{property.city}</h2>
+            ) : (
+              <>
+                <h2 className="stay-sub">{property.city ? t('entire', { city: property.city }) : t('entireNoCity')}</h2>
+                <p className="stay-facts">
+                  {factsLine.map((f) => (
+                    <span key={f}>{f}</span>
+                  ))}
+                </p>
+              </>
+            )}
             {policy && (
               <ul className="stay-badges">
                 <li className="stay-badge stay-badge--accent">{t(`cancel.${policy}.badge`)}</li>
@@ -635,6 +643,9 @@ export default function ListingView({ property, reviews, seasons = [], packages 
                 страницата.
               </p>
             </div>
+          ) : hotelTypes.length > 0 ? (
+            // хотел: гостът избира вид стая, а не целия имот
+            <HotelRooms slug={slug} types={hotelTypes} />
           ) : (
             <>
               <div className="stay-card">

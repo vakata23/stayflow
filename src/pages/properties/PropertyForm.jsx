@@ -1,6 +1,7 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { ImagePlus, X } from 'lucide-react'
 import { PROPERTY_TYPES } from '../../lib/constants'
+import { hotelsAvailable, propertyTypesFor } from '../../lib/hotel'
 import { Field, Input, Textarea, Select, Button, Alert, Card } from '../../components/ui'
 
 const emptyValues = {
@@ -22,6 +23,15 @@ export default function PropertyForm({ initial, onSubmit, submitLabel, saving, e
   const [preview, setPreview] = useState(initial?.cover_image_url || '')
   const [localError, setLocalError] = useState(null)
   const fileRef = useRef(null)
+  const [hotelsOn, setHotelsOn] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    hotelsAvailable().then((ok) => !cancelled && setHotelsOn(ok))
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const set = (key) => (e) => setValues((v) => ({ ...v, [key]: e.target.value }))
 
@@ -100,7 +110,7 @@ export default function PropertyForm({ initial, onSubmit, submitLabel, saving, e
           </Field>
           <Field label="Тип имот">
             <Select value={values.property_type} onChange={set('property_type')}>
-              {PROPERTY_TYPES.map((t) => (
+              {propertyTypesFor(PROPERTY_TYPES, hotelsOn || values.property_type === 'hotel').map((t) => (
                 <option key={t.value} value={t.value}>
                   {t.label}
                 </option>

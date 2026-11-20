@@ -4,6 +4,7 @@ export const PROPERTY_TYPES = [
   { value: 'studio', label: 'Студио' },
   { value: 'villa', label: 'Вила' },
   { value: 'room', label: 'Стая' },
+  { value: 'hotel', label: 'Хотел' },
   { value: 'other', label: 'Друго' },
 ]
 

@@ -233,6 +233,35 @@ export function greeceData() {
   }
 }
 
+// Хотел (миграция 019): „Хотел Слънце“ с 5 стаи в 2 вида; ?on=1 в /__mock/hotel ги добавя
+const HT = '26666666-0000-4000-8000-000000000006'
+const hr = (n) => `27${n}00000-0000-4000-8000-00000000000${n}`
+export function hotelData() {
+  const room = (n, name, room_type, max_guests, created) => ({
+    ...properties[1], id: hr(n), name, room_type, max_guests, parent_id: HT, slug: 'hotel-slance-' + name.split(' ')[1], is_listed: true, property_type: 'room',
+    city: 'Несебър', address: 'Хотел Слънце', ical_url: null, ical_token: 'c6' + n + '00000-0000-4000-8000-000000000006', created_at: ts(-30, created), public_description: null, channels: [],
+  })
+  return {
+    properties: [
+      { ...properties[1], id: HT, name: 'Хотел „Слънце“', city: 'Несебър', address: 'ул. Мороходец 3', slug: 'hotel-slance', is_listed: true, property_type: 'hotel', max_guests: 2, parent_id: null, room_type: null, public_description: 'Семеен хотел на 100 метра от плажа.', ical_url: null, ical_token: 'c6000000-0000-4000-8000-000000000006', created_at: ts(-40), channels: [{ type: 'phone', value: '+359 88 712 4093' }] },
+      room(1, 'Стая 101', 'Двойна стая', 2, 8),
+      room(2, 'Стая 102', 'Двойна стая', 2, 9),
+      room(3, 'Стая 103', 'Двойна стая', 2, 10),
+      room(4, 'Стая 201', 'Семеен апартамент', 4, 11),
+      room(5, 'Стая 202', 'Семеен апартамент', 4, 12),
+    ],
+    settings: [1, 2, 3, 4, 5].map((n) => ({ property_id: hr(n), ota_commission_pct: 15, tourist_tax: 0, cleaning_fee: n > 3 ? 20 : 0, deposit_pct: 30, base_price: [80, 80, 90, 150, 150][n - 1], created_at: ts(-30) })),
+    bookings: [
+      b(80, hr(1), 'Иван Стоянов', -1, 3, 'direct', 'confirmed', 320, 0, 2),
+      b(81, hr(1), 'Мария Георгиева', 3, 6, 'booking', 'confirmed', 240, 36, 2), // идва в деня, в който Иван заминава → смяна на госта
+      b(82, hr(2), 'Anna Schmidt', 0, 2, 'airbnb', 'confirmed', 160, 24, 2),
+      b(83, hr(4), 'Семейство Колеви', 1, 7, 'direct', 'confirmed', 900, 0, 4),
+      b(84, hr(3), 'Чакащ Гост', 2, 4, 'direct', 'pending', 180, 0, 2),
+      b(85, hr(5), 'Отказан Хотелски', 0, 5, 'direct', 'cancelled', 750, 0, 3),
+    ],
+  }
+}
+
 export const TABLES = {
   profiles: [{ id: PROFILE, user_id: U, full_name: 'Иван Петров', company_name: 'Морски имоти ЕООД', phone: '+359 88 712 4093', created_at: '2026-01-10T08:00:00Z' }],
   properties, bookings, payments, property_photos: photos, booking_requests: requests, cleaning_tasks, cleaning_notes, pricing_rules,
@@ -373,6 +402,37 @@ export const RPC = {
     const discount = best?.saving ?? 0
     const total = acc - discount + 25
     return [{ nights, accommodation_total: acc, cleaning_fee: 25, tourist_tax: 2 * a.p_guests * nights, total, deposit: Math.round(total * 0.3), min_nights: 2, fits_guests: a.p_guests <= 6, is_available: !busy, discount, package_id: best?.pkg.id ?? null }]
+  },
+  // Хотел (миграция 019): свободни стаи по вид — същата логика като в SQL (първата свободна стая, цена от основната)
+  public_hotel_types: (a) => {
+    const h = TABLES.properties.find((x) => x.slug === a.p_slug && x.is_listed && x.property_type === 'hotel')
+    if (!h) return []
+    const rooms = TABLES.properties.filter((r) => r.parent_id === h.id && r.is_listed)
+    const types = [...new Set(rooms.map((r) => r.room_type || r.name))]
+    return types.map((t) => {
+      const list = rooms.filter((r) => (r.room_type || r.name) === t)
+      const prices = list.map((r) => TABLES.property_settings.find((s) => s.property_id === r.id)?.base_price).filter((n) => n > 0)
+      return { room_type: t, rooms_total: list.length, max_guests: Math.max(...list.map((r) => r.max_guests)), price_from: prices.length ? Math.min(...prices) : null }
+    })
+  },
+  hotel_availability: (a) => {
+    const h = TABLES.properties.find((x) => x.slug === a.p_slug && x.is_listed && x.property_type === 'hotel')
+    if (!h || a.p_check_out <= a.p_check_in || a.p_guests < 1) return []
+    const nights = Math.round((new Date(a.p_check_out) - new Date(a.p_check_in)) / 86400000)
+    const rooms = TABLES.properties.filter((r) => r.parent_id === h.id && r.is_listed)
+    const types = [...new Set(rooms.map((r) => r.room_type || r.name))]
+    return types.map((t) => {
+      const list = rooms.filter((r) => (r.room_type || r.name) === t)
+      const maxG = Math.max(...list.map((r) => r.max_guests))
+      const free = list.filter((r) => r.max_guests >= a.p_guests && !TABLES.bookings.some((x) => x.property_id === r.id && x.status !== 'cancelled' && x.check_in < a.p_check_out && a.p_check_in < x.check_out))
+      const row = { room_type: t, rooms_total: list.length, rooms_free: free.length, max_guests: maxG, room_slug: null, nights, accommodation_total: null, cleaning_fee: null, total: null, deposit: null, min_nights: null, fits_guests: a.p_guests <= maxG }
+      if (free.length) {
+        const s = TABLES.property_settings.find((x) => x.property_id === free[0].id)
+        const acc = nights * (s?.base_price ?? 0)
+        Object.assign(row, { room_slug: free[0].slug, accommodation_total: acc, cleaning_fee: s?.cleaning_fee ?? 0, total: acc + (s?.cleaning_fee ?? 0), deposit: Math.round((acc + (s?.cleaning_fee ?? 0)) * 0.3), min_nights: 1 })
+      }
+      return row
+    })
   },
   generate_my_auto_entries: () => 0,
   send_test_notification: () => null,

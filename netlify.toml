@@ -180,6 +180,11 @@
   status = 200
 
 [[redirects]]
+  from = "/hotels/*"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
   from = "/embed/*"
   to = "/index.html"
   status = 200
@@ -309,6 +314,11 @@
 
 [[headers]]
   for = "/messages"
+  [headers.values]
+    X-Robots-Tag = "noindex"
+
+[[headers]]
+  for = "/hotels/*"
   [headers.values]
     X-Robots-Tag = "noindex"
 

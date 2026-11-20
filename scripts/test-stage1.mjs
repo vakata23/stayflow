@@ -41,6 +41,7 @@ const sqlFiles = [
   join(projectDir, 'supabase/migrations/015_stay_packages.sql'),
   join(projectDir, 'supabase/migrations/017_greece_compliance.sql'),
   join(projectDir, 'supabase/migrations/018_safety_and_channel_prices.sql'),
+  join(projectDir, 'supabase/migrations/019_hotel_rooms.sql'),
 ];
 
 const db = new PGlite({ extensions: { btree_gist } });
@@ -1276,6 +1277,92 @@ await db.exec(readFileSync(join(projectDir, 'supabase/migrations/018_safety_and_
 ok('018: е идемпотентна — повторно пускане без грешка', true);
 ok('018: след повторното пускане политиките не са задвоени (4)', (await db.query("select count(*)::int n from pg_policies where tablename = 'property_safety_items'")).rows[0].n === 4);
 ok('018: двете колони са по една', (await db.query("select count(*)::int n from information_schema.columns where table_name = 'property_settings' and column_name in ('airbnb_markup_pct','booking_markup_pct')")).rows[0].n === 2);
+
+// ---------------------------------------------------------------- Хотели (019): стаи към един обект
+const H = 'a1a1a1a1-0000-0000-0000-000000000001'; // хотел на A
+const HB = 'a1a1a1a1-0000-0000-0000-0000000000bb'; // хотел на B
+const HR1 = 'a2a2a2a2-0000-0000-0000-000000000001', HR2 = 'a2a2a2a2-0000-0000-0000-000000000002', HR3 = 'a2a2a2a2-0000-0000-0000-000000000003', HR4 = 'a2a2a2a2-0000-0000-0000-000000000004';
+await db.exec(`
+  insert into properties (id, owner_id, name, max_guests, channels, slug, is_listed, property_type) values
+    ('${H}', '${profA}', 'Хотел Слънце', 2, '[]', 'hotel-slance', true, 'hotel'),
+    ('${HB}', '${profB}', 'Хотел на B', 2, '[]', 'hotel-b', true, 'hotel');
+  insert into properties (id, owner_id, parent_id, name, room_type, max_guests, channels, slug, is_listed, created_at) values
+    ('${HR1}', '${profA}', '${H}', 'Стая 101', 'Двойна стая', 2, '[]', 'hotel-slance-101', true, now() - interval '4 minutes'),
+    ('${HR2}', '${profA}', '${H}', 'Стая 102', 'Двойна стая', 2, '[]', 'hotel-slance-102', true, now() - interval '3 minutes'),
+    ('${HR3}', '${profA}', '${H}', 'Стая 201', 'Семеен апартамент', 4, '[]', 'hotel-slance-201', true, now() - interval '2 minutes'),
+    ('${HR4}', '${profA}', '${H}', 'Стая 301', 'Скрита', 2, '[]', 'hotel-slance-301', false, now() - interval '1 minute');
+  insert into property_settings (property_id, base_price) values ('${HR1}', 80), ('${HR2}', 90), ('${HR3}', 150), ('${HR4}', 60)
+    on conflict (property_id) do update set base_price = excluded.base_price;
+`);
+ok('019: колоните parent_id и room_type са добавени', (await db.query("select count(*)::int n from information_schema.columns where table_name = 'properties' and column_name in ('parent_id','room_type')")).rows[0].n === 2);
+
+// правила за връзката стая → хотел
+await asErr('019: имот не може да е свой собствен хотел', 'authenticated', A, `update properties set parent_id = id where id = '${HR1}'`, /собствен хотел/);
+await asErr('019: стая не може да сочи към чужд хотел', 'authenticated', A, `insert into properties (owner_id, parent_id, name, max_guests, channels) values ('${profA}', '${HB}', 'Крадена стая', 2, '[]')`, /ваш имот/);
+await asErr('019: стая не може да е хотел на друга стая', 'authenticated', A, `insert into properties (owner_id, parent_id, name, max_guests, channels) values ('${profA}', '${HR1}', 'Под стая', 2, '[]')`, /не може да е хотел/);
+await asErr('019: хотел със стаи не може да стане стая', 'authenticated', A, `update properties set parent_id = '${U1}' where id = '${H}'`, /със стаи/);
+r = await as('authenticated', A, `select count(*)::int n from properties where parent_id = '${H}'`);
+ok('019: собственикът вижда своите 4 стаи', r[0].n === 4);
+r = await as('authenticated', B, `select count(*)::int n from properties where parent_id = '${H}'`);
+ok('019: чужд собственик не вижда стаите (RLS)', r[0].n === 0);
+
+// какви стаи има хотелът
+r = await as('anon', null, "select * from public_hotel_types('hotel-slance')");
+ok('019: публично — два вида стаи (скритата не се брои)', r.length === 2 && r[0].room_type === 'Двойна стая' && r[1].room_type === 'Семеен апартамент', JSON.stringify(r));
+ok('019: двойните стаи са 2 с цена от 80 €', r[0].rooms_total === 2 && Number(r[0].price_from) === 80 && r[0].max_guests === 2, JSON.stringify(r[0]));
+ok('019: публичният отговор няма id, собственик или адрес на стая', !Object.keys(r[0]).some((k) => /id|owner|slug/.test(k)));
+r = await as('anon', null, "select * from public_hotel_types('hotel-b')");
+ok('019: хотел без стаи → празно', r.length === 0);
+await db.exec(`update properties set is_listed = false where id = '${H}'`);
+r = await as('anon', null, "select * from public_hotel_types('hotel-slance')");
+ok('019: непубликуван хотел → нищо', r.length === 0);
+await db.exec(`update properties set is_listed = true where id = '${H}'`);
+
+// свободни стаи за дати
+r = await as('anon', null, "select * from hotel_availability('hotel-slance','2027-08-10','2027-08-13',2)");
+ok('019: без резервации — 2 свободни двойни, цена 3 × 80 = 240 от първата стая', r.length === 2 && r[0].rooms_free === 2 && Number(r[0].total) === 240 && r[0].room_slug === 'hotel-slance-101', JSON.stringify(r[0]));
+ok('019: семейният апартамент — 3 × 150 = 450', Number(r[1].total) === 450 && r[1].rooms_free === 1 && r[1].room_slug === 'hotel-slance-201');
+await db.exec(`insert into bookings (property_id, guest_name, check_in, check_out, status) values ('${HR1}', 'Гост 1', '2027-08-11', '2027-08-12', 'confirmed')`);
+r = await as('anon', null, "select * from hotel_availability('hotel-slance','2027-08-10','2027-08-13',2)");
+ok('019: стая 101 е заета → остава 1 свободна двойна и предлага стая 102 (3 × 90 = 270)', r[0].rooms_free === 1 && r[0].room_slug === 'hotel-slance-102' && Number(r[0].total) === 270, JSON.stringify(r[0]));
+await db.exec(`insert into bookings (property_id, guest_name, check_in, check_out, status) values ('${HR2}', 'Гост 2', '2027-08-12', '2027-08-14', 'pending')`);
+r = await as('anon', null, "select * from hotel_availability('hotel-slance','2027-08-10','2027-08-13',2)");
+ok('019: и двете заети → 0 свободни, без стая и без цена', r[0].rooms_free === 0 && r[0].room_slug === null && r[0].total === null, JSON.stringify(r[0]));
+r = await as('anon', null, "select * from hotel_availability('hotel-slance','2027-08-13','2027-08-15',2)");
+ok('019: денят на напускане е свободен — от 13-и 101 е свободна', r[0].rooms_free === 2 || (r[0].rooms_free === 1 && r[0].room_slug === 'hotel-slance-101'), JSON.stringify(r[0]));
+await db.exec(`update bookings set status = 'cancelled' where guest_name = 'Гост 2'`);
+r = await as('anon', null, "select * from hotel_availability('hotel-slance','2027-08-12','2027-08-14',2)");
+ok('019: отказана резервация не заема стая', r[0].rooms_free === 2, JSON.stringify(r[0]));
+r = await as('anon', null, "select * from hotel_availability('hotel-slance','2027-08-10','2027-08-13',3)");
+ok('019: 3 гости — двойните не ставят (0 свободни, не побират), апартаментът става', r[0].rooms_free === 0 && r[0].fits_guests === false && r[1].rooms_free === 1 && r[1].fits_guests === true, JSON.stringify(r));
+r = await as('anon', null, "select * from hotel_availability('hotel-slance','2027-08-13','2027-08-10',2)");
+ok('019: обратни дати → празно', r.length === 0);
+r = await as('anon', null, "select * from hotel_availability('hotel-slance','2020-01-01','2020-01-03',2)");
+ok('019: минали дати → празно', r.length === 0);
+r = await as('anon', null, "select * from hotel_availability('hotel-slance','2027-08-10','2027-08-13',0)");
+ok('019: 0 гости → празно', r.length === 0);
+r = await as('anon', null, "select * from hotel_availability('hotel-b','2027-08-10','2027-08-13',2)");
+ok('019: хотел без стаи → празно', r.length === 0);
+r = await as('anon', null, "select * from hotel_availability('nema-takova','2027-08-10','2027-08-13',2)");
+ok('019: непознат адрес → празно', r.length === 0);
+r = await as('anon', null, "select count(*)::int n from hotel_availability('hotel-slance','2027-08-10','2027-08-13',2) where room_type = 'Скрита'");
+ok('019: непубликувана стая не се предлага', r[0].n === 0);
+
+// цената за стаите минава през същия quote_stay (почистване и т.н.)
+await db.exec(`update property_settings set cleaning_fee = 20 where property_id = '${HR3}'`);
+r = await as('anon', null, "select total, cleaning_fee from hotel_availability('hotel-slance','2027-08-10','2027-08-13',2) where room_type = 'Семеен апартамент'");
+ok('019: таксата за почистване е в общата цена (450 + 20)', Number(r[0].total) === 470 && Number(r[0].cleaning_fee) === 20, JSON.stringify(r[0]));
+
+// старите функции не са пипнати
+r = await as('anon', null, "select * from quote_stay('hotel-slance-101','2027-09-01','2027-09-03',2)");
+ok('019: quote_stay за стая работи сам по себе си (2 × 80 = 160)', r.length === 1 && Number(r[0].accommodation_total) === 160, JSON.stringify(r[0]));
+
+// каскада и повторно пускане
+await db.exec(`delete from properties where id = '${H}'`);
+ok('019: изтриването на хотел каскадно маха стаите му', (await db.query(`select count(*)::int n from properties where parent_id = '${H}'`)).rows[0].n === 0);
+await db.exec(readFileSync(join(projectDir, 'supabase/migrations/019_hotel_rooms.sql'), 'utf8'));
+ok('019: е идемпотентна — повторно пускане без грешка', true);
+ok('019: тригерът и функциите са по една', (await db.query("select count(*)::int n from pg_trigger where tgname = 'trg_properties_check_parent'")).rows[0].n === 1 && (await db.query("select count(*)::int n from pg_proc where proname in ('public_hotel_types','hotel_availability','properties_check_parent')")).rows[0].n === 3);
 
 console.log(`\n${pass} успешни, ${fail} провалени\n`);
 process.exit(fail ? 1 : 0);

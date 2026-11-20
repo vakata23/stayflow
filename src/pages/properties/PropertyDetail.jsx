@@ -7,6 +7,7 @@ import { uploadPropertyImage } from '../../lib/storage'
 import { PageHeader, Card, Spinner, Button, Alert, Modal, EmptyState } from '../../components/ui'
 import IcalSync from '../../components/IcalSync'
 import PropertySettingsCard from '../../components/PropertySettingsCard'
+import HotelRoomsCard from '../../components/HotelRoomsCard'
 import SeasonPrices from '../../components/SeasonPrices'
 import PropertyRegistryCard from '../../components/PropertyRegistryCard'
 import PropertySafetyCard from '../../components/PropertySafetyCard'
@@ -200,6 +201,8 @@ export default function PropertyDetail() {
           saving={saving}
           error={error}
         />
+
+        {property.property_type === 'hotel' && <HotelRoomsCard hotel={property} />}
 
         <PropertySettingsCard
           property={property}

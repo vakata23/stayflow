@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Building2, Plus, Users, MapPin, CalendarCheck } from 'lucide-react'
+import { Building2, Plus, Users, MapPin, CalendarCheck, BedDouble } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { propertyTypeLabel } from '../../lib/constants'
+import { loadRoomCounts } from '../../lib/hotel'
 import { PageHeader, Card, EmptyState, Spinner, Button, Alert } from '../../components/ui'
 
-function PropertyCard({ property, activeBookings }) {
+function PropertyCard({ property, activeBookings, roomCount }) {
   return (
     <Link
       to={`/properties/${property.id}`}
@@ -44,10 +45,17 @@ function PropertyCard({ property, activeBookings }) {
         )}
 
         <div className="mt-4 flex items-center gap-4 border-t border-line pt-3 text-xs text-ink-soft">
-          <span className="flex items-center gap-1.5">
-            <Users className="h-3.5 w-3.5" />
-            до {property.max_guests} гости
-          </span>
+          {property.property_type === 'hotel' ? (
+            <span className="flex items-center gap-1.5">
+              <BedDouble className="h-3.5 w-3.5" />
+              {roomCount === 1 ? '1 стая' : `${roomCount} стаи`}
+            </span>
+          ) : (
+            <span className="flex items-center gap-1.5">
+              <Users className="h-3.5 w-3.5" />
+              до {property.max_guests} гости
+            </span>
+          )}
           <span className="flex items-center gap-1.5">
             <CalendarCheck className="h-3.5 w-3.5" />
             {activeBookings} активни резервации
@@ -61,6 +69,7 @@ function PropertyCard({ property, activeBookings }) {
 export default function PropertiesList() {
   const [properties, setProperties] = useState([])
   const [bookingCounts, setBookingCounts] = useState({})
+  const [roomCounts, setRoomCounts] = useState({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
@@ -84,7 +93,9 @@ export default function PropertiesList() {
         setLoading(false)
         return
       }
-      setProperties(data ?? [])
+      // стаите на хотел се виждат в страницата на хотела, не като отделни имоти
+      setProperties((data ?? []).filter((p) => !p.parent_id))
+      loadRoomCounts().then((c) => !cancelled && setRoomCounts(c))
 
       // Брой активни (потвърдени, незавършили) резервации по имот.
       const today = new Date().toISOString().slice(0, 10)
@@ -99,6 +110,8 @@ export default function PropertiesList() {
       for (const b of bookings ?? []) {
         counts[b.property_id] = (counts[b.property_id] ?? 0) + 1
       }
+      // резервациите на стаите се броят към хотела
+      for (const p of data ?? []) if (p.parent_id) counts[p.parent_id] = (counts[p.parent_id] ?? 0) + (counts[p.id] ?? 0)
       setBookingCounts(counts)
       setLoading(false)
     }
@@ -153,6 +166,7 @@ export default function PropertiesList() {
                 key={p.id}
                 property={p}
                 activeBookings={bookingCounts[p.id] ?? 0}
+                roomCount={roomCounts[p.id] ?? 0}
               />
             ))}
           </div>

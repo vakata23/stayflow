@@ -7,6 +7,7 @@ import { useStayLang, useDocumentLang } from './i18n'
 import { loadPublicSeasons } from '../../lib/seasons'
 import { loadPublicPackages } from '../../lib/packages'
 import { loadPublicRegistration } from '../../lib/registry'
+import { loadPublicHotelTypes } from '../../lib/hotel'
 
 /** Скелет с формата на страницата: докато идват данните, не се показва завъртащ се кръг. */
 function StayLoading() {
@@ -34,6 +35,7 @@ export default function PublicStay({ embed = false }) {
   const [seasons, setSeasons] = useState([])
   const [packages, setPackages] = useState([])
   const [registration, setRegistration] = useState(null)
+  const [hotelTypes, setHotelTypes] = useState([])
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
 
@@ -45,7 +47,8 @@ export default function PublicStay({ embed = false }) {
       loadPublicSeasons(slug),
       loadPublicPackages(slug),
       loadPublicRegistration(slug).catch(() => null),
-    ]).then(([propRes, reviewsRes, seasonRows, packageRows, registrationRow]) => {
+      loadPublicHotelTypes(slug).catch(() => []),
+    ]).then(([propRes, reviewsRes, seasonRows, packageRows, registrationRow, hotelRows]) => {
       if (cancelled) return
       if (propRes.error || !propRes.data || propRes.data.length === 0) setNotFound(true)
       else setProperty(propRes.data[0])
@@ -53,6 +56,7 @@ export default function PublicStay({ embed = false }) {
       setSeasons(seasonRows)
       setPackages(packageRows)
       setRegistration(registrationRow)
+      setHotelTypes(hotelRows)
       setLoading(false)
     })
     return () => {
@@ -88,5 +92,5 @@ export default function PublicStay({ embed = false }) {
     )
   }
 
-  return <ListingView property={property} reviews={reviews} seasons={seasons} packages={packages} registration={registration} slug={slug} loadBusy={loadBusy} embed={embed} />
+  return <ListingView property={property} reviews={reviews} seasons={seasons} packages={packages} registration={registration} hotelTypes={hotelTypes} slug={slug} loadBusy={loadBusy} embed={embed} />
 }

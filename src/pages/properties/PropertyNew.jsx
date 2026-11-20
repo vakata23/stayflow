@@ -9,6 +9,7 @@ import { validateSeason } from '../../lib/seasonLogic'
 import SeasonEditor from '../../components/SeasonEditor'
 import { slugify } from '../../lib/slug'
 import { PROPERTY_TYPES } from '../../lib/constants'
+import { hotelsAvailable, propertyTypesFor } from '../../lib/hotel'
 import { PageHeader, Spinner, Alert, Card, Field, Input, Select, Button } from '../../components/ui'
 
 /**
@@ -24,12 +25,14 @@ export default function PropertyNew() {
   const [error, setError] = useState(null)
   // Сезонни цени (миграция 014): редакторът се показва само когато базата вече има таблицата.
   const [seasonsOn, setSeasonsOn] = useState(false)
+  const [hotelsOn, setHotelsOn] = useState(false)
   const [seasons, setSeasons] = useState([])
   const [showSeasonErrors, setShowSeasonErrors] = useState(false)
 
   useEffect(() => {
     let cancelled = false
     seasonsAvailable().then((ok) => !cancelled && setSeasonsOn(ok))
+    hotelsAvailable().then((ok) => !cancelled && setHotelsOn(ok))
     return () => {
       cancelled = true
     }
@@ -126,7 +129,7 @@ export default function PropertyNew() {
           </Field>
           <Field label="Тип имот">
             <Select value={values.property_type} onChange={set('property_type')}>
-              {PROPERTY_TYPES.map((t) => (
+              {propertyTypesFor(PROPERTY_TYPES, hotelsOn).map((t) => (
                 <option key={t.value} value={t.value}>{t.label}</option>
               ))}
             </Select>

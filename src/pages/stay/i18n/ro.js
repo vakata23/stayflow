@@ -172,4 +172,13 @@ export default {
 
   notFoundTitle: 'Pagina nu a fost găsită',
   notFoundText: 'Această locuință nu este publicată sau adresa este greșită. Verificați linkul primit de la gazdă.',
+  // Хотел: избор на вид стая
+  'hotel.title': 'Camere și prețuri',
+  'hotel.intro': 'Alegeți datele pentru a vedea ce camere sunt libere.',
+  'hotel.search': 'Arată camerele libere',
+  'hotel.free': 'Camere libere: {n}',
+  'hotel.none': 'Nu este liberă nicio cameră de acest tip pentru aceste date.',
+  'hotel.noRooms': 'Nu sunt camere libere pentru aceste date. Încercați alte date.',
+  'hotel.choose': 'Alege',
+  'hotel.chosen': 'Selectată',
 }

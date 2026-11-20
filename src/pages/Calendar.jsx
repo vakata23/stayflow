@@ -13,6 +13,7 @@ import {
 import { SOURCE_STYLES, BOOKING_SOURCES } from '../lib/bookings'
 import { priceForDay } from '../lib/pricing'
 import { loadSeasonRows } from '../lib/seasons'
+import { loadHotelParentIds } from '../lib/hotel'
 import { seasonForDay } from '../lib/seasonLogic'
 import { PageHeader, Card, Select, Button, Alert, Spinner, EmptyState } from '../components/ui'
 import BookingFormModal from './bookings/BookingFormModal'
@@ -39,11 +40,10 @@ export default function Calendar() {
   const rangeEnd = days[days.length - 1].iso
 
   useEffect(() => {
-    supabase
-      .from('properties')
-      .select('id, name, max_guests')
-      .order('name')
-      .then(({ data }) => setProperties(data ?? []))
+    // хотел със стаи няма собствени резервации — те са по стаите
+    Promise.all([supabase.from('properties').select('id, name, max_guests').order('name'), loadHotelParentIds()]).then(([{ data }, parents]) =>
+      setProperties((data ?? []).filter((p) => !parents.has(p.id)))
+    )
   }, [])
 
   const loadBookings = useCallback(async () => {

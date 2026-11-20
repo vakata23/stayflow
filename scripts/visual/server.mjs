@@ -7,7 +7,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import zlib from 'node:zlib'
 import { fileURLToPath } from 'node:url'
-import { TABLES, RPC, USER, greeceData } from './seed.mjs'
+import { TABLES, RPC, USER, greeceData, hotelData } from './seed.mjs'
 
 const here = path.dirname(fileURLToPath(import.meta.url))
 const [, , distArg, port = '4174'] = process.argv
@@ -19,6 +19,7 @@ const COMPRESSIBLE = new Set(['.html', '.js', '.css', '.json', '.webmanifest', '
 const cache = new Map()
 const unmatched = new Set()
 const writes = []
+let missing019 = false // true → колоните parent_id/room_type и функциите за хотел „не съществуват“ (миграция 019 непусната)
 let missing018 = false // true → таблицата за безопасност и колоните за надбавки „не съществуват“ (миграция 018 непусната)
 
 function send(res, status, body, headers = {}) {
@@ -69,6 +70,7 @@ function applyFilter(rows, col, spec) {
     case 'lte': return rows.filter((r) => cmp(r[col], val) <= 0)
     case 'in': { const set = val.replace(/^\(|\)$/g, '').split(',').map((s) => s.replace(/^"|"$/g, '')); return rows.filter((r) => set.includes(String(r[col]))) }
     case 'is': return rows.filter((r) => (val === 'null' ? r[col] == null : String(r[col]) === val))
+    case 'not': { const d = val.indexOf('.'); const inner = applyFilter(rows, col, val.slice(0, d) + '.' + val.slice(d + 1)); return rows.filter((r) => !inner.includes(r)) }
     default: return rows
   }
 }
@@ -97,6 +99,8 @@ function embed(rows, select) {
 async function rest(req, res, url, table) {
   if (missing018 && table === 'property_safety_items') return send(res, 404, { code: 'PGRST205', message: "Could not find the table 'public.property_safety_items' in the schema cache" })
   if (missing018 && table === 'property_settings' && /markup_pct/.test(url.searchParams.get('select') ?? '')) return send(res, 400, { code: '42703', message: 'column property_settings.airbnb_markup_pct does not exist' })
+  if (missing019 && table === 'properties' && /(parent_id|room_type)/.test(url.searchParams.get('select') ?? '') ) return send(res, 400, { code: '42703', message: 'column properties.parent_id does not exist' })
+  if (missing019 && table === 'properties' && url.searchParams.has('parent_id')) return send(res, 400, { code: '42703', message: 'column properties.parent_id does not exist' })
   const rows0 = TABLES[table]
   if (!rows0) { unmatched.add('table:' + table); return send(res, 200, []) }
   if (req.method === 'POST' || req.method === 'PATCH' || req.method === 'DELETE') {
@@ -197,6 +201,16 @@ const server = http.createServer(async (req, res) => {
       }
       return send(res, 200, { registry: TABLES.property_registry.length, bookings: TABLES.bookings.length })
     }
+    if (p === '/__mock/hotel') {
+      // Хотели (миграция 019): ?on=1 добавя хотел с 5 стаи, резервации и цени; ?on=0 ги маха; ?m019=1 — хотелската част „не съществува“
+      const h = hotelData()
+      const drop = (arr, keep) => { for (let i = arr.length - 1; i >= 0; i--) if (!keep(arr[i])) arr.splice(i, 1) }
+      const propIds = new Set(h.properties.map((x) => x.id)), bookingIds = new Set(h.bookings.map((x) => x.id))
+      drop(TABLES.properties, (x) => !propIds.has(x.id)); drop(TABLES.bookings, (x) => !bookingIds.has(x.id)); drop(TABLES.property_settings, (x) => !propIds.has(x.property_id))
+      missing019 = url.searchParams.get('m019') === '1'
+      if (url.searchParams.get('on') === '1') { TABLES.properties.push(...h.properties); TABLES.bookings.push(...h.bookings); TABLES.property_settings.push(...h.settings) }
+      return send(res, 200, { properties: TABLES.properties.length, missing: missing019 })
+    }
     if (p === '/__mock/writes') { if (url.searchParams.get('clear')) writes.length = 0; return send(res, 200, writes) }
     if (p === '/__mock/requests') { if (url.searchParams.get('clear')) requestsSent.length = 0; return send(res, 200, requestsSent) }
     if (p === '/__mock/grants') return send(res, 200, grantWrites)
@@ -218,6 +232,7 @@ const server = http.createServer(async (req, res) => {
         requestsSent.push(body)
         return send(res, 200, null)
       }
+      if (missing019 && (fn === 'public_hotel_types' || fn === 'hotel_availability')) return send(res, 404, { code: 'PGRST202', message: 'Could not find the function public.' + fn })
       if (!RPC[fn]) { unmatched.add('rpc:' + fn); return send(res, 200, null) }
       return send(res, 200, RPC[fn](body))
     }

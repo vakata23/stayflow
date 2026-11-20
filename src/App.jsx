@@ -44,6 +44,7 @@ const Clients = lazy(() => import('./pages/admin/Clients'))
 const AccessRequest = lazy(() => import('./pages/demo/AccessRequest'))
 const Declarations = lazy(() => import('./pages/Declarations'))
 const Messages = lazy(() => import('./pages/Messages'))
+const HotelCalendar = lazy(() => import('./pages/hotels/HotelCalendar'))
 
 function PageFallback() {
   return (
@@ -118,6 +119,7 @@ export default function App() {
               <Route path="/notifications" element={<Notifications />} />
               <Route path="/declarations" element={<Declarations />} />
               <Route path="/messages" element={<Messages />} />
+              <Route path="/hotels/:id/calendar" element={<HotelCalendar />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/admin/clients" element={<Clients />} />
               <Route path="/properties" element={<PropertiesList />} />
