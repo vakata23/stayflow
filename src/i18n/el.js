@@ -3,10 +3,12 @@
 // Липсващ запис → текстът остава на български. Редактира се директно; scripts/test-app-i18n.mjs пази покритието.
 import greece from './greece.js'
 import hotel from './hotel.js'
+import payments from './payments.js'
 
 export default {
   ...greece.el,
   ...hotel.el,
+  ...payments.el,
   "Всичко е наред — нищо не чака вас.": "Όλα είναι εντάξει — τίποτα δεν περιμένει εσάς.",
   "Чака вас": "Σας περιμένουν",
   "Първи стъпки": "Πρώτα βήματα",

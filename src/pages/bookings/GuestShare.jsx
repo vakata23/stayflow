@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Copy, FileDown, MessageCircle, Send } from 'lucide-react'
+import { Copy, CreditCard, FileDown, MessageCircle, Send } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
 import { appOrigin } from '../../lib/appUrl'
 import { guestFacingContact } from '../../lib/profileLogic'
 import { guestTotals, guestMessage, whatsappUrl, viberForwardUrl, confirmationData } from '../../lib/guestConfirm'
+import { requestPaymentLink } from '../../lib/stripePay'
 import { Alert, Textarea } from '../../components/ui'
 
 /**
@@ -18,6 +19,9 @@ export default function GuestShare({ booking }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
   const [copied, setCopied] = useState(false)
+  const [payLink, setPayLink] = useState(null) // { url, amount, kind, mode } — линк към Stripe, влиза в съобщението
+  const [payBusy, setPayBusy] = useState(null) // 'deposit' | 'balance' докато се прави линкът
+  const [payError, setPayError] = useState(null)
 
   useEffect(() => {
     let off = false
@@ -35,11 +39,22 @@ export default function GuestShare({ booking }) {
   }, [booking.id, booking.property_id])
 
   const owner = guestFacingContact(profile)
-  const balance = useMemo(() => guestTotals(booking, payments).balance, [booking, payments])
+  const totals = useMemo(() => guestTotals(booking, payments), [booking, payments])
+  const balance = totals.balance
+  const canPayByCard = !totals.viaPlatform && balance != null && balance > 0 && booking.status !== 'cancelled'
   const text = useMemo(
-    () => guestMessage({ booking, property, owner, balance, link: `${appOrigin()}/guest/${booking.property_id}` }),
-    [booking, property, owner.name, owner.phone, balance]
+    () => guestMessage({ booking, property, owner, balance, link: `${appOrigin()}/guest/${booking.property_id}`, payLink }),
+    [booking, property, owner.name, owner.phone, balance, payLink]
   )
+
+  const makePayLink = async (kind) => {
+    setPayBusy(kind)
+    setPayError(null)
+    const r = await requestPaymentLink(booking.id, kind)
+    setPayBusy(null)
+    if (r.ok) setPayLink({ url: r.url, amount: r.amount, kind: r.kind, mode: r.mode })
+    else setPayError(r.error || 'Линкът не се създаде.')
+  }
 
   const copy = async () => {
     try {
@@ -92,6 +107,35 @@ export default function GuestShare({ booking }) {
       {error && (
         <div className="mt-3">
           <Alert>{error}</Alert>
+        </div>
+      )}
+      {canPayByCard && (
+        <div className="mt-4 border-t border-line pt-4" data-testid="card-pay">
+          <h4 className="flex items-center gap-1.5 text-sm font-medium text-ink">
+            <CreditCard className="h-4 w-4 text-ink-muted" aria-hidden="true" /> Плащане с карта
+          </h4>
+          <p className="mt-1 text-sm text-ink-soft">
+            Гостът плаща на страницата на Stripe, парите отиват във вашата сметка, а плащането се записва тук само. Линкът се добавя в съобщението по-горе и важи 23 часа.
+          </p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <button type="button" className={btn} onClick={() => makePayLink('deposit')} disabled={payBusy != null}>
+              {payBusy === 'deposit' ? 'Правя линк…' : 'Линк за капаро'}
+            </button>
+            <button type="button" className={btn} onClick={() => makePayLink('balance')} disabled={payBusy != null}>
+              {payBusy === 'balance' ? 'Правя линк…' : 'Линк за целия остатък'}
+            </button>
+          </div>
+          {payLink && (
+            <p className="mt-2 text-sm text-ink" role="status">
+              Линкът е добавен в съобщението: {payLink.kind === 'deposit' ? 'капаро' : 'остатък'} {payLink.amount.toFixed(2)} €.
+              {payLink.mode === 'test' && <strong className="ml-1 text-warning-ink">Тестов режим — с този линк не се взимат истински пари, не го пращайте на гост.</strong>}
+            </p>
+          )}
+          {payError && (
+            <div className="mt-2">
+              <Alert>{payError}</Alert>
+            </div>
+          )}
         </div>
       )}
     </section>

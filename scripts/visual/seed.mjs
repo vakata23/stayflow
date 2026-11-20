@@ -356,6 +356,11 @@ export const RPC = {
     const commission = rows.reduce((s, x) => s + x.commission, 0)
     return [{ bookings_count: rows.length, revenue: r2(revenue), commission: r2(commission), net: r2(revenue - commission) }]
   },
+  // Картата на госта /guest/<id>: адрес, Wi-Fi, код (само за тест на оформлението)
+  guest_card: (a) => {
+    const p = properties.find((x) => x.id === a.p_property_id)
+    return p ? [{ name: p.name, address: p.address, city: p.city, cover_image_url: null, wifi_name: 'TihiBryag', wifi_password: 'morе2026', access_code: '4821', house_rules: null, checkout_time: '11:00', owner_phone: null }] : []
+  },
   // Публичната страница /stay/<slug> (само за тест на оформлението; снимките са градиенти от сървъра)
   public_property: (a) => {
     // „bez-snimki“ — публикуван имот без нищо попълнено освен основното (празни секции не се показват)

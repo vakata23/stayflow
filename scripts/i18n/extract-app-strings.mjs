@@ -26,7 +26,7 @@ export const EXCLUDE = [
   `lib${sep}icalServer.js`, `lib${sep}bookingRequestServer.js`, `lib${sep}outboxProcessor.js`, `lib${sep}notificationAdapters.js`,
   `lib${sep}autoEntriesServer.js`, `lib${sep}photoAnalysisServer.js`, // само на сървъра
   `pages${sep}DesignSystem.jsx`, // витрината на дизайна — вътрешна
-  `i18n${sep}el.js`, `i18n${sep}mk.js`, `i18n${sep}greece.js`, `i18n${sep}greece2.js`, `i18n${sep}hotel.js`, `lib${sep}messageTemplates.js`, // шаблоните са текстове към госта (като guestConfirm.js)
+  `i18n${sep}el.js`, `i18n${sep}mk.js`, `i18n${sep}greece.js`, `i18n${sep}greece2.js`, `i18n${sep}hotel.js`, `i18n${sep}payments.js`, `lib${sep}messageTemplates.js`, // шаблоните са текстове към госта (като guestConfirm.js)
    `i18n${sep}en.js`, `i18n${sep}en-properties.js`, `i18n${sep}en-screens.js`, `i18n${sep}translator.js`, `i18n${sep}appLang.js`, `i18n${sep}domTranslator.js`, // самият превод и речниците (AppLangSwitch.jsx се чете като екран)
 ]
 

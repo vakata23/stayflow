@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useLocation, useParams } from 'react-router-dom'
 import {
   Wifi,
   KeyRound,
@@ -62,6 +62,7 @@ function Section({ icon: Icon, title, children }) {
 
 export default function GuestCard() {
   const { id } = useParams()
+  const justPaid = new URLSearchParams(useLocation().search).get('paid') === '1' // Stripe връща госта тук след плащане
   const [card, setCard] = useState(null)
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
@@ -141,6 +142,12 @@ export default function GuestCard() {
       </div>
 
       <div className="mx-auto max-w-md space-y-6 px-5 pt-6">
+        {justPaid && (
+          // Само подсказка: адресът може да се отвори и без плащане, затова не твърдим, че парите са получени.
+          <div role="status" className="rounded-xl bg-success-soft px-4 py-3 text-center text-sm font-medium text-success-ink">
+            Благодарим за плащането! Домакинът ще го види до минута.
+          </div>
+        )}
         <div className="rounded-xl bg-accent-soft px-4 py-3 text-center text-sm font-medium text-accent-ink">
           Добре дошли! Тук е всичко необходимо за престоя ви.
         </div>

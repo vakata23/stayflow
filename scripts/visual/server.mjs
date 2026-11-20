@@ -161,6 +161,8 @@ let accessState = 'active'
 let accessMissing = false // true → функцията my_access „не съществува“ (миграция 016 непусната)
 const requestsSent = []
 const grantWrites = []
+let stripeMode = 'test'
+const stripeRequests = []
 const adminClients = () => [
   { profile_id: 'p1', full_name: 'Мария Петрова', company_name: null, phone: '+359 888 100 200', email: 'maria@example.bg', created_at: '2026-11-01T10:00:00Z', property_count: 2, plan: 'start', status: 'active', active_until: sofiaPlus(40), is_trial: false, note: null },
   { profile_id: 'p2', full_name: 'Георги Димитров', company_name: 'Морски къщи ЕООД', phone: null, email: 'georgi@example.bg', created_at: '2026-11-10T10:00:00Z', property_count: 5, plan: 'plus', status: 'active', active_until: sofiaPlus(3), is_trial: false, note: null },
@@ -249,6 +251,18 @@ const server = http.createServer(async (req, res) => {
       const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1067"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="hsl(${h} 38% 62%)"/><stop offset="1" stop-color="hsl(${(h + 40) % 360} 42% 28%)"/></linearGradient></defs><rect width="1600" height="1067" fill="url(#g)"/></svg>`
       res.writeHead(200, { 'content-type': 'image/svg+xml', 'cache-control': 'public, max-age=3600' })
       return res.end(svg)
+    }
+    if (p === '/__mock/stripe') { stripeMode = url.searchParams.get('mode') || 'test'; if (url.searchParams.get('clear')) stripeRequests.length = 0; return send(res, 200, { mode: stripeMode }) }
+    if (p === '/__mock/stripe-requests') return send(res, 200, stripeRequests)
+    if (p === '/api/stripe-checkout') {
+      // Плащане с карта: ?mode=test|live — връща линк; off — „не е свързано“ (501); nothing — „няма дължима сума“ (422); error — Stripe отказва (502)
+      const body = JSON.parse((await readBody(req)) || '{}')
+      stripeRequests.push({ auth: req.headers.authorization ?? '', body })
+      if (stripeMode === 'off') return send(res, 501, { ok: false, configured: false, error: 'Плащането с карта още не е свързано (липсва ключ на Stripe).' })
+      if (stripeMode === 'nothing') return send(res, 422, { ok: false, error: 'Няма дължима сума за този вид плащане (вече е платено или е под 0,50 €).', reason: 'nothing_due' })
+      if (stripeMode === 'error') return send(res, 502, { ok: false, error: 'Stripe отказа: Invalid API Key provided' })
+      const amount = body.kind === 'deposit' ? 9.6 : 32
+      return send(res, 200, { ok: true, url: `https://checkout.stripe.com/c/pay/cs_${stripeMode}_${body.kind}`, amount, kind: body.kind, mode: stripeMode === 'live' ? 'live' : 'test', expires_hours: 23 })
     }
     if (p === '/api/booking-request') { await readBody(req); return send(res, 200, { ok: true }) }
     if (p.startsWith('/api/')) { await readBody(req); return send(res, 200, { ok: true }) }

@@ -67,7 +67,7 @@ const firstName = (name) => String(name ?? '').trim().split(/\s+/)[0] || ''
 /**
  * Съобщение до госта. owner = { name, phone } (от профила: фирма или име). link — картата на госта (адрес, Wi-Fi, код).
  */
-export function guestMessage({ booking, property, owner = {}, balance = null, link }) {
+export function guestMessage({ booking, property, owner = {}, balance = null, link, payLink = null }) {
   const n = nights(booking.check_in, booking.check_out)
   // имената често вече са в кавички („Тихи бряг“) — не ги удвояваме
   const quoted = (n) => (/[„“"]/.test(n) ? n : `„${n}“`)
@@ -78,6 +78,8 @@ export function guestMessage({ booking, property, owner = {}, balance = null, li
     `Потвърждавам резервацията ви в ${where}: ${bgDate(booking.check_in)} – ${bgDate(booking.check_out)} (${n} ${n === 1 ? 'нощувка' : 'нощувки'}).`,
   ]
   if (balance != null && balance > 0) parts.push(`Остава за плащане: ${formatMoney(balance)}.`)
+  // линк към страницата на Stripe (картата се въвежда там), създаден от „Прати на госта“ — важи 23 часа
+  if (payLink?.url) parts.push(`${payLink.kind === 'deposit' ? 'Капаро' : 'Плащане'} ${formatMoney(payLink.amount)} с карта (линкът важи 23 часа): ${payLink.url}`)
   if (link) parts.push(`Всичко за настаняването (адрес, Wi-Fi, код): ${link}`)
   parts.push('До скоро!')
   const sign = [owner.name, owner.phone].filter(Boolean).join(', ')

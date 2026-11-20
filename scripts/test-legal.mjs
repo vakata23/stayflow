@@ -102,7 +102,7 @@ const ALLOWED_HOSTS = new Set([
   'wiki.osmfoundation.org', 'www.cpdp.bg', // връзки в политиката
   'www.w3.org', // пространство от имена на SVG
   'schema.org', // структурирани данни за търсачки
-  'localhost', 'api.telegram.org', 'api.resend.com', 'api.anthropic.com', // сървърен код (функции), не се зарежда в браузъра
+  'localhost', 'api.telegram.org', 'api.resend.com', 'api.anthropic.com', 'api.stripe.com', // сървърен код (функции), не се зарежда в браузъра
   'www.airbnb.com', 'airbnb.com', 'www.booking.com', 'booking.com', 'maps.google.com', 'www.google.com', 'wa.me', 'm.me', 'viber.com', 't.me', 'instagram.com', // връзки, които посетителят сам отваря, или примерни адреси в подсказки
 ])
 const hosts = new Map()
